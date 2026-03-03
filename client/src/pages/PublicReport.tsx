@@ -4,6 +4,7 @@ import { Loader2, Copy, Download } from "lucide-react";
 import { formatCurrency, formatNumber, formatPercentage } from "@shared/metrics";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import ConsultiveReport from "@/components/ConsultiveReport";
 
 export default function PublicReport() {
   const { slug } = useParams<{ slug: string }>();
@@ -225,6 +226,24 @@ export default function PublicReport() {
                 </table>
               </div>
             </div>
+
+            {/* Consultive Report */}
+            <ConsultiveReport
+              metrics={{
+                ctr: parseFloat(metrics.ctr),
+                cpm: parseFloat(metrics.cpm),
+                totalReach: metrics.totalReach,
+                totalImpressions: metrics.totalImpressions,
+                totalSpent: parseFloat(metrics.totalSpent),
+                totalClicks: metrics.totalClicks,
+                costPerClick: parseFloat(metrics.costPerClick),
+                videoRetentionRate: parseFloat(metrics.videoRetentionRate),
+                newInstagramFollowers: metrics.newInstagramFollowers,
+                messagesInitiated: metrics.messagesInitiated,
+                instagramProfileVisits: metrics.instagramProfileVisits,
+                costPerProfileVisit: parseFloat(metrics.costPerProfileVisit),
+              }}
+            />
           </>
         )}
       </main>

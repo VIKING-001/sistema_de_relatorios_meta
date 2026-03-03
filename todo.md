@@ -52,3 +52,10 @@
 - [x] Verificar responsividade em mobile
 - [x] Testar fluxo completo end-to-end
 - [x] Popular com dados de exemplo de fevereiro
+
+## Relatório Consultivo (Nova Funcionalidade)
+- [x] Criar utiliários de análise de métricas Meta
+- [x] Implementar gerador de insights baseado em benchmarks
+- [x] Criar componente de relatório consultivo na página pública
+- [x] Adicionar recomendações personalizadas por métrica
+- [x] Testar análises com dados de fevereiro
