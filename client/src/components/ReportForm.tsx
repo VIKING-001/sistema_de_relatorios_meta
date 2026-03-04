@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { parseBrazilianNumber } from "@shared/numberParser";
 
 interface ReportFormProps {
   companyId: number;
@@ -61,18 +62,18 @@ export default function ReportForm({ companyId, onSuccess }: ReportFormProps) {
         startDate: new Date(startDate),
         endDate: new Date(endDate),
         metrics: {
-          instagramReach: parseInt(instagramReach) || 0,
-          totalReach: parseInt(totalReach) || 0,
-          totalImpressions: parseInt(totalImpressions) || 0,
-          instagramProfileVisits: parseInt(instagramProfileVisits) || 0,
-          newInstagramFollowers: parseInt(newInstagramFollowers) || 0,
-          messagesInitiated: parseInt(messagesInitiated) || 0,
-          totalSpent: parseFloat(totalSpent) || 0,
-          totalClicks: parseInt(totalClicks) || 0,
-          costPerClick: parseFloat(costPerClick) || 0,
-          videoRetentionRate: parseFloat(videoRetentionRate) || 0,
-          profileVisitsThroughCampaigns: parseInt(profileVisitsThroughCampaigns) || 0,
-          costPerProfileVisit: parseFloat(costPerProfileVisit) || 0,
+          instagramReach: Math.floor(parseBrazilianNumber(instagramReach)) || 0,
+          totalReach: Math.floor(parseBrazilianNumber(totalReach)) || 0,
+          totalImpressions: Math.floor(parseBrazilianNumber(totalImpressions)) || 0,
+          instagramProfileVisits: Math.floor(parseBrazilianNumber(instagramProfileVisits)) || 0,
+          newInstagramFollowers: Math.floor(parseBrazilianNumber(newInstagramFollowers)) || 0,
+          messagesInitiated: Math.floor(parseBrazilianNumber(messagesInitiated)) || 0,
+          totalSpent: parseBrazilianNumber(totalSpent) || 0,
+          totalClicks: Math.floor(parseBrazilianNumber(totalClicks)) || 0,
+          costPerClick: parseBrazilianNumber(costPerClick) || 0,
+          videoRetentionRate: parseBrazilianNumber(videoRetentionRate) || 0,
+          profileVisitsThroughCampaigns: Math.floor(parseBrazilianNumber(profileVisitsThroughCampaigns)) || 0,
+          costPerProfileVisit: parseBrazilianNumber(costPerProfileVisit) || 0,
           cpm: 0,
           ctr: 0,
         },

@@ -59,3 +59,10 @@
 - [x] Criar componente de relatório consultivo na página pública
 - [x] Adicionar recomendações personalizadas por métrica
 - [x] Testar análises com dados de fevereiro
+
+## Correção de Parsing de Números (Nova Funcionalidade)
+- [x] Criar função de parsing que reconheça formato brasileiro (1.000.800,50)
+- [x] Implementar validação de entrada para aceitar pontos e vírgulas
+- [x] Atualizar componentes de formulário para aceitar formato brasileiro
+- [x] Testar parsing com vários formatos de números
+- [x] Adicionar máscara de entrada para facilitar digitação
