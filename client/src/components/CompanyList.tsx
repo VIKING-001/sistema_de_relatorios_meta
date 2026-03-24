@@ -1,4 +1,3 @@
-import { Company } from "@shared/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
@@ -6,7 +5,9 @@ import { useState } from "react";
 import { Plus, Trash2, ChevronRight, Loader2 } from "lucide-react";
 import ReportList from "./ReportList";
 import ReportForm from "./ReportForm";
+import EditReportModal from "./EditReportModal";
 import { toast } from "sonner";
+import { Report, Company } from "@shared/types";
 
 interface CompanyListProps {
   company: Company;
@@ -16,6 +17,7 @@ interface CompanyListProps {
 export default function CompanyList({ company, onUpdate }: CompanyListProps) {
   const [showReports, setShowReports] = useState(false);
   const [showReportForm, setShowReportForm] = useState(false);
+  const [editingReport, setEditingReport] = useState<Report | null>(null);
 
   const { data: reports } = trpc.report.list.useQuery(
     { companyId: company.id },
@@ -100,7 +102,12 @@ export default function CompanyList({ company, onUpdate }: CompanyListProps) {
           {showReports && reports && (
             <div className="mt-4 space-y-2">
               {reports.length > 0 ? (
-                <ReportList reports={reports} companyId={company.id} onUpdate={onUpdate} />
+                <ReportList
+                  reports={reports}
+                  companyId={company.id}
+                  onUpdate={onUpdate}
+                  onEditReport={setEditingReport}
+                />
               ) : (
                 <p className="text-sm text-gray-400 text-center py-4">
                   Nenhum relatório criado
@@ -108,6 +115,15 @@ export default function CompanyList({ company, onUpdate }: CompanyListProps) {
               )}
             </div>
           )}
+
+          <EditReportModal
+            report={editingReport}
+            onClose={() => setEditingReport(null)}
+            onSuccess={() => {
+              setEditingReport(null);
+              onUpdate();
+            }}
+          />
         </CardContent>
       </Card>
     </>

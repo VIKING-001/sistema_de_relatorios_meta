@@ -1,7 +1,7 @@
 import { Report } from "@shared/types";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
-import { Copy, Trash2, Eye, Loader2 } from "lucide-react";
+import { Copy, Trash2, Eye, Loader2, Edit2 } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 
@@ -9,9 +9,10 @@ interface ReportListProps {
   reports: Report[];
   companyId: number;
   onUpdate: () => void;
+  onEditReport?: (report: Report) => void;
 }
 
-export default function ReportList({ reports, companyId, onUpdate }: ReportListProps) {
+export default function ReportList({ reports, companyId, onUpdate, onEditReport }: ReportListProps) {
   const [publishingId, setPublishingId] = useState<number | null>(null);
 
   const deleteMutation = trpc.report.delete.useMutation();
@@ -94,6 +95,17 @@ export default function ReportList({ reports, companyId, onUpdate }: ReportListP
               >
                 {publishingId === report.id && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
                 Publicar
+              </Button>
+            )}
+
+            {report.isPublished === "published" && (
+              <Button
+                onClick={() => onEditReport?.(report)}
+                size="sm"
+                variant="outline"
+                className="border-blue-500/20 text-blue-400 hover:bg-blue-500/10"
+              >
+                <Edit2 className="h-3 w-3" />
               </Button>
             )}
 

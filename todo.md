@@ -66,3 +66,23 @@
 - [x] Atualizar componentes de formulário para aceitar formato brasileiro
 - [x] Testar parsing com vários formatos de números
 - [x] Adicionar máscara de entrada para facilitar digitação
+
+
+## Edição de Relatórios (Nova Funcionalidade)
+- [ ] Adicionar botão de editar na listagem de relatórios
+- [ ] Criar modal de edição com formulário pré-preenchido
+- [ ] Implementar API de atualização de relatório
+- [ ] Testar edição e validar atualização na página pública
+- [ ] Validar que mudanças aparecem imediatamente
+
+## Correção de Seleção de Datas
+- [x] Corrigir problema onde sistema ignora período selecionado
+- [x] Validar que datas são salvas corretamente no banco de dados
+- [x] Testar com vários períodos diferentes
+
+## Edição de Relatórios (Nova Funcionalidade)
+- [x] Criar botão de edição na listagem de relatórios
+- [x] Criar modal de edição com formulário completo
+- [x] Implementar API de atualização de relatório
+- [x] Testar fluxo completo de edição
+- [x] Validar que mudanças aparecem imediatamente

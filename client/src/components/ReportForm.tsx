@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { parseBrazilianNumber } from "@shared/numberParser";
+import { parseLocalDate } from "@shared/dateParser";
 
 interface ReportFormProps {
   companyId: number;
@@ -59,8 +60,8 @@ export default function ReportForm({ companyId, onSuccess }: ReportFormProps) {
         companyId,
         title: title.trim(),
         description: description.trim() || undefined,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
+        startDate: parseLocalDate(startDate),
+        endDate: parseLocalDate(endDate),
         metrics: {
           instagramReach: Math.floor(parseBrazilianNumber(instagramReach)) || 0,
           totalReach: Math.floor(parseBrazilianNumber(totalReach)) || 0,
