@@ -4,23 +4,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Calendar, Target, TrendingUp, DollarSign, MousePointer2, PlayCircle, Users, Plus } from "lucide-react";
 import { parseBrazilianNumber } from "@shared/numberParser";
 import { parseLocalDate } from "@shared/dateParser";
+import { motion } from "framer-motion";
 
 interface ReportFormProps {
   companyId: number;
   onSuccess: () => void;
+  onCancel?: () => void;
 }
 
-export default function ReportForm({ companyId, onSuccess }: ReportFormProps) {
+export default function ReportForm({ companyId, onSuccess, onCancel }: ReportFormProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Métricas
+  // Étricas
   const [instagramReach, setInstagramReach] = useState("0");
   const [totalReach, setTotalReach] = useState("0");
   const [totalImpressions, setTotalImpressions] = useState("0");
@@ -46,11 +48,6 @@ export default function ReportForm({ companyId, onSuccess }: ReportFormProps) {
 
     if (!startDate || !endDate) {
       toast.error("Datas de início e fim são obrigatórias");
-      return;
-    }
-
-    if (new Date(startDate) > new Date(endDate)) {
-      toast.error("Data de início não pode ser maior que data de fim");
       return;
     }
 
@@ -90,234 +87,131 @@ export default function ReportForm({ companyId, onSuccess }: ReportFormProps) {
     }
   };
 
+  const inputClass = "bg-white/5 border-white/10 text-white placeholder:text-muted-foreground focus:border-primary/50 focus:ring-primary/20 transition-all rounded-xl";
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <motion.form 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      onSubmit={handleSubmit} 
+      className="space-y-8"
+    >
       {/* Informações Básicas */}
-      <div className="space-y-4">
-        <h3 className="text-white font-bold">Informações Básicas</h3>
-
-        <div>
-          <label className="block text-sm font-medium text-white mb-2">
-            Título do Relatório *
-          </label>
-          <Input
-            type="text"
-            placeholder="Ex: Campanha Fevereiro 2026"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            disabled={isLoading}
-            className="bg-white/10 border-white/20 text-white placeholder:text-gray-500"
-          />
+      <div className="space-y-5">
+        <div className="flex items-center gap-2 text-primary">
+          <Calendar className="h-5 w-5" />
+          <h3 className="font-bold font-display uppercase tracking-wider text-sm">Cronograma e Identificação</h3>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-white mb-2">
-            Descrição
-          </label>
-          <Textarea
-            placeholder="Descrição do relatório (opcional)"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            disabled={isLoading}
-            className="bg-white/10 border-white/20 text-white placeholder:text-gray-500 resize-none"
-            rows={2}
-          />
-        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="md:col-span-2">
+            <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2 ml-1">
+              Título da Campanha
+            </label>
+            <Input
+              placeholder="Ex: Lançamento Coleção Outono 2026"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              disabled={isLoading}
+              className={inputClass}
+            />
+          </div>
 
-        <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-white mb-2">
-              Data Início *
+            <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2 ml-1">
+              Início do Período
             </label>
             <Input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               disabled={isLoading}
-              className="bg-white/10 border-white/20 text-white"
+              className={inputClass}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-white mb-2">
-              Data Fim *
+            <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2 ml-1">
+              Fim do Período
             </label>
             <Input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               disabled={isLoading}
-              className="bg-white/10 border-white/20 text-white"
+              className={inputClass}
             />
           </div>
         </div>
       </div>
 
       {/* Métricas */}
-      <div className="space-y-4">
-        <h3 className="text-white font-bold">Métricas de Campanha</h3>
+      <div className="space-y-6">
+        <div className="flex items-center gap-2 text-primary">
+          <Target className="h-5 w-5" />
+          <h3 className="font-bold font-display uppercase tracking-wider text-sm">Performance e Alcance</h3>
+        </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-white mb-2">
-              Alcance Instagram
-            </label>
-            <Input
-              type="number"
-              value={instagramReach}
-              onChange={(e) => setInstagramReach(e.target.value)}
-              disabled={isLoading}
-              className="bg-white/10 border-white/20 text-white"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-white mb-2">
-              Alcance Total
-            </label>
-            <Input
-              type="number"
-              value={totalReach}
-              onChange={(e) => setTotalReach(e.target.value)}
-              disabled={isLoading}
-              className="bg-white/10 border-white/20 text-white"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-white mb-2">
-              Total de Impressões
-            </label>
-            <Input
-              type="number"
-              value={totalImpressions}
-              onChange={(e) => setTotalImpressions(e.target.value)}
-              disabled={isLoading}
-              className="bg-white/10 border-white/20 text-white"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-white mb-2">
-              Visitas Perfil Instagram
-            </label>
-            <Input
-              type="number"
-              value={instagramProfileVisits}
-              onChange={(e) => setInstagramProfileVisits(e.target.value)}
-              disabled={isLoading}
-              className="bg-white/10 border-white/20 text-white"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-white mb-2">
-              Novos Seguidores Instagram
-            </label>
-            <Input
-              type="number"
-              value={newInstagramFollowers}
-              onChange={(e) => setNewInstagramFollowers(e.target.value)}
-              disabled={isLoading}
-              className="bg-white/10 border-white/20 text-white"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-white mb-2">
-              Mensagens Iniciadas
-            </label>
-            <Input
-              type="number"
-              value={messagesInitiated}
-              onChange={(e) => setMessagesInitiated(e.target.value)}
-              disabled={isLoading}
-              className="bg-white/10 border-white/20 text-white"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-white mb-2">
-              Valor Gasto (R$)
-            </label>
-            <Input
-              type="number"
-              step="0.01"
-              value={totalSpent}
-              onChange={(e) => setTotalSpent(e.target.value)}
-              disabled={isLoading}
-              className="bg-white/10 border-white/20 text-white"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-white mb-2">
-              Cliques Todos
-            </label>
-            <Input
-              type="number"
-              value={totalClicks}
-              onChange={(e) => setTotalClicks(e.target.value)}
-              disabled={isLoading}
-              className="bg-white/10 border-white/20 text-white"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-white mb-2">
-              Custo por Clique (R$)
-            </label>
-            <Input
-              type="number"
-              step="0.01"
-              value={costPerClick}
-              onChange={(e) => setCostPerClick(e.target.value)}
-              disabled={isLoading}
-              className="bg-white/10 border-white/20 text-white"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-white mb-2">
-              Retenção de Reprodução de Vídeo (%)
-            </label>
-            <Input
-              type="number"
-              step="0.01"
-              value={videoRetentionRate}
-              onChange={(e) => setVideoRetentionRate(e.target.value)}
-              disabled={isLoading}
-              className="bg-white/10 border-white/20 text-white"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-white mb-2">
-              Visitas no Perfil através das Campanhas
-            </label>
-            <Input
-              type="number"
-              value={profileVisitsThroughCampaigns}
-              onChange={(e) => setProfileVisitsThroughCampaigns(e.target.value)}
-              disabled={isLoading}
-              className="bg-white/10 border-white/20 text-white"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-white mb-2">
-              Custo de Visita através da Campanha (R$)
-            </label>
-            <Input
-              type="number"
-              step="0.01"
-              value={costPerProfileVisit}
-              onChange={(e) => setCostPerProfileVisit(e.target.value)}
-              disabled={isLoading}
-              className="bg-white/10 border-white/20 text-white"
-            />
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[
+            { label: "Alcance IG", val: instagramReach, set: setInstagramReach, icon: Users },
+            { label: "Alcance Total", val: totalReach, set: setTotalReach, icon: TrendingUp },
+            { label: "Impressões", val: totalImpressions, set: setTotalImpressions, icon: Target },
+            { label: "Visitas IG", val: instagramProfileVisits, set: setInstagramProfileVisits, icon: MousePointer2 },
+            { label: "Seguidores", val: newInstagramFollowers, set: setNewInstagramFollowers, icon: Plus },
+            { label: "Mensagens", val: messagesInitiated, set: setMessagesInitiated, icon: PlayCircle },
+            { label: "Total Gasto", val: totalSpent, set: setTotalSpent, icon: DollarSign, isMoney: true },
+            { label: "Cliques", val: totalClicks, set: setTotalClicks, icon: MousePointer2 },
+            { label: "CPC", val: costPerClick, set: setCostPerClick, icon: DollarSign, isMoney: true },
+          ].map((field) => (
+            <div key={field.label} className="group">
+              <label className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2 ml-1 group-focus-within:text-primary transition-colors">
+                <field.icon className="h-3 w-3" />
+                {field.label}
+              </label>
+              <div className="relative">
+                {field.isMoney && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">R$</span>}
+                <Input
+                  type="text"
+                  value={field.val}
+                  onChange={(e) => field.set(e.target.value)}
+                  disabled={isLoading}
+                  className={`${inputClass} ${field.isMoney ? 'pl-9' : ''} bg-white/[0.03] hover:bg-white/[0.06]`}
+                />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div className="flex gap-3 pt-4">
+      <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-white/5">
+        {onCancel && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={isLoading}
+            className="flex-1 rounded-2xl py-6 border-white/10 text-muted-foreground hover:text-white hover:bg-white/5 transition-all"
+          >
+            Descartar
+          </Button>
+        )}
         <Button
           type="submit"
           disabled={isLoading}
-          className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold"
+          className="flex-[2] rounded-2xl py-6 bg-primary hover:bg-primary/90 text-white font-bold glow-blue shadow-lg shadow-primary/20 transition-all"
         >
-          {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          {isLoading ? "Criando..." : "Criar Relatório"}
+          {isLoading ? (
+            <div className="flex items-center gap-3">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span>Processando...</span>
+            </div>
+          ) : (
+            "Finalizar Relatório"
+          )}
         </Button>
       </div>
-    </form>
+    </motion.form>
+  );
+}
   );
 }

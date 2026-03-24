@@ -6,16 +6,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
+import { Company } from "@shared/types";
+
 interface CompanyFormProps {
+  company?: Company;
   onSuccess: () => void;
+  onCancel?: () => void;
 }
 
-export default function CompanyForm({ onSuccess }: CompanyFormProps) {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
+export default function CompanyForm({ company, onSuccess, onCancel }: CompanyFormProps) {
+  const [name, setName] = useState(company?.name || "");
+  const [description, setDescription] = useState(company?.description || "");
   const [isLoading, setIsLoading] = useState(false);
 
   const createMutation = trpc.company.create.useMutation();
+  const updateMutation = trpc.company.update.useMutation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,17 +32,26 @@ export default function CompanyForm({ onSuccess }: CompanyFormProps) {
 
     setIsLoading(true);
     try {
-      await createMutation.mutateAsync({
-        name: name.trim(),
-        description: description.trim() || undefined,
-      });
+      if (company) {
+        await updateMutation.mutateAsync({
+          id: company.id,
+          name: name.trim(),
+          description: description.trim() || undefined,
+        });
+        toast.success("Empresa atualizada com sucesso!");
+      } else {
+        await createMutation.mutateAsync({
+          name: name.trim(),
+          description: description.trim() || undefined,
+        });
+        toast.success("Empresa criada com sucesso!");
+      }
 
-      toast.success("Empresa criada com sucesso!");
       setName("");
       setDescription("");
       onSuccess();
     } catch (error) {
-      toast.error("Erro ao criar empresa");
+      toast.error(company ? "Erro ao atualizar empresa" : "Erro ao criar empresa");
       console.error(error);
     } finally {
       setIsLoading(false);
@@ -75,13 +89,24 @@ export default function CompanyForm({ onSuccess }: CompanyFormProps) {
       </div>
 
       <div className="flex gap-3 pt-4">
+        {onCancel && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={isLoading}
+            className="flex-1 border-white/20 text-white hover:bg-white/10"
+          >
+            Cancelar
+          </Button>
+        )}
         <Button
           type="submit"
           disabled={isLoading}
           className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold"
         >
           {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          {isLoading ? "Criando..." : "Criar Empresa"}
+          {isLoading ? (company ? "Salvando..." : "Criando...") : (company ? "Salvar Alterações" : "Criar Empresa")}
         </Button>
       </div>
     </form>

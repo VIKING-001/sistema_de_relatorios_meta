@@ -1,15 +1,16 @@
 import { eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import * as schema from "../drizzle/schema";
 import { InsertUser, users, companies, reports, reportMetrics, Company, Report, ReportMetrics } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
-let _db: ReturnType<typeof drizzle> | null = null;
+let _db: ReturnType<typeof drizzle<typeof schema>> | null = null;
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      _db = drizzle(process.env.DATABASE_URL, { schema });
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -168,11 +169,17 @@ export async function createReport(
   return inserted[0]!;
 }
 
-export async function getReportsByCompanyId(companyId: number): Promise<Report[]> {
+export async function getReportsByCompanyId(companyId: number): Promise<(Report & { metrics: ReportMetrics[] })[]> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  return db.select().from(reports).where(eq(reports.companyId, companyId));
+  return db.query.reports.findMany({
+    where: eq(reports.companyId, companyId),
+    with: {
+      metrics: true
+    },
+    orderBy: (reports, { desc }) => [desc(reports.createdAt)]
+  }) as Promise<(Report & { metrics: ReportMetrics[] })[]>;
 }
 
 export async function getReportById(id: number): Promise<Report | undefined> {

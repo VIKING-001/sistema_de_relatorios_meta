@@ -1,9 +1,10 @@
 import { Report } from "@shared/types";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
-import { Copy, Trash2, Eye, Loader2, Edit2 } from "lucide-react";
+import { Copy, Trash2, Eye, Loader2, Edit2, Share2, Globe, Clock, CheckCircle2, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ReportListProps {
   reports: Report[];
@@ -19,14 +20,14 @@ export default function ReportList({ reports, companyId, onUpdate, onEditReport 
   const publishMutation = trpc.report.publish.useMutation();
 
   const handleDelete = async (reportId: number) => {
-    if (!confirm("Tem certeza que deseja deletar este relatório?")) return;
+    if (!confirm("Deseja realmente excluir este relatório?")) return;
 
     try {
       await deleteMutation.mutateAsync({ id: reportId });
-      toast.success("Relatório deletado com sucesso!");
+      toast.success("Relatório removido com sucesso");
       onUpdate();
     } catch (error) {
-      toast.error("Erro ao deletar relatório");
+      toast.error("Erro ao remover relatório");
     }
   };
 
@@ -36,10 +37,10 @@ export default function ReportList({ reports, companyId, onUpdate, onEditReport 
       await publishMutation.mutateAsync({ id: reportId });
       const publicUrl = `${window.location.origin}/report/${slug}`;
       navigator.clipboard.writeText(publicUrl);
-      toast.success("Relatório publicado! Link copiado para a área de transferência");
+      toast.success("Publicado com sucesso! Link copiado.");
       onUpdate();
     } catch (error) {
-      toast.error("Erro ao publicar relatório");
+      toast.error("Erro ao publicar");
     } finally {
       setPublishingId(null);
     }
@@ -48,79 +49,114 @@ export default function ReportList({ reports, companyId, onUpdate, onEditReport 
   const handleCopyLink = (slug: string) => {
     const publicUrl = `${window.location.origin}/report/${slug}`;
     navigator.clipboard.writeText(publicUrl);
-    toast.success("Link copiado para a área de transferência!");
+    toast.success("Link copiado para a área de transferência");
   };
 
   return (
-    <div className="space-y-2">
-      {reports.map((report) => (
-        <div
-          key={report.id}
-          className="p-3 bg-white/5 border border-white/10 rounded-lg flex items-center justify-between hover:border-cyan-500/50 transition-colors"
-        >
-          <div className="flex-1 min-w-0">
-            <p className="text-white font-medium truncate">{report.title}</p>
-            <p className="text-xs text-gray-400">
-              {new Date(report.startDate).toLocaleDateString("pt-BR")} a{" "}
-              {new Date(report.endDate).toLocaleDateString("pt-BR")}
-            </p>
-          </div>
+    <div className="space-y-3">
+      <AnimatePresence initial={false}>
+        {reports.map((report, index) => (
+          <motion.div
+            key={report.id}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ delay: index * 0.05 }}
+            className="group relative p-4 rounded-xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.06] hover:border-primary/20 transition-all duration-300"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 mb-1.5">
+                  <span className="text-white font-semibold truncate text-sm">
+                    {report.title}
+                  </span>
+                  {report.isPublished === "published" ? (
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold uppercase tracking-wider border border-emerald-500/20">
+                      <CheckCircle2 className="h-2.5 w-2.5" />
+                      Ativo
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 text-[10px] font-bold uppercase tracking-wider border border-amber-500/20">
+                      <Clock className="h-2.5 w-2.5" />
+                      Rascunho
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex items-center gap-3 text-[11px] text-muted-foreground font-medium">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3 opacity-50" />
+                    {new Date(report.startDate).toLocaleDateString("pt-BR")}
+                    <span className="mx-1 opacity-30">→</span>
+                    {new Date(report.endDate).toLocaleDateString("pt-BR")}
+                  </div>
+                </div>
+              </div>
 
-          <div className="flex items-center gap-2 ml-4">
-            {report.isPublished === "published" ? (
-              <>
-                <Button
-                  onClick={() => handleCopyLink(report.slug)}
-                  size="sm"
-                  variant="outline"
-                  className="border-white/20 text-white hover:bg-white/10"
-                >
-                  <Copy className="h-3 w-3" />
-                </Button>
-                <a
-                  href={`/report/${report.slug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-cyan-500/20 text-cyan-300 rounded hover:bg-cyan-500/30 transition-colors"
-                >
-                  <Eye className="h-3 w-3" />
-                </a>
-              </>
-            ) : (
-              <Button
-                onClick={() => handlePublish(report.id, report.slug)}
-                disabled={publishingId === report.id}
-                size="sm"
-                className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white text-xs"
-              >
-                {publishingId === report.id && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
-                Publicar
-              </Button>
-            )}
+              <div className="flex items-center gap-2">
+                {report.isPublished === "published" ? (
+                  <div className="flex items-center gap-1.5 bg-white/5 rounded-xl p-1 border border-white/5">
+                    <button
+                      onClick={() => handleCopyLink(report.slug)}
+                      className="p-2 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all"
+                      title="Copiar Link"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </button>
+                    <a
+                      href={`/report/${report.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all"
+                      title="Abrir Visualização"
+                    >
+                      <Globe className="h-4 w-4" />
+                    </a>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={() => handlePublish(report.id, report.slug)}
+                    disabled={publishingId === report.id}
+                    size="sm"
+                    className="h-9 px-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs"
+                  >
+                    {publishingId === report.id ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      "Publicar Agora"
+                    )}
+                  </Button>
+                )}
 
-            {report.isPublished === "published" && (
-              <Button
-                onClick={() => onEditReport?.(report)}
-                size="sm"
-                variant="outline"
-                className="border-blue-500/20 text-blue-400 hover:bg-blue-500/10"
-              >
-                <Edit2 className="h-3 w-3" />
-              </Button>
-            )}
-
-            <Button
-              onClick={() => handleDelete(report.id)}
-              disabled={deleteMutation.isPending}
-              size="sm"
-              variant="outline"
-              className="border-red-500/20 text-red-400 hover:bg-red-500/10"
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </div>
+                <div className="flex items-center gap-1 ml-1 pl-3 border-l border-white/5">
+                  <button
+                    onClick={() => onEditReport?.(report)}
+                    className="p-2 rounded-lg hover:bg-blue-500/10 text-muted-foreground hover:text-blue-400 transition-all outline-none"
+                    title="Editar"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(report.id)}
+                    className="p-2 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition-all outline-none"
+                    title="Excluir"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </AnimatePresence>
+      
+      {reports.length === 0 && (
+        <div className="text-center py-12 rounded-2xl bg-white/[0.02] border border-dashed border-white/10">
+          <Clock className="h-10 w-10 text-white/10 mx-auto mb-4" />
+          <p className="text-muted-foreground text-sm font-medium">Nenhum relatório encontrado</p>
+          <p className="text-[11px] text-muted-foreground/60 mt-1">Comece criando um novo relatório de performance</p>
         </div>
-      ))}
+      )}
     </div>
   );
 }

@@ -26,7 +26,8 @@ export default function EditReportModal({ report, onClose, onSuccess }: EditRepo
   );
 
   // Métricas - usar valores padrão se report não tiver métricas
-  const metrics = (report as any)?.metrics || {};
+  const metricsArr = (report as any)?.metrics;
+  const metrics = Array.isArray(metricsArr) ? (metricsArr[0] || {}) : (metricsArr || {});
   const [instagramReach, setInstagramReach] = useState(
     metrics.instagramReach?.toString() || "0"
   );

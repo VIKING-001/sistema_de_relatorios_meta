@@ -1,13 +1,15 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
-import { Plus, Trash2, ChevronRight, Loader2 } from "lucide-react";
+import { Plus, Trash2, ChevronRight, Loader2, Edit2, Building2, BarChart2, MoreVertical } from "lucide-react";
+import CompanyForm from "./CompanyForm";
 import ReportList from "./ReportList";
 import ReportForm from "./ReportForm";
 import EditReportModal from "./EditReportModal";
-import { toast } from "sonner";
 import { Report, Company } from "@shared/types";
+import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface CompanyListProps {
   company: Company;
@@ -18,114 +20,172 @@ export default function CompanyList({ company, onUpdate }: CompanyListProps) {
   const [showReports, setShowReports] = useState(false);
   const [showReportForm, setShowReportForm] = useState(false);
   const [editingReport, setEditingReport] = useState<Report | null>(null);
+  const [isEditingCompany, setIsEditingCompany] = useState(false);
 
   const { data: reports } = trpc.report.list.useQuery(
     { companyId: company.id },
     { enabled: showReports }
   );
 
-  const deleteMutation = trpc.company.delete.useMutation();
-
-  const handleDelete = async () => {
-    if (!confirm("Tem certeza que deseja deletar esta empresa?")) return;
-
-    try {
-      await deleteMutation.mutateAsync({ id: company.id });
-      toast.success("Empresa deletada com sucesso!");
+  const deleteMutation = trpc.company.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Empresa removida com sucesso");
       onUpdate();
-    } catch (error) {
-      toast.error("Erro ao deletar empresa");
+    },
+    onError: (error) => {
+      toast.error("Erro ao remover empresa: " + (error as any).message);
+    }
+  });
+
+  const handleDelete = () => {
+    if (confirm(`Deseja realmente remover a empresa ${company.name}? Isso apagará todos os seus relatórios.`)) {
+      deleteMutation.mutate({ id: company.id });
     }
   };
 
   return (
-    <>
-      <Card className="bg-white/5 border-white/10 hover:border-cyan-500/50 transition-colors">
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <CardTitle className="text-white">{company.name}</CardTitle>
+    <Card className="glass-card group overflow-hidden border-white/10 hover:border-primary/30 transition-all duration-500">
+      <CardHeader className="pb-4 relative overflow-hidden">
+        {/* Decorative background element */}
+        <div className="absolute top-0 right-0 -mr-8 -mt-8 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-colors" />
+        
+        <div className="flex items-start justify-between relative z-10">
+          <div className="flex gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-primary glow-blue">
+              <Building2 className="h-6 w-6" />
+            </div>
+            <div>
+              <CardTitle className="text-xl font-bold font-display group-hover:text-primary transition-colors">
+                {company.name}
+              </CardTitle>
               {company.description && (
-                <CardDescription className="text-gray-400 mt-1">
+                <CardDescription className="line-clamp-1 mt-0.5 text-muted-foreground/80">
                   {company.description}
                 </CardDescription>
               )}
             </div>
+          </div>
+          
+          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => setIsEditingCompany(true)}
+              className="p-2 rounded-lg hover:bg-blue-500/10 text-blue-400/70 hover:text-blue-400 transition-all"
+              title="Editar"
+            >
+              <Edit2 className="h-4 w-4" />
+            </button>
             <button
               onClick={handleDelete}
               disabled={deleteMutation.isPending}
-              className="text-red-400 hover:text-red-300 transition-colors"
+              className="p-2 rounded-lg hover:bg-red-500/10 text-red-400/70 hover:text-red-400 transition-all"
+              title="Excluir"
             >
               <Trash2 className="h-4 w-4" />
             </button>
           </div>
-        </CardHeader>
+        </div>
+      </CardHeader>
 
-        <CardContent className="space-y-4">
-          <div className="text-sm text-gray-400">
-            {reports?.length ?? 0} relatório(s)
-          </div>
-
-          <div className="flex gap-2">
-            <Button
-              onClick={() => setShowReports(!showReports)}
-              variant="outline"
-              size="sm"
-              className="flex-1 border-white/20 text-white hover:bg-white/10"
-            >
-              <ChevronRight className={`h-4 w-4 mr-2 transition-transform ${showReports ? "rotate-90" : ""}`} />
-              Ver Relatórios
-            </Button>
-
-            <Button
-              onClick={() => setShowReportForm(!showReportForm)}
-              size="sm"
-              className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Novo
-            </Button>
-          </div>
-
-          {showReportForm && (
-            <div className="mt-4 p-4 bg-white/5 rounded-lg border border-white/10">
-              <ReportForm
-                companyId={company.id}
-                onSuccess={() => {
-                  setShowReportForm(false);
-                  onUpdate();
-                }}
-              />
+      <CardContent className="space-y-6 pt-2">
+        {isEditingCompany ? (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-5 rounded-2xl bg-primary/5 border border-primary/20 -mx-2"
+          >
+            <h4 className="text-sm font-bold uppercase tracking-wider text-primary mb-5 flex items-center gap-2">
+              <div className="w-1 h-4 bg-primary rounded-full" />
+              Editar Informações
+            </h4>
+            <CompanyForm
+              company={company}
+              onSuccess={() => {
+                setIsEditingCompany(false);
+                onUpdate();
+              }}
+              onCancel={() => setIsEditingCompany(false)}
+            />
+          </motion.div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between text-sm px-1">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <BarChart2 className="h-4 w-4" />
+                <span>{reports?.length ?? 0} Relatórios</span>
+              </div>
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             </div>
-          )}
 
-          {showReports && reports && (
-            <div className="mt-4 space-y-2">
-              {reports.length > 0 ? (
-                <ReportList
-                  reports={reports}
-                  companyId={company.id}
-                  onUpdate={onUpdate}
-                  onEditReport={setEditingReport}
-                />
-              ) : (
-                <p className="text-sm text-gray-400 text-center py-4">
-                  Nenhum relatório criado
-                </p>
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                onClick={() => setShowReports(!showReports)}
+                variant="outline"
+                className={`w-full rounded-xl border-white/5 hover:bg-white/5 font-medium transition-all ${showReports ? 'bg-primary/10 border-primary/30 text-primary' : ''}`}
+              >
+                {showReports ? "Fechar" : "Ver Lista"}
+              </Button>
+              <Button
+                onClick={() => setShowReportForm(!showReportForm)}
+                className="w-full rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium border border-white/10"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Novo
+              </Button>
+            </div>
+
+            <AnimatePresence>
+              {showReportForm && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="p-5 rounded-2xl bg-white/5 border border-white/10 -mx-2">
+                    <h4 className="text-sm font-bold uppercase tracking-wider mb-5">Novo Relatório</h4>
+                    <ReportForm
+                      companyId={company.id}
+                      onSuccess={() => {
+                        setShowReportForm(false);
+                        setShowReports(true);
+                      }}
+                      onCancel={() => setShowReportForm(false)}
+                    />
+                  </div>
+                </motion.div>
               )}
-            </div>
-          )}
+            </AnimatePresence>
 
-          <EditReportModal
-            report={editingReport}
-            onClose={() => setEditingReport(null)}
-            onSuccess={() => {
-              setEditingReport(null);
-              onUpdate();
-            }}
-          />
-        </CardContent>
-      </Card>
-    </>
+            <AnimatePresence>
+              {showReports && !showReportForm && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                >
+                  <div className="pt-2">
+                    <ReportList
+                      reports={reports || []}
+                      companyId={company.id}
+                      onEditReport={(report) => setEditingReport(report)}
+                      onUpdate={() => onUpdate()}
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </>
+        )}
+
+        <EditReportModal
+          report={editingReport}
+          onClose={() => setEditingReport(null)}
+          onSuccess={() => {
+            setEditingReport(null);
+            onUpdate();
+          }}
+        />
+      </CardContent>
+    </Card>
   );
 }
