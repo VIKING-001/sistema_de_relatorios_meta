@@ -213,5 +213,3 @@ export default function ReportForm({ companyId, onSuccess, onCancel }: ReportFor
     </motion.form>
   );
 }
-  );
-}
