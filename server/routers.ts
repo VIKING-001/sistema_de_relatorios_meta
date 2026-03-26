@@ -7,6 +7,7 @@ import * as db from "./db";
 import { calculateCPM, calculateCTR } from "@shared/metrics";
 import { nanoid } from "nanoid";
 import { TRPCError } from "@trpc/server";
+import { loginUser, registerUser, signSessionJwt } from "./_core/localAuth";
 
 // Validação de entrada para empresa
 const createCompanySchema = z.object({
@@ -53,12 +54,52 @@ export const appRouter = router({
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
+
+    login: publicProcedure
+      .input(z.object({
+        email: z.string().email("Email inválido"),
+        password: z.string().min(6, "Senha deve ter ao menos 6 caracteres"),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          const user = await loginUser(input.email, input.password);
+          const token = await signSessionJwt(user.openId, user.name ?? user.email ?? "User");
+          const cookieOptions = getSessionCookieOptions(ctx.req);
+          ctx.res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: 365 * 24 * 60 * 60 * 1000 });
+          return { success: true, user };
+        } catch (err: any) {
+          if (err.message === "INVALID_CREDENTIALS") {
+            throw new TRPCError({ code: "UNAUTHORIZED", message: "Email ou senha incorretos" });
+          }
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Erro ao fazer login" });
+        }
+      }),
+
+    register: publicProcedure
+      .input(z.object({
+        name: z.string().min(2, "Nome deve ter ao menos 2 caracteres"),
+        email: z.string().email("Email inválido"),
+        password: z.string().min(6, "Senha deve ter ao menos 6 caracteres"),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          const user = await registerUser(input.email, input.password, input.name);
+          const token = await signSessionJwt(user.openId, user.name ?? user.email ?? "User");
+          const cookieOptions = getSessionCookieOptions(ctx.req);
+          ctx.res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: 365 * 24 * 60 * 60 * 1000 });
+          return { success: true, user };
+        } catch (err: any) {
+          if (err.message === "EMAIL_ALREADY_EXISTS") {
+            throw new TRPCError({ code: "CONFLICT", message: "Este email já está cadastrado" });
+          }
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Erro ao criar conta" });
+        }
+      }),
+
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      return {
-        success: true,
-      } as const;
+      return { success: true } as const;
     }),
   }),
 
