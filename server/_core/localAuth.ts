@@ -3,21 +3,24 @@ import { SignJWT, jwtVerify } from "jose";
 import { nanoid } from "nanoid";
 import { parse as parseCookieHeader } from "cookie";
 import type { Request } from "express";
-import { webcrypto } from "node:crypto";
 import * as db from "../db";
 import { ENV } from "./env";
-
-const crypto = webcrypto;
-
 import { ForbiddenError } from "@shared/_core/errors";
 import type { User } from "../../drizzle/schema";
+
+// Use global crypto (available in Node 18+ and edge runtimes)
+const getCrypto = () => {
+    if (typeof crypto !== 'undefined') return crypto;
+    // Fallback for older environments
+    return (globalThis as any).crypto;
+};
 
 // ---------------------------------------------------------------------------
 // JWT helpers
 // ---------------------------------------------------------------------------
 
 function getSecretKey() {
-  return new TextEncoder().encode(ENV.cookieSecret || "fallback-secret-change-me-in-production");
+  return new TextEncoder().encode(ENV.cookieSecret || "viking-secret-key-default-366");
 }
 
 export async function signSessionJwt(openId: string, name: string): Promise<string> {
@@ -51,17 +54,17 @@ export async function verifySessionJwt(
 // ---------------------------------------------------------------------------
 
 async function hashPassword(password: string): Promise<string> {
-  // Simple PBKDF2 using Web Crypto (works in Node 18+, no native addons needed)
+  const c = getCrypto();
   const encoder = new TextEncoder();
   const salt = nanoid(16);
-  const keyMaterial = await crypto.subtle.importKey(
+  const keyMaterial = await c.subtle.importKey(
     "raw",
     encoder.encode(password),
     "PBKDF2",
     false,
     ["deriveBits"]
   );
-  const bits = await crypto.subtle.deriveBits(
+  const bits = await c.subtle.deriveBits(
     { name: "PBKDF2", hash: "SHA-256", salt: encoder.encode(salt), iterations: 100000 },
     keyMaterial,
     256
@@ -76,15 +79,16 @@ async function verifyPassword(password: string, stored: string): Promise<boolean
   const parts = stored.split(":");
   if (parts.length !== 3 || parts[0] !== "pbkdf2") return false;
   const [, salt, expectedHash] = parts;
+  const c = getCrypto();
   const encoder = new TextEncoder();
-  const keyMaterial = await crypto.subtle.importKey(
+  const keyMaterial = await c.subtle.importKey(
     "raw",
     encoder.encode(password),
     "PBKDF2",
     false,
     ["deriveBits"]
   );
-  const bits = await crypto.subtle.deriveBits(
+  const bits = await c.subtle.deriveBits(
     { name: "PBKDF2", hash: "SHA-256", salt: encoder.encode(salt), iterations: 100000 },
     keyMaterial,
     256
