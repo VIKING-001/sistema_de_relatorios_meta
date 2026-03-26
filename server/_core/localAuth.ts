@@ -1,11 +1,11 @@
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { COOKIE_NAME, ONE_YEAR_MS } from "../../shared/const";
 import { SignJWT, jwtVerify } from "jose";
 import { nanoid } from "nanoid";
 import { parse as parseCookieHeader } from "cookie";
 import type { Request } from "express";
 import * as db from "../db";
 import { ENV } from "./env";
-import { ForbiddenError } from "@shared/_core/errors";
+import { ForbiddenError } from "../../shared/_core/errors";
 import type { User } from "../../drizzle/schema";
 
 // Use global crypto (available in Node 18+ and edge runtimes)
