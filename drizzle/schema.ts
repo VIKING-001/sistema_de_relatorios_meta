@@ -1,27 +1,21 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, date } from "drizzle-orm/mysql-core";
+import { integer, pgEnum, pgTable, text, timestamp, varchar, decimal, date, serial } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 /**
  * Core user table backing auth flow.
- * Extend this file with additional tables as your product grows.
- * Columns use camelCase to match both database fields and generated types.
  */
-export const users = mysqlTable("users", {
-  /**
-   * Surrogate primary key. Auto-incremented numeric value managed by the database.
-   * Use this for relations between tables.
-   */
-  id: int("id").autoincrement().primaryKey(),
-  /** Internal unique identifier (UUID-based, replaces Manus openId). */
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  /** Internal unique identifier (UUID-based). */
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }).unique(),
-  /** Bcrypt hash of the user's password. Null for legacy/OAuth users. */
+  /** Bcrypt hash of the user's password. */
   passwordHash: varchar("passwordHash", { length: 255 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  role: text("role").default("user").notNull(), // PG handles enums differently, text is safer for migration
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
 
@@ -29,66 +23,62 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
 /**
- * Empresas/Clientes para os quais os relatórios são criados
+ * Empresas/Clientes
  */
-export const companies = mysqlTable("companies", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
+export const companies = pgTable("companies", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 export type Company = typeof companies.$inferSelect;
 export type InsertCompany = typeof companies.$inferInsert;
 
 /**
- * Relatórios de campanhas Meta com versionamento
+ * Relatórios de campanhas Meta
  */
-export const reports = mysqlTable("reports", {
-  id: int("id").autoincrement().primaryKey(),
-  companyId: int("companyId").notNull(),
-  userId: int("userId").notNull(),
+export const reports = pgTable("reports", {
+  id: serial("id").primaryKey(),
+  companyId: integer("companyId").notNull(),
+  userId: integer("userId").notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   slug: varchar("slug", { length: 255 }).notNull().unique(),
   description: text("description"),
   startDate: date("startDate").notNull(),
   endDate: date("endDate").notNull(),
-  isPublished: mysqlEnum("isPublished", ["draft", "published"]).default("draft").notNull(),
+  isPublished: text("isPublished").default("draft").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 export type Report = typeof reports.$inferSelect;
 export type InsertReport = typeof reports.$inferInsert;
 
 /**
- * Métricas de campanhas Meta - dados específicos de cada relatório
+ * Métricas de campanhas Meta
  */
-export const reportMetrics = mysqlTable("reportMetrics", {
-  id: int("id").autoincrement().primaryKey(),
-  reportId: int("reportId").notNull(),
-  // Métricas de alcance e impressões
-  instagramReach: int("instagramReach").notNull().default(0),
-  totalReach: int("totalReach").notNull().default(0),
-  totalImpressions: int("totalImpressions").notNull().default(0),
-  instagramProfileVisits: int("instagramProfileVisits").notNull().default(0),
-  newInstagramFollowers: int("newInstagramFollowers").notNull().default(0),
-  messagesInitiated: int("messagesInitiated").notNull().default(0),
-  // Métricas de custo e cliques
+export const reportMetrics = pgTable("reportMetrics", {
+  id: serial("id").primaryKey(),
+  reportId: integer("reportId").notNull(),
+  instagramReach: integer("instagramReach").notNull().default(0),
+  totalReach: integer("totalReach").notNull().default(0),
+  totalImpressions: integer("totalImpressions").notNull().default(0),
+  instagramProfileVisits: integer("instagramProfileVisits").notNull().default(0),
+  newInstagramFollowers: integer("newInstagramFollowers").notNull().default(0),
+  messagesInitiated: integer("messagesInitiated").notNull().default(0),
   totalSpent: decimal("totalSpent", { precision: 10, scale: 2 }).notNull().default("0.00"),
-  totalClicks: int("totalClicks").notNull().default(0),
+  totalClicks: integer("totalClicks").notNull().default(0),
   costPerClick: decimal("costPerClick", { precision: 10, scale: 2 }).notNull().default("0.00"),
-  // Métricas de vídeo e engajamento
   videoRetentionRate: decimal("videoRetentionRate", { precision: 5, scale: 2 }).notNull().default("0.00"),
-  profileVisitsThroughCampaigns: int("profileVisitsThroughCampaigns").notNull().default(0),
+  profileVisitsThroughCampaigns: integer("profileVisitsThroughCampaigns").notNull().default(0),
   costPerProfileVisit: decimal("costPerProfileVisit", { precision: 10, scale: 2 }).notNull().default("0.00"),
-  // Métricas calculadas
   cpm: decimal("cpm", { precision: 10, scale: 2 }).notNull().default("0.00"),
   ctr: decimal("ctr", { precision: 5, scale: 2 }).notNull().default("0.00"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
 export type ReportMetrics = typeof reportMetrics.$inferSelect;
