@@ -1,14 +1,22 @@
 import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import cors from "cors";
 import { appRouter } from "../server/routers";
 import { createContext } from "../server/_core/context";
 
 const app = express();
 
-app.use(cors());
+// Manual CORS to avoid 'cors' package dependency issues on Vercel
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-trpc-source');
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
+
 app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 // TRPC Endpoint
 app.use("/api/trpc", createExpressMiddleware({
@@ -16,20 +24,9 @@ app.use("/api/trpc", createExpressMiddleware({
   createContext,
 }));
 
-// Health check
+// Health check endpoint for testing
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", time: new Date().toISOString() });
-});
-
-// Global error handler
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error("[API ERROR]", err);
-  res.status(500).json({
-    error: {
-      message: err.message || "Internal Server Error",
-      code: "INTERNAL_ERROR"
-    }
-  });
+  res.json({ status: "ok", message: "Viking System is Online" });
 });
 
 export default app;
