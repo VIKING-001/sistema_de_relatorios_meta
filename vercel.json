@@ -2,7 +2,6 @@
   "buildCommand": "vite build",
   "outputDirectory": "dist/public",
   "installCommand": "pnpm install",
-  "framework": null,
   "rewrites": [
     {
       "source": "/api/(.*)",
@@ -12,10 +11,5 @@
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
-  ],
-  "functions": {
-    "api/index.ts": {
-      "runtime": "nodejs20.x"
-    }
-  }
+  ]
 }
