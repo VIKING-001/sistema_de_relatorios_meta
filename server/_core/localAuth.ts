@@ -3,8 +3,12 @@ import { SignJWT, jwtVerify } from "jose";
 import { nanoid } from "nanoid";
 import { parse as parseCookieHeader } from "cookie";
 import type { Request } from "express";
+import { webcrypto } from "node:crypto";
 import * as db from "../db";
 import { ENV } from "./env";
+
+const crypto = webcrypto;
+
 import { ForbiddenError } from "@shared/_core/errors";
 import type { User } from "../../drizzle/schema";
 
