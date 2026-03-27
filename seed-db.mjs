@@ -1,9 +1,10 @@
 /**
- * Script para popular o banco de dados com dados de exemplo
+ * Script para popular o banco de dados com dados de exemplo (Versão PostgreSQL/Supabase)
  * Uso: node seed-db.mjs
  */
 
-import mysql from "mysql2/promise";
+import pkg from 'pg';
+const { Pool } = pkg;
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -11,155 +12,108 @@ dotenv.config();
 const DATABASE_URL = process.env.DATABASE_URL;
 
 if (!DATABASE_URL) {
-  console.error("DATABASE_URL não está definida");
+  console.error("❌ DATABASE_URL não está definida no arquivo .env");
   process.exit(1);
 }
 
-// Parse database URL
-const url = new URL(DATABASE_URL);
-const config = {
-  host: url.hostname,
-  user: url.username,
-  password: url.password,
-  database: url.pathname.slice(1),
-  port: url.port || 3306,
-  ssl: {},
-};
-
 async function seed() {
-  let connection;
+  let pool;
 
   try {
-    connection = await mysql.createConnection(config);
-    console.log("✓ Conectado ao banco de dados");
+    pool = new Pool({
+      connectionString: DATABASE_URL,
+      ssl: { rejectUnauthorized: false }
+    });
 
-    // Dados de exemplo
-    const ownerOpenId = process.env.OWNER_OPEN_ID || "test-owner";
-    const ownerName = process.env.OWNER_NAME || "Test User";
+    console.log("✓ Conectando ao banco de dados Supabase...");
 
-    // 1. Criar usuário (se não existir)
-    console.log("\n📝 Criando usuário...");
-    await connection.execute(
-      `INSERT IGNORE INTO users (openId, name, email, loginMethod, role, createdAt, updatedAt, lastSignedIn)
-       VALUES (?, ?, ?, ?, ?, NOW(), NOW(), NOW())`,
-      [ownerOpenId, ownerName, `${ownerName.toLowerCase().replace(/\s+/g, ".")}@example.com`, "manus", "admin"]
+    // 1. Criar usuário de teste (Admin)
+    console.log("\n📝 Criando usuário de teste...");
+    const ownerOpenId = process.env.OWNER_OPEN_ID || "local_seed_admin_2026";
+    const ownerName = process.env.OWNER_NAME || "Viking Administrador";
+    const email = "admin@viking.com.br";
+    const passwordHash = "pbkdf2:salt:fakehash"; // hash simplificado para o exemplo
+
+    const userResult = await pool.query(
+      `INSERT INTO users ("openId", name, email, "passwordHash", "loginMethod", role)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT ("openId") DO UPDATE SET "lastSignedIn" = NOW()
+       RETURNING id`,
+      [ownerOpenId, ownerName, email, passwordHash, "email", "admin"]
     );
-    console.log("✓ Usuário criado/verificado");
 
-    // 2. Obter ID do usuário
-    const [users] = await connection.execute(
-      "SELECT id FROM users WHERE openId = ? LIMIT 1",
-      [ownerOpenId]
-    );
+    const userId = userResult.rows[0].id;
+    console.log(`✓ Usuário ID: ${userId}`);
 
-    if (users.length === 0) {
-      throw new Error("Usuário não encontrado após criação");
-    }
-
-    const userId = users[0].id;
-    console.log(`✓ ID do usuário: ${userId}`);
-
-    // 3. Criar empresa de exemplo
+    // 2. Criar empresa de exemplo
     console.log("\n🏢 Criando empresa de exemplo...");
-    const [companyResult] = await connection.execute(
-      `INSERT INTO companies (userId, name, description, createdAt, updatedAt)
-       VALUES (?, ?, ?, NOW(), NOW())`,
-      [userId, "Empresa Exemplo", "Empresa de exemplo para demonstração do sistema"]
+    const companyResult = await pool.query(
+      `INSERT INTO companies ("userId", name, description)
+       VALUES ($1, $2, $3)
+       RETURNING id`,
+      [userId, "Viking Digital Agency", "Agência parceira Meta com foco em performance"]
     );
 
-    const companyId = companyResult.insertId;
+    const companyId = companyResult.rows[0].id;
     console.log(`✓ Empresa criada com ID: ${companyId}`);
 
-    // 4. Criar relatório com dados de fevereiro
+    // 3. Criar relatório de Fevereiro
     console.log("\n📊 Criando relatório de fevereiro...");
-    const [reportResult] = await connection.execute(
-      `INSERT INTO reports (companyId, userId, title, slug, description, startDate, endDate, isPublished, createdAt, updatedAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+    const reportTitle = "Performance Meta - Fevereiro 2026";
+    const slug = `meta-performance-fevereiro-2026-${Math.floor(Math.random() * 1000)}`;
+    
+    const reportResult = await pool.query(
+      `INSERT INTO reports ("companyId", "userId", title, slug, description, "startDate", "endDate", "isPublished")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING id`,
       [
         companyId,
         userId,
-        "Campanha Fevereiro 2026",
-        "campanha-fevereiro-2026-demo",
-        "Relatório de performance das campanhas Meta de fevereiro de 2026",
+        reportTitle,
+        slug,
+        "Análise mensal de performance das campanhas de tráfego pago.",
         "2026-02-01",
         "2026-02-28",
-        "published",
+        "published"
       ]
     );
 
-    const reportId = reportResult.insertId;
+    const reportId = reportResult.rows[0].id;
     console.log(`✓ Relatório criado com ID: ${reportId}`);
 
-    // 5. Criar métricas do relatório
-    console.log("\n📈 Criando métricas do relatório...");
-
-    // Cálculos de CPM e CTR
+    // 4. Criar métricas reais
+    console.log("\n📈 Criando métricas...");
     const totalSpent = 1935.02;
     const totalImpressions = 137870;
     const totalClicks = 2125;
-    const cpm = (totalSpent / totalImpressions) * 1000; // 14.04
-    const ctr = (totalClicks / totalImpressions) * 100; // 1.54
+    const cpm = (totalSpent / totalImpressions) * 1000;
+    const ctr = (totalClicks / totalImpressions) * 100;
 
-    await connection.execute(
-      `INSERT INTO reportMetrics (
-        reportId,
-        instagramReach,
-        totalReach,
-        totalImpressions,
-        instagramProfileVisits,
-        newInstagramFollowers,
-        messagesInitiated,
-        totalSpent,
-        totalClicks,
-        costPerClick,
-        videoRetentionRate,
-        profileVisitsThroughCampaigns,
-        costPerProfileVisit,
-        cpm,
-        ctr,
-        createdAt,
-        updatedAt
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+    await pool.query(
+      `INSERT INTO "reportMetrics" (
+        "reportId", "instagramReach", "totalReach", "totalImpressions",
+        "instagramProfileVisits", "newInstagramFollowers", "messagesInitiated",
+        "totalSpent", "totalClicks", "costPerClick", "videoRetentionRate",
+        "profileVisitsThroughCampaigns", "costPerProfileVisit", cpm, ctr
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
       [
         reportId,
-        46800, // instagramReach
-        63093, // totalReach
-        137870, // totalImpressions
-        2800, // instagramProfileVisits
-        546, // newInstagramFollowers
-        421, // messagesInitiated
-        totalSpent.toString(), // totalSpent
-        totalClicks, // totalClicks
-        "1.53", // costPerClick (1935.02 / 2125)
-        "17.48", // videoRetentionRate
-        1050, // profileVisitsThroughCampaigns
-        "0.28", // costPerProfileVisit (1935.02 / 6893 aprox)
-        cpm.toFixed(2), // cpm
-        ctr.toFixed(2), // ctr
+        46800, 63093, totalImpressions,
+        2800, 546, 421,
+        totalSpent, totalClicks, (totalSpent / totalClicks).toFixed(2), 
+        17.48, 1050, 0.28, cpm.toFixed(2), ctr.toFixed(2)
       ]
     );
 
-    console.log("✓ Métricas criadas com sucesso");
-
-    console.log("\n✅ Banco de dados populado com sucesso!");
-    console.log(`\n📊 Dados de exemplo criados:`);
-    console.log(`   - Empresa: Empresa Exemplo`);
-    console.log(`   - Relatório: Campanha Fevereiro 2026`);
-    console.log(`   - Período: 01/02/2026 a 28/02/2026`);
-    console.log(`   - Alcance: 63.093`);
-    console.log(`   - Impressões: 137.870`);
-    console.log(`   - Valor gasto: R$ 1.935,02`);
-    console.log(`   - CPM: R$ ${cpm.toFixed(2)}`);
-    console.log(`   - CTR: ${ctr.toFixed(2)}%`);
-    console.log(`\n🔗 Link do relatório público será disponível após login`);
+    console.log("\n✅ Dados populados com sucesso no Supabase!");
+    console.log(`\nRelatório disponível em seu ambiente local após o login.`);
   } catch (error) {
-    console.error("❌ Erro ao popular banco de dados:", error.message);
+    console.error("❌ Erro ao popular banco de dados:", error);
     process.exit(1);
   } finally {
-    if (connection) {
-      await connection.end();
-    }
+    if (pool) await pool.end();
   }
 }
 
 seed();
+
