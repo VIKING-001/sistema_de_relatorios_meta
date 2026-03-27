@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1772568398226,
+      "tag": "0000_outgoing_spiral",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1772568513826,
+      "tag": "0001_dapper_molten_man",
+      "breakpoints": true
+    }
+  ]
+}
