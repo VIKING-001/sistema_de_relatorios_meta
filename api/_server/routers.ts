@@ -1,10 +1,10 @@
-import { COOKIE_NAME } from "../shared/const";
+import { COOKIE_NAME } from "../_shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
-import { calculateCPM, calculateCTR } from "../shared/metrics";
+import { calculateCPM, calculateCTR } from "../_shared/metrics";
 import { nanoid } from "nanoid";
 import { TRPCError } from "@trpc/server";
 import { loginUser, registerUser, signSessionJwt } from "./_core/localAuth";

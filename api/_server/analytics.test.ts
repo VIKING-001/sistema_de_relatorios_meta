@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { analyzeMetrics } from "../shared/analytics";
+import { analyzeMetrics } from "../_shared/analytics";
 
 describe("Analytics - Metrics Analysis", () => {
   const baseMetrics = {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseLocalDate, formatLocalDate, isValidDateString } from "../shared/dateParser";
+import { parseLocalDate, formatLocalDate, isValidDateString } from "../_shared/dateParser";
 
 describe("Date Parser", () => {
   describe("parseLocalDate", () => {

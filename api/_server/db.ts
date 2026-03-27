@@ -1,10 +1,10 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import * as schema from "../drizzle/schema";
-import { users, companies, reports, reportMetrics } from "../drizzle/schema";
+import * as schema from "../_drizzle/schema";
+import { users, companies, reports, reportMetrics } from "../_drizzle/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { ENV } from "./_core/env";
-import type { User, InsertUser, Company, Report, ReportMetrics, InsertReportMetrics } from "../drizzle/schema";
+import type { User, InsertUser, Company, Report, ReportMetrics, InsertReportMetrics } from "../_drizzle/schema";
 
 let dbInstance: any;
 

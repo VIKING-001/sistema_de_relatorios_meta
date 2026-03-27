@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateCPM, calculateCTR, calculateCPC, formatCurrency, formatPercentage, formatNumber } from "../shared/metrics";
+import { calculateCPM, calculateCTR, calculateCPC, formatCurrency, formatPercentage, formatNumber } from "../_shared/metrics";
 
 describe("Metrics Calculations", () => {
   describe("calculateCPM", () => {

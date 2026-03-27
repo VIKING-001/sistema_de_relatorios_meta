@@ -5,7 +5,7 @@ import {
   isValidBrazilianNumber,
   maskBrazilianNumber,
   maskBrazilianNumberWithDecimals,
-} from "../shared/numberParser";
+} from "../_shared/numberParser";
 
 describe("Brazilian Number Parser", () => {
   describe("parseBrazilianNumber", () => {

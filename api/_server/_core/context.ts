@@ -1,5 +1,5 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
-import type { User } from "../../drizzle/schema";
+import type { User } from "../../_drizzle/schema";
 import { authenticateRequest } from "./localAuth";
 
 export type TrpcContext = {
