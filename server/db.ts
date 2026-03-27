@@ -39,11 +39,16 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   const values: any = { ...user };
   if (!values.lastSignedIn) values.lastSignedIn = new Date();
   
-  // PostgreSQL ON CONFLICT (upsert)
-  await db.insert(users).values(values).onConflictDoUpdate({
-    target: [users.openId],
-    set: values
-  });
+  try {
+    // PostgreSQL ON CONFLICT (upsert)
+    await db.insert(users).values(values).onConflictDoUpdate({
+      target: [users.openId],
+      set: values
+    });
+  } catch (err) {
+    console.error("[Database] Error in upsertUser:", err);
+    throw err; // Re-throw to be caught by the router
+  }
 }
 
 export async function getUserByOpenId(openId: string) {
