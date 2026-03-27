@@ -8,11 +8,11 @@ import type { User, InsertUser, Company, Report, ReportMetrics, InsertReportMetr
 
 let dbInstance: any;
 
-const databaseUrl = ENV.databaseUrl || process.env.DATABASE_URL;
+const databaseUrl = process.env.DATABASE_URL || process.env.DB_POOLER_URL || ENV.databaseUrl;
 
 async function getDb() {
   if (!databaseUrl) {
-    console.warn("[Database] DATABASE_URL is missing! Please configure it in Vercel/env.");
+    console.warn(`[Database] DATABASE_URL is missing! (Tried DATABASE_URL and DB_POOLER_URL). Env keys found: ${Object.keys(process.env).filter(k => !k.includes('TOKEN') && !k.includes('SECRET')).join(', ')}`);
     return undefined;
   }
 
