@@ -1,4 +1,4 @@
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { COOKIE_NAME, ONE_YEAR_MS } from "../../shared/const";
 import { parse as parseCookieHeader } from "cookie";
 import type { Request } from "express";
 import { SignJWT, jwtVerify } from "jose";
@@ -95,6 +95,30 @@ class SDKServer {
     });
 
     return user;
+  }
+
+  // Métodos necessários para compatibilidade com fluxos OAuth
+  async exchangeCodeForToken(code: string, state: string) {
+    // Implementação simplificada ou placeholder conforme fluxo do sistema
+    return { accessToken: "placeholder_token" };
+  }
+
+  async getUserInfo(accessToken: string) {
+    return { 
+      openId: "", 
+      name: "", 
+      email: "", 
+      loginMethod: "manus", 
+      platform: "manus" 
+    };
+  }
+
+  async createSessionToken(openId: string, options: { name: string, expiresInMs: number }) {
+    return this.signSession({
+      openId,
+      appId: "viking-reports",
+      name: options.name
+    }, { expiresInMs: options.expiresInMs });
   }
 }
 
