@@ -50,6 +50,121 @@ const metricsSchema = z.object({
   ctr: data.ctr.toString(),
 }));
 
+// ─── Meta Marketing API helpers ───────────────────────────────────────────────
+
+async function fetchMetaInsights(
+  adAccountId: string,
+  accessToken: string,
+  startDate: string,
+  endDate: string
+) {
+  const accountId = adAccountId.startsWith("act_") ? adAccountId : `act_${adAccountId}`;
+  const timeRange = JSON.stringify({ since: startDate, until: endDate });
+
+  // 1. Insights gerais da conta
+  const baseUrl = `https://graph.facebook.com/v19.0/${accountId}/insights`;
+  const params = new URLSearchParams({
+    fields: "reach,impressions,spend,clicks,cpc,cpm,ctr,actions",
+    time_range: timeRange,
+    level: "account",
+    access_token: accessToken,
+  });
+
+  const res = await fetch(`${baseUrl}?${params}`);
+  const json = await res.json();
+
+  if (json.error) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `Erro Meta API: ${json.error.message}`,
+    });
+  }
+
+  if (!json.data || json.data.length === 0) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Nenhum dado encontrado para o período selecionado. Verifique se há campanhas ativas nesse intervalo.",
+    });
+  }
+
+  const ins = json.data[0];
+
+  const getAction = (actions: any[], type: string): number => {
+    const a = (actions || []).find((x: any) => x.action_type === type);
+    return a ? Math.round(parseFloat(a.value)) : 0;
+  };
+
+  const actions = ins.actions || [];
+  const messagesInitiated =
+    getAction(actions, "onsite_conversion.messaging_conversation_started_7d") ||
+    getAction(actions, "onsite_conversion.messaging_first_reply") ||
+    getAction(actions, "onsite_conversion.total_messaging_connection") ||
+    0;
+
+  // 2. Breakdown por publisher_platform para métricas do Instagram
+  let instagramReach = 0;
+  let instagramProfileVisits = 0;
+  let newInstagramFollowers = 0;
+  let profileVisitsThroughCampaigns = 0;
+
+  try {
+    const igParams = new URLSearchParams({
+      fields: "reach,actions",
+      time_range: timeRange,
+      level: "account",
+      breakdowns: "publisher_platform",
+      access_token: accessToken,
+    });
+    const igRes = await fetch(`${baseUrl}?${igParams}`);
+    const igJson = await igRes.json();
+
+    if (igJson.data) {
+      const igRow = igJson.data.find((d: any) => d.publisher_platform === "instagram");
+      if (igRow) {
+        instagramReach = parseInt(igRow.reach || "0", 10);
+        const igActions = igRow.actions || [];
+        instagramProfileVisits =
+          getAction(igActions, "profile_visit") ||
+          getAction(igActions, "view_content") ||
+          0;
+        newInstagramFollowers =
+          getAction(igActions, "like") ||
+          getAction(igActions, "page_engagement") ||
+          0;
+        profileVisitsThroughCampaigns = instagramProfileVisits;
+      }
+    }
+  } catch (_e) {
+    // Breakdown é opcional — ignora erro silenciosamente
+  }
+
+  const totalSpent = parseFloat(ins.spend || "0");
+  const totalImpressions = parseInt(ins.impressions || "0", 10);
+  const totalClicks = parseInt(ins.clicks || "0", 10);
+
+  return {
+    totalReach: parseInt(ins.reach || "0", 10),
+    totalImpressions,
+    totalSpent,
+    totalClicks,
+    costPerClick: parseFloat(ins.cpc || "0"),
+    cpm: parseFloat(ins.cpm || "0"),
+    ctr: parseFloat(ins.ctr || "0"),
+    instagramReach,
+    instagramProfileVisits,
+    profileVisitsThroughCampaigns,
+    newInstagramFollowers,
+    messagesInitiated,
+    videoRetentionRate: 0,
+    costPerProfileVisit:
+      instagramProfileVisits > 0
+        ? parseFloat((totalSpent / instagramProfileVisits).toFixed(2))
+        : 0,
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -330,6 +445,127 @@ export const appRouter = router({
         const company = await db.getCompanyById(report.companyId);
 
         return { report, metrics, company };
+      }),
+  }),
+
+  // ── Meta Marketing API ────────────────────────────────────────────────────
+  meta: router({
+    /** Retorna o status de conexão Meta de uma empresa */
+    getStatus: protectedProcedure
+      .input(z.object({ companyId: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        const company = await db.getCompanyById(input.companyId);
+        if (!company || company.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+        }
+        const connected = !!company.metaAccessToken;
+        const expired = company.metaTokenExpiresAt
+          ? new Date(company.metaTokenExpiresAt) < new Date()
+          : false;
+        return {
+          connected,
+          expired,
+          hasAdAccount: !!company.metaAdAccountId,
+          adAccountId: company.metaAdAccountId ?? null,
+          expiresAt: company.metaTokenExpiresAt ?? null,
+        };
+      }),
+
+    /** Lista as contas de anúncios disponíveis para o token salvo */
+    listAdAccounts: protectedProcedure
+      .input(z.object({ companyId: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        const company = await db.getCompanyById(input.companyId);
+        if (!company || company.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+        }
+        if (!company.metaAccessToken) {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Empresa não conectada ao Meta." });
+        }
+        const url = new URL("https://graph.facebook.com/v19.0/me/adaccounts");
+        url.searchParams.set("fields", "id,name,currency");
+        url.searchParams.set("access_token", company.metaAccessToken);
+        const res = await fetch(url.toString());
+        const data = await res.json();
+        if (data.error) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: `Meta API: ${data.error.message}` });
+        }
+        return (data.data ?? []) as Array<{ id: string; name: string; currency: string }>;
+      }),
+
+    /** Seleciona qual conta de anúncios usar para a empresa */
+    selectAdAccount: protectedProcedure
+      .input(z.object({
+        companyId: z.number().int().positive(),
+        adAccountId: z.string().min(1),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const company = await db.getCompanyById(input.companyId);
+        if (!company || company.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+        }
+        return db.updateCompanyMeta(input.companyId, input.adAccountId, company.metaAccessToken ?? null);
+      }),
+
+    /** Desconecta a empresa do Meta */
+    disconnect: protectedProcedure
+      .input(z.object({ companyId: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        const company = await db.getCompanyById(input.companyId);
+        if (!company || company.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+        }
+        return db.disconnectCompanyMeta(input.companyId);
+      }),
+
+    /** Salva/atualiza as credenciais Meta de uma empresa (modo manual, legado) */
+    saveCredentials: protectedProcedure
+      .input(
+        z.object({
+          companyId: z.number().int().positive(),
+          metaAdAccountId: z.string().min(1, "ID da conta é obrigatório"),
+          metaAccessToken: z.string().min(1, "Access Token é obrigatório"),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const company = await db.getCompanyById(input.companyId);
+        if (!company || company.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+        }
+        const updated = await db.updateCompanyMeta(
+          input.companyId,
+          input.metaAdAccountId.trim(),
+          input.metaAccessToken.trim()
+        );
+        return updated;
+      }),
+
+    /** Busca métricas diretamente da Meta API para um período */
+    fetchInsights: protectedProcedure
+      .input(
+        z.object({
+          companyId: z.number().int().positive(),
+          startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD"),
+          endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD"),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const company = await db.getCompanyById(input.companyId);
+        if (!company || company.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+        }
+        if (!company.metaAdAccountId || !company.metaAccessToken) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "Configure as credenciais do Meta Ads para esta empresa antes de importar.",
+          });
+        }
+        return fetchMetaInsights(
+          company.metaAdAccountId,
+          company.metaAccessToken,
+          input.startDate,
+          input.endDate
+        );
       }),
   }),
 });

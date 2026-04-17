@@ -30,6 +30,12 @@ export const companies = pgTable("companies", {
   userId: integer("userId").notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
+  /** Meta Ads: ID da conta de anúncios (ex: act_1234567890) */
+  metaAdAccountId: varchar("metaAdAccountId", { length: 64 }),
+  /** Meta Ads: Access Token (long-lived, 60 dias) */
+  metaAccessToken: text("metaAccessToken"),
+  /** Meta Ads: Data de expiração do token */
+  metaTokenExpiresAt: timestamp("metaTokenExpiresAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });

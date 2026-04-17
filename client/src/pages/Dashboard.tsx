@@ -3,11 +3,12 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Settings, LogOut, Loader2, Building2, BarChart3, Users, Zap } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import CompanyForm from "@/components/CompanyForm";
 import CompanyList from "@/components/CompanyList";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -15,6 +16,45 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
 
   const { data: companies, isLoading, refetch } = trpc.company.list.useQuery();
+  const [autoOpenMetaCompanyId, setAutoOpenMetaCompanyId] = useState<number | null>(null);
+
+  // Detecta retorno do OAuth do Meta e mostra feedback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const metaConnected = params.get("meta_connected");
+    const metaError = params.get("meta_error");
+    const companyId = params.get("companyId");
+    const accounts = params.get("accounts");
+
+    if (metaConnected) {
+      let adAccountCount = 0;
+      if (accounts) {
+        try {
+          const list = JSON.parse(decodeURIComponent(accounts));
+          adAccountCount = list.length;
+        } catch {}
+      }
+
+      const msg = adAccountCount > 1
+        ? `Meta conectado! Selecione qual conta de anúncios usar no painel ⚡ abaixo.`
+        : adAccountCount === 1
+        ? `Meta conectado! Conta de anúncios vinculada automaticamente.`
+        : `Meta conectado! Abra o painel ⚡ para configurar a conta de anúncios.`;
+
+      toast.success(msg, { duration: 6000 });
+      refetch();
+
+      // Abre automaticamente o painel Meta da empresa que acabou de conectar
+      if (companyId) setAutoOpenMetaCompanyId(Number(companyId));
+
+      window.history.replaceState({}, "", "/");
+    }
+
+    if (metaError) {
+      toast.error("Erro ao conectar Meta Ads: " + decodeURIComponent(metaError), { duration: 8000 });
+      window.history.replaceState({}, "", "/");
+    }
+  }, []);
 
   const handleLogout = async () => {
     await trpc.auth.logout.useMutation().mutateAsync();
@@ -164,6 +204,7 @@ export default function Dashboard() {
                     <CompanyList
                       company={company}
                       onUpdate={() => refetch()}
+                      autoOpenMeta={autoOpenMetaCompanyId === company.id}
                     />
                   </motion.div>
                 ))

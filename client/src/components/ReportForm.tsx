@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, Calendar, Target, TrendingUp, DollarSign, MousePointer2, PlayCircle, Users, Plus } from "lucide-react";
+import { Loader2, Calendar, Target, TrendingUp, DollarSign, MousePointer2, PlayCircle, Users, Plus, Zap } from "lucide-react";
 import { parseBrazilianNumber } from "@shared/numberParser";
 import { parseLocalDate } from "@shared/dateParser";
 import { motion } from "framer-motion";
@@ -21,8 +21,9 @@ export default function ReportForm({ companyId, onSuccess, onCancel }: ReportFor
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
-  // Étricas
+  // Métricas
   const [instagramReach, setInstagramReach] = useState("0");
   const [totalReach, setTotalReach] = useState("0");
   const [totalImpressions, setTotalImpressions] = useState("0");
@@ -37,6 +38,43 @@ export default function ReportForm({ companyId, onSuccess, onCancel }: ReportFor
   const [costPerProfileVisit, setCostPerProfileVisit] = useState("0");
 
   const createMutation = trpc.report.create.useMutation();
+  const importMutation = trpc.meta.fetchInsights.useMutation();
+
+  const handleImportMeta = async () => {
+    if (!startDate || !endDate) {
+      toast.error("Preencha as datas de início e fim antes de importar do Meta.");
+      return;
+    }
+    setIsImporting(true);
+    try {
+      const data = await importMutation.mutateAsync({
+        companyId,
+        startDate,
+        endDate,
+      });
+
+      // Preenche os campos automaticamente
+      setTotalReach(String(data.totalReach));
+      setInstagramReach(String(data.instagramReach));
+      setTotalImpressions(String(data.totalImpressions));
+      setInstagramProfileVisits(String(data.instagramProfileVisits));
+      setNewInstagramFollowers(String(data.newInstagramFollowers));
+      setMessagesInitiated(String(data.messagesInitiated));
+      setTotalSpent(String(data.totalSpent));
+      setTotalClicks(String(data.totalClicks));
+      setCostPerClick(String(data.costPerClick));
+      setVideoRetentionRate(String(data.videoRetentionRate));
+      setProfileVisitsThroughCampaigns(String(data.profileVisitsThroughCampaigns));
+      setCostPerProfileVisit(String(data.costPerProfileVisit));
+
+      toast.success("Métricas importadas do Meta Ads com sucesso!");
+    } catch (err: any) {
+      const msg = err?.message || "Erro ao importar dados do Meta.";
+      toast.error(msg);
+    } finally {
+      setIsImporting(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,10 +128,10 @@ export default function ReportForm({ companyId, onSuccess, onCancel }: ReportFor
   const inputClass = "bg-white/5 border-white/10 text-white placeholder:text-muted-foreground focus:border-primary/50 focus:ring-primary/20 transition-all rounded-xl";
 
   return (
-    <motion.form 
+    <motion.form
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      onSubmit={handleSubmit} 
+      onSubmit={handleSubmit}
       className="space-y-8"
     >
       {/* Informações Básicas */}
@@ -142,6 +180,34 @@ export default function ReportForm({ companyId, onSuccess, onCancel }: ReportFor
             />
           </div>
         </div>
+      </div>
+
+      {/* Botão de importação Meta */}
+      <div className="flex items-center gap-4 p-4 rounded-2xl bg-[#1877F2]/10 border border-[#1877F2]/30">
+        <div className="flex-1">
+          <p className="text-sm font-bold text-white">Importar métricas do Meta Ads</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Preenche os campos abaixo automaticamente com dados reais do período selecionado.
+          </p>
+        </div>
+        <Button
+          type="button"
+          onClick={handleImportMeta}
+          disabled={isImporting || isLoading || !startDate || !endDate}
+          className="shrink-0 rounded-xl bg-[#1877F2] hover:bg-[#1466d8] text-white font-bold px-5 py-2 h-auto disabled:opacity-40"
+        >
+          {isImporting ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Importando...</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Zap className="h-4 w-4" />
+              <span>Importar do Meta</span>
+            </div>
+          )}
+        </Button>
       </div>
 
       {/* Métricas */}

@@ -7,8 +7,89 @@ import { ENV } from "./_core/env";
 import type { User, InsertUser, Company, Report, ReportMetrics, InsertReportMetrics } from "../drizzle/schema";
 
 let dbInstance: any;
+let rawPool: InstanceType<typeof Pool> | null = null;
+let migratedOnce = false;
 
 const databaseUrl = process.env.DATABASE_URL || ENV.databaseUrl;
+
+/** Cria as tabelas se ainda não existirem (idempotente via IF NOT EXISTS) */
+async function ensureTables(pool: InstanceType<typeof Pool>) {
+  if (migratedOnce) return;
+  // Cada statement separado para compatibilidade com pgBouncer
+  const statements = [
+    `CREATE TABLE IF NOT EXISTS "users" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "openId" varchar(64) NOT NULL,
+      "name" text,
+      "email" varchar(320),
+      "passwordHash" varchar(255),
+      "loginMethod" varchar(64),
+      "role" text DEFAULT 'user' NOT NULL,
+      "createdAt" timestamp DEFAULT now() NOT NULL,
+      "updatedAt" timestamp DEFAULT now() NOT NULL,
+      "lastSignedIn" timestamp DEFAULT now() NOT NULL,
+      CONSTRAINT "users_openId_unique" UNIQUE("openId"),
+      CONSTRAINT "users_email_unique" UNIQUE("email")
+    )`,
+    `CREATE TABLE IF NOT EXISTS "companies" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "userId" integer NOT NULL,
+      "name" varchar(255) NOT NULL,
+      "description" text,
+      "metaAdAccountId" varchar(64),
+      "metaAccessToken" text,
+      "createdAt" timestamp DEFAULT now() NOT NULL,
+      "updatedAt" timestamp DEFAULT now() NOT NULL
+    )`,
+    // Adiciona colunas Meta em empresas já existentes (idempotente)
+    `ALTER TABLE "companies" ADD COLUMN IF NOT EXISTS "metaAdAccountId" varchar(64)`,
+    `ALTER TABLE "companies" ADD COLUMN IF NOT EXISTS "metaAccessToken" text`,
+    `ALTER TABLE "companies" ADD COLUMN IF NOT EXISTS "metaTokenExpiresAt" timestamp`,
+    `CREATE TABLE IF NOT EXISTS "reports" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "companyId" integer NOT NULL,
+      "userId" integer NOT NULL,
+      "title" varchar(255) NOT NULL,
+      "slug" varchar(255) NOT NULL,
+      "description" text,
+      "startDate" date NOT NULL,
+      "endDate" date NOT NULL,
+      "isPublished" text DEFAULT 'draft' NOT NULL,
+      "createdAt" timestamp DEFAULT now() NOT NULL,
+      "updatedAt" timestamp DEFAULT now() NOT NULL,
+      CONSTRAINT "reports_slug_unique" UNIQUE("slug")
+    )`,
+    `CREATE TABLE IF NOT EXISTS "reportMetrics" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "reportId" integer NOT NULL,
+      "instagramReach" integer DEFAULT 0 NOT NULL,
+      "totalReach" integer DEFAULT 0 NOT NULL,
+      "totalImpressions" integer DEFAULT 0 NOT NULL,
+      "instagramProfileVisits" integer DEFAULT 0 NOT NULL,
+      "newInstagramFollowers" integer DEFAULT 0 NOT NULL,
+      "messagesInitiated" integer DEFAULT 0 NOT NULL,
+      "totalSpent" numeric(10, 2) DEFAULT '0.00' NOT NULL,
+      "totalClicks" integer DEFAULT 0 NOT NULL,
+      "costPerClick" numeric(10, 2) DEFAULT '0.00' NOT NULL,
+      "videoRetentionRate" numeric(5, 2) DEFAULT '0.00' NOT NULL,
+      "profileVisitsThroughCampaigns" integer DEFAULT 0 NOT NULL,
+      "costPerProfileVisit" numeric(10, 2) DEFAULT '0.00' NOT NULL,
+      "cpm" numeric(10, 2) DEFAULT '0.00' NOT NULL,
+      "ctr" numeric(5, 2) DEFAULT '0.00' NOT NULL,
+      "createdAt" timestamp DEFAULT now() NOT NULL,
+      "updatedAt" timestamp DEFAULT now() NOT NULL
+    )`,
+  ];
+  try {
+    for (const sql of statements) {
+      await pool.query(sql);
+    }
+    migratedOnce = true;
+    console.log("[Database] Tables verified/created successfully.");
+  } catch (err: any) {
+    console.error("[Database] Failed to ensure tables:", err?.message || err);
+  }
+}
 
 async function getDb() {
   if (!databaseUrl) {
@@ -21,9 +102,15 @@ async function getDb() {
   try {
     const pool = new Pool({
       connectionString: databaseUrl,
-      ssl: { rejectUnauthorized: false } // Required for Supabase in many environments
+      ssl: { rejectUnauthorized: false }, // Required for Supabase
+      max: 1,                             // Serverless: 1 connection per invocation
+      idleTimeoutMillis: 10000,
+      connectionTimeoutMillis: 10000,
     });
+    rawPool = pool;
     dbInstance = drizzle(pool, { schema });
+    // Garante que as tabelas existem na primeira conexão
+    await ensureTables(pool);
     return dbInstance;
   } catch (err) {
     console.error("[Database] Failed to connect:", err);
@@ -94,6 +181,45 @@ export async function deleteCompany(id: number) {
   await db.delete(companies).where(eq(companies.id, id));
 }
 
+export async function updateCompanyMeta(
+  id: number,
+  metaAdAccountId: string | null,
+  metaAccessToken: string | null
+) {
+  const db = await getDb();
+  const [result] = await db
+    .update(companies)
+    .set({ metaAdAccountId, metaAccessToken })
+    .where(eq(companies.id, id))
+    .returning();
+  return result;
+}
+
+export async function updateCompanyMetaOAuth(
+  id: number,
+  metaAccessToken: string,
+  metaTokenExpiresAt: Date,
+  metaAdAccountId: string | null
+) {
+  const db = await getDb();
+  const [result] = await db
+    .update(companies)
+    .set({ metaAccessToken, metaTokenExpiresAt, ...(metaAdAccountId ? { metaAdAccountId } : {}) })
+    .where(eq(companies.id, id))
+    .returning();
+  return result;
+}
+
+export async function disconnectCompanyMeta(id: number) {
+  const db = await getDb();
+  const [result] = await db
+    .update(companies)
+    .set({ metaAccessToken: null, metaAdAccountId: null, metaTokenExpiresAt: null })
+    .where(eq(companies.id, id))
+    .returning();
+  return result;
+}
+
 // Report queries
 export async function createReport(
   companyId: number,
@@ -138,17 +264,20 @@ export async function updateReport(
   id: number,
   title: string,
   slug: string,
-  startDate: Date,
-  endDate: Date,
+  startDate: Date | string,
+  endDate: Date | string,
   description?: string,
   isPublished: string = "draft"
 ) {
+  const toDateStr = (d: Date | string): string =>
+    d instanceof Date ? d.toISOString().split("T")[0] : String(d).split("T")[0];
+
   const db = await getDb();
   const [result] = await db.update(reports).set({
     title,
     slug,
-    startDate: startDate.toISOString().split('T')[0],
-    endDate: endDate.toISOString().split('T')[0],
+    startDate: toDateStr(startDate),
+    endDate: toDateStr(endDate),
     description,
     isPublished,
   }).where(eq(reports.id, id)).returning();

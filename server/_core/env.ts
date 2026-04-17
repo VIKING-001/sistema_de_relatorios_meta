@@ -5,6 +5,11 @@ export const ENV = {
   isProduction: process.env.NODE_ENV === "production",
   forgeApiUrl: process.env.FORGE_API_URL || process.env.OAUTH_SERVER_URL || "",
   forgeApiKey: process.env.FORGE_API_KEY || "",
+  /** Meta / Facebook Developer App */
+  metaAppId: (process.env.META_APP_ID || "").trim(),
+  metaAppSecret: (process.env.META_APP_SECRET || "").trim(),
+  /** Base URL do sistema (ex: https://sistemaderelatoriosmeta.vercel.app) */
+  appBaseUrl: process.env.APP_BASE_URL || "https://sistemaderelatoriosmeta.vercel.app",
 };
 
 // Log basic status (DO NOT LOG DATABASE_URL FOR SECURITY)
