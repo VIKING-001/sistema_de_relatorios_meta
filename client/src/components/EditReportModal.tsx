@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Report } from "@shared/types";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -16,75 +16,70 @@ interface EditReportModalProps {
 }
 
 export default function EditReportModal({ report, onClose, onSuccess }: EditReportModalProps) {
-  const [title, setTitle] = useState(report?.title || "");
-  const [description, setDescription] = useState(report?.description || "");
-  const [startDate, setStartDate] = useState(
-    report ? formatLocalDate(new Date(report.startDate)) : ""
-  );
-  const [endDate, setEndDate] = useState(
-    report ? formatLocalDate(new Date(report.endDate)) : ""
+  // Busca o relatório completo (com métricas) do servidor
+  const { data: fullData, isLoading: loadingReport } = trpc.report.get.useQuery(
+    { id: report?.id ?? 0 },
+    { enabled: !!report?.id }
   );
 
-  // Métricas - usar valores padrão se report não tiver métricas
-  const metricsArr = (report as any)?.metrics;
-  const metrics = Array.isArray(metricsArr) ? (metricsArr[0] || {}) : (metricsArr || {});
-  const [instagramReach, setInstagramReach] = useState(
-    metrics.instagramReach?.toString() || "0"
-  );
-  const [totalReach, setTotalReach] = useState(metrics.totalReach?.toString() || "0");
-  const [totalImpressions, setTotalImpressions] = useState(
-    metrics.totalImpressions?.toString() || "0"
-  );
-  const [instagramProfileVisits, setInstagramProfileVisits] = useState(
-    metrics.instagramProfileVisits?.toString() || "0"
-  );
-  const [newInstagramFollowers, setNewInstagramFollowers] = useState(
-    metrics.newInstagramFollowers?.toString() || "0"
-  );
-  const [messagesInitiated, setMessagesInitiated] = useState(
-    metrics.messagesInitiated?.toString() || "0"
-  );
-  const [totalSpent, setTotalSpent] = useState(metrics.totalSpent?.toString() || "0");
-  const [totalClicks, setTotalClicks] = useState(metrics.totalClicks?.toString() || "0");
-  const [costPerClick, setCostPerClick] = useState(
-    metrics.costPerClick?.toString() || "0"
-  );
-  const [videoRetentionRate, setVideoRetentionRate] = useState(
-    metrics.videoRetentionRate?.toString() || "0"
-  );
-  const [profileVisitsThroughCampaigns, setProfileVisitsThroughCampaigns] = useState(
-    metrics.profileVisitsThroughCampaigns?.toString() || "0"
-  );
-  const [costPerProfileVisit, setCostPerProfileVisit] = useState(
-    metrics.costPerProfileVisit?.toString() || "0"
-  );
+  const fullReport = fullData?.report;
+  const metrics = fullData?.metrics;
 
+  // Estados do formulário — iniciam vazios, preenchidos via useEffect quando dados chegam
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [instagramReach, setInstagramReach] = useState("0");
+  const [totalReach, setTotalReach] = useState("0");
+  const [totalImpressions, setTotalImpressions] = useState("0");
+  const [instagramProfileVisits, setInstagramProfileVisits] = useState("0");
+  const [newInstagramFollowers, setNewInstagramFollowers] = useState("0");
+  const [messagesInitiated, setMessagesInitiated] = useState("0");
+  const [totalSpent, setTotalSpent] = useState("0");
+  const [totalClicks, setTotalClicks] = useState("0");
+  const [costPerClick, setCostPerClick] = useState("0");
+  const [videoRetentionRate, setVideoRetentionRate] = useState("0");
+  const [profileVisitsThroughCampaigns, setProfileVisitsThroughCampaigns] = useState("0");
+  const [costPerProfileVisit, setCostPerProfileVisit] = useState("0");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Quando o relatório completo chegar do servidor, preenche todos os campos
+  useEffect(() => {
+    if (!fullReport) return;
+    setTitle(fullReport.title || "");
+    setDescription(fullReport.description || "");
+    setStartDate(formatLocalDate(new Date(fullReport.startDate)));
+    setEndDate(formatLocalDate(new Date(fullReport.endDate)));
+  }, [fullReport]);
+
+  useEffect(() => {
+    if (!metrics) return;
+    setInstagramReach(metrics.instagramReach?.toString() ?? "0");
+    setTotalReach(metrics.totalReach?.toString() ?? "0");
+    setTotalImpressions(metrics.totalImpressions?.toString() ?? "0");
+    setInstagramProfileVisits(metrics.instagramProfileVisits?.toString() ?? "0");
+    setNewInstagramFollowers(metrics.newInstagramFollowers?.toString() ?? "0");
+    setMessagesInitiated(metrics.messagesInitiated?.toString() ?? "0");
+    setTotalSpent(metrics.totalSpent?.toString() ?? "0");
+    setTotalClicks(metrics.totalClicks?.toString() ?? "0");
+    setCostPerClick(metrics.costPerClick?.toString() ?? "0");
+    setVideoRetentionRate(metrics.videoRetentionRate?.toString() ?? "0");
+    setProfileVisitsThroughCampaigns(metrics.profileVisitsThroughCampaigns?.toString() ?? "0");
+    setCostPerProfileVisit(metrics.costPerProfileVisit?.toString() ?? "0");
+  }, [metrics]);
 
   const updateMutation = trpc.report.update.useMutation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!report) return;
-
-    if (!title.trim()) {
-      toast.error("Título do relatório é obrigatório");
-      return;
-    }
-
-    if (!startDate || !endDate) {
-      toast.error("Datas de início e fim são obrigatórias");
-      return;
-    }
+    if (!title.trim()) { toast.error("Título do relatório é obrigatório"); return; }
+    if (!startDate || !endDate) { toast.error("Datas de início e fim são obrigatórias"); return; }
 
     const start = parseLocalDate(startDate);
     const end = parseLocalDate(endDate);
-
-    if (start > end) {
-      toast.error("Data de início não pode ser maior que data de fim");
-      return;
-    }
+    if (start > end) { toast.error("Data de início não pode ser maior que data de fim"); return; }
 
     setIsLoading(true);
     try {
@@ -105,14 +100,12 @@ export default function EditReportModal({ report, onClose, onSuccess }: EditRepo
           totalClicks: Math.floor(parseBrazilianNumber(totalClicks)) || 0,
           costPerClick: parseBrazilianNumber(costPerClick) || 0,
           videoRetentionRate: parseBrazilianNumber(videoRetentionRate) || 0,
-          profileVisitsThroughCampaigns:
-            Math.floor(parseBrazilianNumber(profileVisitsThroughCampaigns)) || 0,
+          profileVisitsThroughCampaigns: Math.floor(parseBrazilianNumber(profileVisitsThroughCampaigns)) || 0,
           costPerProfileVisit: parseBrazilianNumber(costPerProfileVisit) || 0,
           cpm: 0,
           ctr: 0,
         },
       });
-
       toast.success("Relatório atualizado com sucesso!");
       onSuccess();
       onClose();
@@ -126,251 +119,100 @@ export default function EditReportModal({ report, onClose, onSuccess }: EditRepo
 
   if (!report) return null;
 
+  const inputClass = "bg-white/5 border-white/10 text-white placeholder:text-gray-500 rounded-xl";
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-white/10 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 flex items-center justify-between p-6 border-b border-white/10 bg-slate-900/80 backdrop-blur">
-          <h2 className="text-xl font-bold text-white">Editar Relatório</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
-          >
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+      <div className="bg-[#0f1623] border border-white/10 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        {/* Header */}
+        <div className="sticky top-0 flex items-center justify-between p-5 border-b border-white/10 bg-[#0f1623]/95 backdrop-blur rounded-t-2xl">
+          <h2 className="text-lg font-bold text-white">Editar Relatório</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Informações Básicas */}
-          <div className="space-y-4">
-            <h3 className="text-white font-bold">Informações Básicas</h3>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">
-                Título do Relatório *
-              </label>
-              <Input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ex: Relatório de Fevereiro"
-                className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">Descrição</label>
-              <Textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Descrição opcional do relatório"
-                className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  Data de Início *
-                </label>
-                <Input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="bg-white/5 border-white/10 text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">Data de Fim *</label>
-                <Input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="bg-white/5 border-white/10 text-white"
-                />
-              </div>
-            </div>
+        {/* Loading state */}
+        {loadingReport ? (
+          <div className="flex items-center justify-center py-20 gap-3 text-muted-foreground">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <span className="text-sm">Carregando dados do relatório...</span>
           </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="p-5 space-y-6">
+            {/* Informações Básicas */}
+            <div className="space-y-4">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Informações Básicas</h3>
 
-          {/* Métricas */}
-          <div className="space-y-4">
-            <h3 className="text-white font-bold">Métricas</h3>
-
-            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  Alcance Instagram
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wider">
+                  Título do Relatório *
                 </label>
-                <Input
-                  type="text"
-                  value={instagramReach}
-                  onChange={(e) => setInstagramReach(e.target.value)}
-                  placeholder="Ex: 46.800"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
-                />
+                <Input type="text" value={title} onChange={e => setTitle(e.target.value)}
+                  placeholder="Ex: Relatório de Março 2026" className={inputClass} />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-white mb-2">Alcance Total</label>
-                <Input
-                  type="text"
-                  value={totalReach}
-                  onChange={(e) => setTotalReach(e.target.value)}
-                  placeholder="Ex: 63.093"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
-                />
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wider">Descrição</label>
+                <Textarea value={description} onChange={e => setDescription(e.target.value)}
+                  placeholder="Descrição opcional" className={`${inputClass} resize-none`} rows={2} />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  Total de Impressões
-                </label>
-                <Input
-                  type="text"
-                  value={totalImpressions}
-                  onChange={(e) => setTotalImpressions(e.target.value)}
-                  placeholder="Ex: 137.870"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  Visitas Perfil Instagram
-                </label>
-                <Input
-                  type="text"
-                  value={instagramProfileVisits}
-                  onChange={(e) => setInstagramProfileVisits(e.target.value)}
-                  placeholder="Ex: 2.800"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  Novos Seguidores Instagram
-                </label>
-                <Input
-                  type="text"
-                  value={newInstagramFollowers}
-                  onChange={(e) => setNewInstagramFollowers(e.target.value)}
-                  placeholder="Ex: 546"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  Mensagens Iniciadas
-                </label>
-                <Input
-                  type="text"
-                  value={messagesInitiated}
-                  onChange={(e) => setMessagesInitiated(e.target.value)}
-                  placeholder="Ex: 421"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">Valor Gasto</label>
-                <Input
-                  type="text"
-                  value={totalSpent}
-                  onChange={(e) => setTotalSpent(e.target.value)}
-                  placeholder="Ex: 1.935,02"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  Cliques Todos
-                </label>
-                <Input
-                  type="text"
-                  value={totalClicks}
-                  onChange={(e) => setTotalClicks(e.target.value)}
-                  placeholder="Ex: 2.125"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  Custo por Clique
-                </label>
-                <Input
-                  type="text"
-                  value={costPerClick}
-                  onChange={(e) => setCostPerClick(e.target.value)}
-                  placeholder="Ex: 1,53"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  Retenção de Reprodução de Vídeo (%)
-                </label>
-                <Input
-                  type="text"
-                  value={videoRetentionRate}
-                  onChange={(e) => setVideoRetentionRate(e.target.value)}
-                  placeholder="Ex: 17,48"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  Visitas no Perfil através das Campanhas
-                </label>
-                <Input
-                  type="text"
-                  value={profileVisitsThroughCampaigns}
-                  onChange={(e) => setProfileVisitsThroughCampaigns(e.target.value)}
-                  placeholder="Ex: 1.050"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  Custo de Visita através da Campanha
-                </label>
-                <Input
-                  type="text"
-                  value={costPerProfileVisit}
-                  onChange={(e) => setCostPerProfileVisit(e.target.value)}
-                  placeholder="Ex: 0,28"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wider">Início *</label>
+                  <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className={inputClass} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wider">Fim *</label>
+                  <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className={inputClass} />
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Botões */}
-          <div className="flex gap-3 justify-end pt-4 border-t border-white/10">
-            <Button
-              type="button"
-              onClick={onClose}
-              variant="outline"
-              className="border-white/20 text-white hover:bg-white/10"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white"
-            >
-              {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Salvar Alterações
-            </Button>
-          </div>
-        </form>
+            {/* Métricas */}
+            <div className="space-y-4">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Métricas</h3>
+
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: "Alcance Instagram", val: instagramReach, set: setInstagramReach },
+                  { label: "Alcance Total", val: totalReach, set: setTotalReach },
+                  { label: "Total de Impressões", val: totalImpressions, set: setTotalImpressions },
+                  { label: "Visitas Perfil Instagram", val: instagramProfileVisits, set: setInstagramProfileVisits },
+                  { label: "Novos Seguidores Instagram", val: newInstagramFollowers, set: setNewInstagramFollowers },
+                  { label: "Mensagens Iniciadas", val: messagesInitiated, set: setMessagesInitiated },
+                  { label: "Valor Gasto (R$)", val: totalSpent, set: setTotalSpent },
+                  { label: "Cliques Totais", val: totalClicks, set: setTotalClicks },
+                  { label: "Custo por Clique (R$)", val: costPerClick, set: setCostPerClick },
+                  { label: "Retenção de Vídeo (%)", val: videoRetentionRate, set: setVideoRetentionRate },
+                  { label: "Visitas via Campanhas", val: profileVisitsThroughCampaigns, set: setProfileVisitsThroughCampaigns },
+                  { label: "Custo por Visita (R$)", val: costPerProfileVisit, set: setCostPerProfileVisit },
+                ].map(field => (
+                  <div key={field.label}>
+                    <label className="block text-[11px] font-medium text-muted-foreground mb-1 uppercase tracking-wide">
+                      {field.label}
+                    </label>
+                    <Input type="text" value={field.val}
+                      onChange={e => field.set(e.target.value)} className={inputClass} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Botões */}
+            <div className="flex gap-3 justify-end pt-4 border-t border-white/10">
+              <Button type="button" onClick={onClose} variant="outline"
+                className="border-white/20 text-white hover:bg-white/10 rounded-xl">
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isLoading} className="rounded-xl bg-primary hover:bg-primary/90 text-white font-bold px-6">
+                {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Salvar Alterações
+              </Button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
