@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Copy, Check, Link2, Zap } from "lucide-react";
+import { Copy, Check, Link2, Zap, Hash } from "lucide-react";
 
 const PLATFORMS = [
   {
@@ -43,11 +43,22 @@ const UTM_FIELDS = [
   { key: "utm_term",     label: "Termo/Conjunto (utm_term)",    placeholder: "conjunto-de-anuncios", color: "text-purple-400" },
 ];
 
+// Monta só a string de parâmetros UTM (sem URL base)
+function buildUtmParams(utmParams: Record<string, string>): string {
+  return Object.entries(utmParams)
+    .filter(([, v]) => v)
+    .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+    .join("&");
+}
+
 export default function GeradorUrl() {
   const [baseUrl, setBaseUrl] = useState("");
   const [selectedPlatform, setSelectedPlatform] = useState("facebook");
   const [utmParams, setUtmParams] = useState(PLATFORMS[0].defaults);
-  const [copied, setCopied] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState(false);
+  const [copiedParams, setCopiedParams] = useState(false);
+  // mode: "url" = URL completa, "params" = só parâmetros UTM
+  const [mode, setMode] = useState<"url" | "params">("url");
 
   const platform = PLATFORMS.find(p => p.id === selectedPlatform)!;
 
@@ -55,6 +66,8 @@ export default function GeradorUrl() {
     setSelectedPlatform(id);
     setUtmParams({ ...PLATFORMS.find(p => p.id === id)!.defaults });
   };
+
+  const utmParamsString = useMemo(() => buildUtmParams(utmParams as any), [utmParams]);
 
   const finalUrl = useMemo(() => {
     if (!baseUrl) return "";
@@ -69,12 +82,20 @@ export default function GeradorUrl() {
     }
   }, [baseUrl, utmParams]);
 
-  const handleCopy = async () => {
+  const handleCopyUrl = async () => {
     if (!finalUrl) { toast.error("Preencha a URL base primeiro."); return; }
     await navigator.clipboard.writeText(finalUrl);
-    setCopied(true);
-    toast.success("URL copiada!");
-    setTimeout(() => setCopied(false), 2000);
+    setCopiedUrl(true);
+    toast.success("URL completa copiada!");
+    setTimeout(() => setCopiedUrl(false), 2000);
+  };
+
+  const handleCopyParams = async () => {
+    if (!utmParamsString) { toast.error("Preencha ao menos um parâmetro UTM."); return; }
+    await navigator.clipboard.writeText(utmParamsString);
+    setCopiedParams(true);
+    toast.success("Parâmetros UTM copiados!");
+    setTimeout(() => setCopiedParams(false), 2000);
   };
 
   const insertTag = (tag: string, field: string) => {
@@ -85,7 +106,31 @@ export default function GeradorUrl() {
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Gerador de URL</h1>
-        <p className="text-sm text-muted-foreground mt-1">Crie URLs com parâmetros UTM para rastrear suas campanhas</p>
+        <p className="text-sm text-muted-foreground mt-1">Crie parâmetros UTM para rastrear suas campanhas</p>
+      </div>
+
+      {/* Mode toggle */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setMode("url")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
+            mode === "url"
+              ? "border-primary/50 bg-primary/10 text-primary"
+              : "border-white/10 bg-white/5 text-muted-foreground hover:bg-white/10"
+          }`}
+        >
+          <Link2 className="h-4 w-4" /> URL Completa
+        </button>
+        <button
+          onClick={() => setMode("params")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
+            mode === "params"
+              ? "border-primary/50 bg-primary/10 text-primary"
+              : "border-white/10 bg-white/5 text-muted-foreground hover:bg-white/10"
+          }`}
+        >
+          <Hash className="h-4 w-4" /> Só Parâmetros UTM
+        </button>
       </div>
 
       {/* Platform selector */}
@@ -113,19 +158,22 @@ export default function GeradorUrl() {
         <Card className="glass-card border-white/10">
           <CardHeader className="pb-4">
             <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-              <Link2 className="h-4 w-4 text-primary" /> Configurar URL
+              <Zap className="h-4 w-4 text-primary" /> Configurar Parâmetros
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">URL Base *</Label>
-              <Input
-                placeholder="https://seusite.com.br/pagina"
-                value={baseUrl}
-                onChange={e => setBaseUrl(e.target.value)}
-                className="bg-white/5 border-white/10 rounded-xl"
-              />
-            </div>
+            {/* URL Base — só exibe no modo URL */}
+            {mode === "url" && (
+              <div>
+                <Label className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">URL Base *</Label>
+                <Input
+                  placeholder="https://seusite.com.br/pagina"
+                  value={baseUrl}
+                  onChange={e => setBaseUrl(e.target.value)}
+                  className="bg-white/5 border-white/10 rounded-xl"
+                />
+              </div>
+            )}
 
             {UTM_FIELDS.map(field => (
               <div key={field.key}>
@@ -159,59 +207,117 @@ export default function GeradorUrl() {
 
         {/* Preview */}
         <div className="space-y-4">
-          <Card className="glass-card border-white/10">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-                <Zap className="h-4 w-4 text-primary" /> URL Gerada
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {finalUrl ? (
-                <>
-                  <div className="p-3 rounded-xl bg-white/5 border border-white/10 break-all text-xs font-mono text-muted-foreground leading-relaxed">
-                    {finalUrl.split("?")[0]}
-                    {finalUrl.includes("?") && (
-                      <>
-                        <span className="text-white/40">?</span>
-                        {finalUrl.split("?")[1].split("&").map((param, i) => (
-                          <span key={i}>
-                            {i > 0 && <span className="text-white/30">&</span>}
-                            <span className="text-primary/80">{param.split("=")[0]}</span>
-                            <span className="text-white/30">=</span>
-                            <span className="text-emerald-400/80">{param.split("=").slice(1).join("=")}</span>
-                          </span>
-                        ))}
-                      </>
-                    )}
-                  </div>
-                  <Button onClick={handleCopy} className="w-full rounded-xl gap-2">
-                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    {copied ? "Copiado!" : "Copiar URL"}
-                  </Button>
-                </>
-              ) : (
-                <div className="py-8 text-center text-muted-foreground text-sm">
-                  Preencha a URL base para ver a prévia
-                </div>
-              )}
-            </CardContent>
-          </Card>
 
-          {/* UTM breakdown */}
-          {finalUrl && (
+          {/* Modo: só parâmetros */}
+          {mode === "params" && (
             <Card className="glass-card border-white/10">
               <CardHeader className="pb-3">
-                <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Parâmetros</CardTitle>
+                <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                  <Hash className="h-4 w-4 text-primary" /> Parâmetros UTM Gerados
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {utmParamsString ? (
+                  <>
+                    <div className="p-3 rounded-xl bg-white/5 border border-white/10 break-all text-xs font-mono text-muted-foreground leading-relaxed space-y-1">
+                      {utmParamsString.split("&").map((param, i) => (
+                        <div key={i} className="flex gap-1">
+                          <span className="text-primary/80">{param.split("=")[0]}</span>
+                          <span className="text-white/30">=</span>
+                          <span className="text-emerald-400/80">{decodeURIComponent(param.split("=").slice(1).join("="))}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                      <p className="text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">String completa</p>
+                      <p className="text-xs font-mono text-muted-foreground break-all">{utmParamsString}</p>
+                    </div>
+
+                    <Button onClick={handleCopyParams} className="w-full rounded-xl gap-2">
+                      {copiedParams ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      {copiedParams ? "Copiado!" : "Copiar Parâmetros UTM"}
+                    </Button>
+
+                    <p className="text-[11px] text-muted-foreground text-center">
+                      Cole no campo de URL da campanha no gerenciador de anúncios após o <span className="font-mono text-white/50">?</span>
+                    </p>
+                  </>
+                ) : (
+                  <div className="py-8 text-center text-muted-foreground text-sm">
+                    Preencha os parâmetros UTM para gerar
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Modo: URL completa */}
+          {mode === "url" && (
+            <Card className="glass-card border-white/10">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                  <Link2 className="h-4 w-4 text-primary" /> URL Gerada
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {finalUrl ? (
+                  <>
+                    <div className="p-3 rounded-xl bg-white/5 border border-white/10 break-all text-xs font-mono text-muted-foreground leading-relaxed">
+                      {finalUrl.split("?")[0]}
+                      {finalUrl.includes("?") && (
+                        <>
+                          <span className="text-white/40">?</span>
+                          {finalUrl.split("?")[1].split("&").map((param, i) => (
+                            <span key={i}>
+                              {i > 0 && <span className="text-white/30">&</span>}
+                              <span className="text-primary/80">{param.split("=")[0]}</span>
+                              <span className="text-white/30">=</span>
+                              <span className="text-emerald-400/80">{param.split("=").slice(1).join("=")}</span>
+                            </span>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                    <Button onClick={handleCopyUrl} className="w-full rounded-xl gap-2">
+                      {copiedUrl ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      {copiedUrl ? "Copiado!" : "Copiar URL Completa"}
+                    </Button>
+                  </>
+                ) : (
+                  <div className="py-8 text-center text-muted-foreground text-sm">
+                    Preencha a URL base para ver a prévia
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* UTM breakdown — sempre visível */}
+          {utmParamsString && (
+            <Card className="glass-card border-white/10">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Resumo dos Parâmetros</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 {UTM_FIELDS.filter(f => (utmParams as any)[f.key]).map(field => (
                   <div key={field.key} className="flex items-center justify-between text-xs">
                     <span className={`font-mono ${field.color}`}>{field.key}</span>
-                    <span className="text-muted-foreground font-mono truncate max-w-[180px]">
+                    <span className="text-muted-foreground font-mono truncate max-w-[200px]">
                       {(utmParams as any)[field.key]}
                     </span>
                   </div>
                 ))}
+
+                {/* Botão copiar params disponível em qualquer modo */}
+                {mode === "url" && (
+                  <div className="pt-2 border-t border-white/5">
+                    <Button onClick={handleCopyParams} variant="outline" size="sm" className="w-full rounded-xl gap-2 text-xs border-white/10">
+                      {copiedParams ? <Check className="h-3.5 w-3.5" /> : <Hash className="h-3.5 w-3.5" />}
+                      {copiedParams ? "Copiado!" : "Copiar só os parâmetros UTM"}
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
