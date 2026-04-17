@@ -363,6 +363,8 @@ export default function CompanyList({ company, onUpdate, autoOpenMeta = false }:
                     <h4 className="text-sm font-bold uppercase tracking-wider mb-5">Novo Relatório</h4>
                     <ReportForm
                       companyId={company.id}
+                      metaConnected={!!metaStatus?.connected && !metaStatus?.expired}
+                      metaHasAccount={!!metaStatus?.hasAdAccount}
                       onSuccess={() => {
                         setShowReportForm(false);
                         setShowReports(true);

@@ -54089,10 +54089,21 @@ async function fetchMetaInsights(adAccountId, accessToken, startDate, endDate) {
     });
   }
   if (!json3.data || json3.data.length === 0) {
-    throw new TRPCError({
-      code: "NOT_FOUND",
-      message: "Nenhum dado encontrado para o per\xEDodo selecionado. Verifique se h\xE1 campanhas ativas nesse intervalo."
-    });
+    return {
+      totalReach: 0,
+      instagramReach: 0,
+      totalImpressions: 0,
+      instagramProfileVisits: 0,
+      newInstagramFollowers: 0,
+      messagesInitiated: 0,
+      totalSpent: 0,
+      totalClicks: 0,
+      costPerClick: 0,
+      videoRetentionRate: 0,
+      profileVisitsThroughCampaigns: 0,
+      costPerProfileVisit: 0,
+      _warning: "Nenhum dado encontrado para o per\xEDodo selecionado. Os campos foram zerados \u2014 verifique o per\xEDodo ou preencha manualmente."
+    };
   }
   const ins = json3.data[0];
   const getAction = (actions2, type) => {
@@ -54451,10 +54462,16 @@ var appRouter = router({
       if (!company || company.userId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
       }
-      if (!company.metaAdAccountId || !company.metaAccessToken) {
+      if (!company.metaAccessToken) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
-          message: "Configure as credenciais do Meta Ads para esta empresa antes de importar."
+          message: "Esta empresa n\xE3o est\xE1 conectada ao Meta Ads. V\xE1 em Contas de An\xFAncio e clique em Conectar com Meta."
+        });
+      }
+      if (!company.metaAdAccountId) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Nenhuma conta de an\xFAncio selecionada. V\xE1 em Contas de An\xFAncio, abra o painel desta empresa e selecione a conta de an\xFAncio."
         });
       }
       return fetchMetaInsights(

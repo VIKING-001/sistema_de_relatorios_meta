@@ -4,18 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, Calendar, Target, TrendingUp, DollarSign, MousePointer2, PlayCircle, Users, Plus, Zap } from "lucide-react";
+import { Loader2, Calendar, Target, TrendingUp, DollarSign, MousePointer2, PlayCircle, Users, Plus, Zap, AlertCircle } from "lucide-react";
 import { parseBrazilianNumber } from "@shared/numberParser";
 import { parseLocalDate } from "@shared/dateParser";
 import { motion } from "framer-motion";
+import { useLocation } from "wouter";
 
 interface ReportFormProps {
   companyId: number;
+  metaConnected?: boolean;
+  metaHasAccount?: boolean;
   onSuccess: () => void;
   onCancel?: () => void;
 }
 
-export default function ReportForm({ companyId, onSuccess, onCancel }: ReportFormProps) {
+export default function ReportForm({ companyId, metaConnected = false, metaHasAccount = false, onSuccess, onCancel }: ReportFormProps) {
+  const [, setLocation] = useLocation();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -183,32 +187,68 @@ export default function ReportForm({ companyId, onSuccess, onCancel }: ReportFor
       </div>
 
       {/* Botão de importação Meta */}
-      <div className="flex items-center gap-4 p-4 rounded-2xl bg-[#1877F2]/10 border border-[#1877F2]/30">
-        <div className="flex-1">
-          <p className="text-sm font-bold text-white">Importar métricas do Meta Ads</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Preenche os campos abaixo automaticamente com dados reais do período selecionado.
-          </p>
+      {!metaConnected ? (
+        <div className="flex items-center gap-3 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30">
+          <AlertCircle className="h-5 w-5 text-amber-400 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-bold text-amber-300">Meta Ads não conectado</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Conecte o Meta Ads desta empresa para importar métricas automaticamente.</p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setLocation("/contas")}
+            className="shrink-0 rounded-xl border-amber-500/40 text-amber-300 hover:bg-amber-500/10 text-xs"
+          >
+            Conectar
+          </Button>
         </div>
-        <Button
-          type="button"
-          onClick={handleImportMeta}
-          disabled={isImporting || isLoading || !startDate || !endDate}
-          className="shrink-0 rounded-xl bg-[#1877F2] hover:bg-[#1466d8] text-white font-bold px-5 py-2 h-auto disabled:opacity-40"
-        >
-          {isImporting ? (
-            <div className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Importando...</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Zap className="h-4 w-4" />
-              <span>Importar do Meta</span>
-            </div>
-          )}
-        </Button>
-      </div>
+      ) : !metaHasAccount ? (
+        <div className="flex items-center gap-3 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30">
+          <AlertCircle className="h-5 w-5 text-amber-400 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-bold text-amber-300">Conta de anúncio não selecionada</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Vá em Contas de Anúncio e selecione qual conta usar para esta empresa.</p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setLocation("/contas")}
+            className="shrink-0 rounded-xl border-amber-500/40 text-amber-300 hover:bg-amber-500/10 text-xs"
+          >
+            Selecionar
+          </Button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-4 p-4 rounded-2xl bg-[#1877F2]/10 border border-[#1877F2]/30">
+          <div className="flex-1">
+            <p className="text-sm font-bold text-white">Importar métricas do Meta Ads</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Preenche os campos abaixo automaticamente com dados reais do período selecionado.
+            </p>
+          </div>
+          <Button
+            type="button"
+            onClick={handleImportMeta}
+            disabled={isImporting || isLoading || !startDate || !endDate}
+            className="shrink-0 rounded-xl bg-[#1877F2] hover:bg-[#1466d8] text-white font-bold px-5 py-2 h-auto disabled:opacity-40"
+          >
+            {isImporting ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Importando...</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Zap className="h-4 w-4" />
+                <span>Importar do Meta</span>
+              </div>
+            )}
+          </Button>
+        </div>
+      )}
 
       {/* Métricas */}
       <div className="space-y-6">

@@ -7,26 +7,50 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import Relatorios from "./pages/Relatorios";
+import ContasAnuncio from "./pages/ContasAnuncio";
+import Campanhas from "./pages/Campanhas";
+import GeradorUrl from "./pages/GeradorUrl";
+import Integracoes from "./pages/Integracoes";
+import Configuracoes from "./pages/Configuracoes";
 import PublicReport from "./pages/PublicReport";
+import DashboardLayout from "./components/DashboardLayout";
+
+function PrivateRoutes() {
+  return (
+    <DashboardLayout>
+      <Switch>
+        <Route path="/"              component={Dashboard} />
+        <Route path="/relatorios"    component={Relatorios} />
+        <Route path="/contas"        component={ContasAnuncio} />
+        <Route path="/campanhas"     component={Campanhas} />
+        <Route path="/compras"       component={Campanhas} />
+        <Route path="/gerador-url"   component={GeradorUrl} />
+        <Route path="/integracoes"   component={Integracoes} />
+        <Route path="/configuracoes" component={Configuracoes} />
+        <Route component={NotFound} />
+      </Switch>
+    </DashboardLayout>
+  );
+}
 
 function Router() {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-orange-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400"></div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
       </div>
     );
   }
 
   return (
     <Switch>
-      <Route path="/" component={isAuthenticated ? Dashboard : Login} />
       <Route path="/report/:slug" component={PublicReport} />
-      <Route path="/404" component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
+      <Route>
+        {isAuthenticated ? <PrivateRoutes /> : <Login />}
+      </Route>
     </Switch>
   );
 }
