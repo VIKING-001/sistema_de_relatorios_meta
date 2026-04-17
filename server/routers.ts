@@ -585,6 +585,49 @@ export const appRouter = router({
           input.endDate
         );
       }),
+
+    /** Lista campanhas reais da Meta API para uma empresa */
+    listCampaigns: protectedProcedure
+      .input(z.object({ companyId: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        const company = await db.getCompanyById(input.companyId);
+        if (!company || company.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+        }
+        if (!company.metaAccessToken) {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Empresa não conectada ao Meta." });
+        }
+        if (!company.metaAdAccountId) {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Conta de anúncio não selecionada." });
+        }
+        const accountId = company.metaAdAccountId.startsWith("act_")
+          ? company.metaAdAccountId
+          : `act_${company.metaAdAccountId}`;
+        const url = new URL(`https://graph.facebook.com/v19.0/${accountId}/campaigns`);
+        url.searchParams.set("fields", "id,name,status,objective,created_time,daily_budget,lifetime_budget,effective_status");
+        url.searchParams.set("limit", "50");
+        url.searchParams.set("access_token", company.metaAccessToken);
+        const res = await fetch(url.toString());
+        const data = await res.json();
+        if (data.error) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: `Meta API: ${data.error.message}` });
+        }
+        return {
+          companyId: company.id,
+          companyName: company.name,
+          adAccountId: company.metaAdAccountId,
+          campaigns: (data.data ?? []) as Array<{
+            id: string;
+            name: string;
+            status: string;
+            effective_status: string;
+            objective: string;
+            created_time: string;
+            daily_budget?: string;
+            lifetime_budget?: string;
+          }>,
+        };
+      }),
   }),
 });
 
