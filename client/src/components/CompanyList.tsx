@@ -126,33 +126,40 @@ export default function CompanyList({ company, onUpdate, autoOpenMeta = false }:
             </div>
           </div>
 
-          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-2">
+            {/* Badge de status Meta — sempre visível */}
             <button
               onClick={() => setShowMetaPanel(!showMetaPanel)}
-              className={`p-2 rounded-lg transition-all ${
-                showMetaPanel || isConnected
-                  ? "bg-[#1877F2]/20 text-[#1877F2]"
-                  : "hover:bg-[#1877F2]/10 text-[#1877F2]/60 hover:text-[#1877F2]"
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                isConnected
+                  ? "bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/30"
+                  : isExpired
+                  ? "bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 border border-amber-500/30"
+                  : "bg-[#1877F2]/10 text-[#1877F2] hover:bg-[#1877F2]/20 border border-[#1877F2]/30"
               }`}
-              title="Meta Ads"
+              title="Configurar Meta Ads"
             >
-              <Zap className="h-4 w-4" />
+              <Zap className="h-3 w-3" />
+              {isConnected ? "Meta ✓" : isExpired ? "Expirado" : "Meta"}
             </button>
-            <button
-              onClick={() => setIsEditingCompany(true)}
-              className="p-2 rounded-lg hover:bg-blue-500/10 text-blue-400/70 hover:text-blue-400 transition-all"
-              title="Editar"
-            >
-              <Edit2 className="h-4 w-4" />
-            </button>
-            <button
-              onClick={handleDelete}
-              disabled={deleteMutation.isPending}
-              className="p-2 rounded-lg hover:bg-red-500/10 text-red-400/70 hover:text-red-400 transition-all"
-              title="Excluir"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+
+            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={() => setIsEditingCompany(true)}
+                className="p-2 rounded-lg hover:bg-blue-500/10 text-blue-400/70 hover:text-blue-400 transition-all"
+                title="Editar"
+              >
+                <Edit2 className="h-4 w-4" />
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleteMutation.isPending}
+                className="p-2 rounded-lg hover:bg-red-500/10 text-red-400/70 hover:text-red-400 transition-all"
+                title="Excluir"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       </CardHeader>
@@ -318,9 +325,13 @@ export default function CompanyList({ company, onUpdate, autoOpenMeta = false }:
             <div className="flex items-center justify-between text-sm px-1">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <BarChart2 className="h-4 w-4" />
-                <span>{reports?.length ?? 0} Relatórios</span>
+                <span>{reports?.length ?? 0} Relatório{(reports?.length ?? 0) !== 1 ? "s" : ""}</span>
               </div>
-              <div className={`w-2 h-2 rounded-full animate-pulse ${isConnected ? "bg-emerald-500" : "bg-white/20"}`} />
+              {isConnected && metaStatus?.adAccountId && (
+                <span className="text-xs text-emerald-400 font-mono truncate max-w-[120px]" title={metaStatus.adAccountId}>
+                  {metaStatus.adAccountId}
+                </span>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
