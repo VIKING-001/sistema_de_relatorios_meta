@@ -327,6 +327,11 @@ export const appRouter = router({
         return report;
       }),
 
+    listAll: protectedProcedure
+      .query(async ({ ctx }) => {
+        return db.getReportsWithMetricsByUserId(ctx.user.id);
+      }),
+
     list: protectedProcedure
       .input(z.object({ companyId: z.number().int().positive() }))
       .query(async ({ ctx, input }) => {

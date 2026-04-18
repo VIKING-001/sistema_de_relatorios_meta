@@ -40,17 +40,21 @@ function StatCard({
 export default function Dashboard() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
-  const { data: companies, isLoading, refetch } = trpc.company.list.useQuery();
+  const { data: companies, isLoading: loadingCompanies, refetch: refetchCompanies } = trpc.company.list.useQuery();
+  const { data: allReportsRaw, isLoading: loadingReports, refetch: refetchReports } = trpc.report.listAll.useQuery();
+
+  const isLoading = loadingCompanies || loadingReports;
+  const refetch = () => { refetchCompanies(); refetchReports(); };
 
   const totalCompanies = companies?.length ?? 0;
   const connectedMeta = companies?.filter((c: any) => c.metaAccessToken).length ?? 0;
-  const allReports = companies?.flatMap((c: any) => c.reports || []) ?? [];
+  const allReports = allReportsRaw ?? [];
   const totalReports = allReports.length;
 
-  const totalSpent = allReports.reduce((s, r: any) => s + parseFloat(r.totalSpent || "0"), 0);
-  const totalClicks = allReports.reduce((s, r: any) => s + (r.totalClicks || 0), 0);
-  const totalImpressions = allReports.reduce((s, r: any) => s + (r.totalImpressions || 0), 0);
-  const totalReach = allReports.reduce((s, r: any) => s + (r.totalReach || 0), 0);
+  const totalSpent = allReports.reduce((s: number, r: any) => s + parseFloat(r.metrics?.totalSpent || "0"), 0);
+  const totalClicks = allReports.reduce((s: number, r: any) => s + (r.metrics?.totalClicks ?? 0), 0);
+  const totalImpressions = allReports.reduce((s: number, r: any) => s + (r.metrics?.totalImpressions ?? 0), 0);
+  const totalReach = allReports.reduce((s: number, r: any) => s + (r.metrics?.totalReach ?? 0), 0);
 
   const fmt = (n: number) => n.toLocaleString("pt-BR");
   const fmtR = (n: number) =>

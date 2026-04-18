@@ -248,6 +248,17 @@ export async function getReportsByCompanyId(companyId: number) {
   return db.select().from(reports).where(eq(reports.companyId, companyId)).orderBy(desc(reports.createdAt));
 }
 
+export async function getReportsWithMetricsByUserId(userId: number) {
+  const db = await getDb();
+  const rows = await db
+    .select({ report: reports, metrics: reportMetrics })
+    .from(reports)
+    .leftJoin(reportMetrics, eq(reportMetrics.reportId, reports.id))
+    .where(eq(reports.userId, userId))
+    .orderBy(desc(reports.createdAt));
+  return rows.map(row => ({ ...row.report, metrics: row.metrics ?? null }));
+}
+
 export async function getReportById(id: number) {
   const db = await getDb();
   const [result] = await db.select().from(reports).where(eq(reports.id, id)).limit(1);
