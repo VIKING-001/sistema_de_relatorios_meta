@@ -178,6 +178,10 @@ export function registerOAuthRoutes(app: Express) {
 
     const redirectUri = `${ENV.appBaseUrl}/api/meta/callback`;
 
+    console.log("[OAuth] APP_BASE_URL:", ENV.appBaseUrl);
+    console.log("[OAuth] redirect_uri:", redirectUri);
+    console.log("[OAuth] META_APP_ID:", ENV.metaAppId);
+
     const authUrl = new URL("https://www.facebook.com/v19.0/dialog/oauth");
     authUrl.searchParams.set("client_id", ENV.metaAppId);
     authUrl.searchParams.set("redirect_uri", redirectUri);
