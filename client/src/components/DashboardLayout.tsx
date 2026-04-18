@@ -62,13 +62,18 @@ const MAX_WIDTH = 320;
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarWidth, setSidebarWidth] = useState(() => {
-    const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
-    return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
+    try {
+      const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
+      const parsed = saved ? parseInt(saved, 10) : NaN;
+      return isNaN(parsed) ? DEFAULT_WIDTH : parsed;
+    } catch {
+      return DEFAULT_WIDTH;
+    }
   });
   const { loading, user } = useAuth();
 
   useEffect(() => {
-    localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
+    try { localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString()); } catch {}
   }, [sidebarWidth]);
 
   if (loading) return <DashboardLayoutSkeleton />;
