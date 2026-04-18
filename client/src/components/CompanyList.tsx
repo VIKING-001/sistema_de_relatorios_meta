@@ -213,51 +213,51 @@ export default function CompanyList({ company, onUpdate, autoOpenMeta = false }:
                       )}
                     </div>
 
-                    {/* Contas de anúncios disponíveis */}
+                    {/* Contas de anúncios */}
                     <div className="space-y-2">
-                      <p className="text-xs font-bold text-white/60 uppercase tracking-wider flex items-center gap-1">
-                        {needsAccount
-                          ? <><AlertCircle className="h-3 w-3 text-amber-400" /><span className="text-amber-400">Selecione a conta de anúncios</span></>
-                          : <><CheckCircle2 className="h-3 w-3 text-emerald-400" /><span className="text-emerald-400">Conta ativa</span></>
-                        }
-                      </p>
-
-                      {loadingAccounts ? (
-                        <div className="flex items-center gap-2 text-muted-foreground text-sm py-2">
-                          <Loader2 className="h-4 w-4 animate-spin" /> Buscando suas contas de anúncios...
-                        </div>
-                      ) : adAccounts && adAccounts.length > 0 ? (
-                        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                          {adAccounts.map((acc) => {
-                            const isActive = metaStatus?.adAccountId === acc.id;
-                            return (
-                              <button
-                                key={acc.id}
-                                onClick={() => !isActive && handleSelectAccount(acc.id)}
-                                disabled={isSelectingAccount || isActive}
-                                className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left ${
-                                  isActive
-                                    ? "bg-emerald-500/10 border-emerald-500/40 cursor-default"
-                                    : "bg-white/5 border-white/10 hover:border-[#1877F2]/40 hover:bg-[#1877F2]/5"
-                                }`}
-                              >
-                                <div>
-                                  <p className="text-sm font-medium text-white">{acc.name}</p>
-                                  <p className="text-xs text-muted-foreground font-mono">{acc.id} · {acc.currency}</p>
-                                </div>
-                                {isActive
-                                  ? <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                                  : <ChevronDown className="h-4 w-4 text-muted-foreground -rotate-90 shrink-0" />
-                                }
-                              </button>
-                            );
-                          })}
+                      {/* Conta JÁ selecionada — mostra somente ela, sem lista para trocar */}
+                      {metaStatus?.hasAdAccount ? (
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-emerald-400">Conta ativa</p>
+                            <p className="text-xs text-muted-foreground font-mono truncate">{metaStatus.adAccountId}</p>
+                          </div>
                         </div>
                       ) : (
-                        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-400 space-y-1">
-                          <p className="font-bold">Nenhuma conta encontrada</p>
-                          <p className="text-white/60">Verifique se você tem acesso a contas de anúncios no Business Manager desta conta Meta.</p>
-                        </div>
+                        /* Sem conta — mostra lista para selecionar */
+                        <>
+                          <p className="text-xs font-bold text-amber-400 flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" /> Selecione a conta de anúncios
+                          </p>
+                          {loadingAccounts ? (
+                            <div className="flex items-center gap-2 text-muted-foreground text-sm py-2">
+                              <Loader2 className="h-4 w-4 animate-spin" /> Buscando suas contas...
+                            </div>
+                          ) : adAccounts && adAccounts.length > 0 ? (
+                            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                              {adAccounts.map((acc) => (
+                                <button
+                                  key={acc.id}
+                                  onClick={() => handleSelectAccount(acc.id)}
+                                  disabled={isSelectingAccount}
+                                  className="w-full flex items-center justify-between p-3 rounded-xl border border-white/10 bg-white/5 hover:border-[#1877F2]/40 hover:bg-[#1877F2]/5 transition-all text-left"
+                                >
+                                  <div>
+                                    <p className="text-sm font-medium text-white">{acc.name}</p>
+                                    <p className="text-xs text-muted-foreground font-mono">{acc.id} · {acc.currency}</p>
+                                  </div>
+                                  <ChevronDown className="h-4 w-4 text-muted-foreground -rotate-90 shrink-0" />
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-400 space-y-1">
+                              <p className="font-bold">Nenhuma conta encontrada</p>
+                              <p className="text-white/60">Verifique o Business Manager desta conta Meta.</p>
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
 
