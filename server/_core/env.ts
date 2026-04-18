@@ -9,7 +9,7 @@ export const ENV = {
   metaAppId: (process.env.META_APP_ID || "").trim(),
   metaAppSecret: (process.env.META_APP_SECRET || "").trim(),
   /** Base URL do sistema (ex: https://sistemaderelatoriosmeta.vercel.app) */
-  appBaseUrl: process.env.APP_BASE_URL || "https://sistemaderelatoriosmeta.vercel.app",
+  appBaseUrl: process.env.APP_BASE_URL || "https://sistemaderelatoriosmetaof.vercel.app",
 };
 
 // Log basic status (DO NOT LOG DATABASE_URL FOR SECURITY)
