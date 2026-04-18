@@ -2,7 +2,10 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
-import { Plus, Trash2, Loader2, Edit2, Building2, BarChart2, Zap, CheckCircle2, AlertCircle, ChevronDown, LogOut } from "lucide-react";
+import {
+  Plus, Trash2, Loader2, Edit2, Building2, BarChart2, Zap,
+  CheckCircle2, AlertCircle, ChevronDown, LogOut, FileText, X,
+} from "lucide-react";
 import CompanyForm from "./CompanyForm";
 import ReportList from "./ReportList";
 import ReportForm from "./ReportForm";
@@ -18,8 +21,8 @@ interface CompanyListProps {
 }
 
 export default function CompanyList({ company, onUpdate, autoOpenMeta = false }: CompanyListProps) {
-  const [showReports, setShowReports] = useState(false);
-  const [showReportForm, setShowReportForm] = useState(false);
+  const [showReportDialog, setShowReportDialog] = useState(false);
+  const [showListDialog, setShowListDialog] = useState(false);
   const [editingReport, setEditingReport] = useState<Report | null>(null);
   const [isEditingCompany, setIsEditingCompany] = useState(false);
   const [showMetaPanel, setShowMetaPanel] = useState(autoOpenMeta);
@@ -28,7 +31,7 @@ export default function CompanyList({ company, onUpdate, autoOpenMeta = false }:
 
   const { data: reports, refetch: refetchReports } = trpc.report.list.useQuery(
     { companyId: company.id },
-    { enabled: showReports }
+    { enabled: showListDialog }
   );
 
   const { data: metaStatus, refetch: refetchStatus } = trpc.meta.getStatus.useQuery(
@@ -42,13 +45,8 @@ export default function CompanyList({ company, onUpdate, autoOpenMeta = false }:
   );
 
   const deleteMutation = trpc.company.delete.useMutation({
-    onSuccess: () => {
-      toast.success("Empresa removida com sucesso");
-      onUpdate();
-    },
-    onError: (error) => {
-      toast.error("Erro ao remover empresa: " + (error as any).message);
-    },
+    onSuccess: () => { toast.success("Empresa removida com sucesso"); onUpdate(); },
+    onError: (error) => { toast.error("Erro ao remover empresa: " + (error as any).message); },
   });
 
   const disconnectMutation = trpc.meta.disconnect.useMutation();
@@ -61,7 +59,6 @@ export default function CompanyList({ company, onUpdate, autoOpenMeta = false }:
   };
 
   const handleConnectMeta = () => {
-    // Redireciona para a rota Express que inicia o OAuth
     window.location.href = `/api/meta/connect?companyId=${company.id}`;
   };
 
@@ -71,13 +68,9 @@ export default function CompanyList({ company, onUpdate, autoOpenMeta = false }:
     try {
       await disconnectMutation.mutateAsync({ companyId: company.id });
       toast.success("Empresa desconectada do Meta Ads.");
-      refetchStatus();
-      onUpdate();
-    } catch {
-      toast.error("Erro ao desconectar.");
-    } finally {
-      setIsDisconnecting(false);
-    }
+      refetchStatus(); onUpdate();
+    } catch { toast.error("Erro ao desconectar."); }
+    finally { setIsDisconnecting(false); }
   };
 
   const handleSelectAccount = async (accountId: string) => {
@@ -85,137 +78,127 @@ export default function CompanyList({ company, onUpdate, autoOpenMeta = false }:
     try {
       await selectAccountMutation.mutateAsync({ companyId: company.id, adAccountId: accountId });
       toast.success("Conta de anúncios selecionada!");
-      refetchStatus();
-      onUpdate();
-    } catch {
-      toast.error("Erro ao selecionar conta.");
-    } finally {
-      setIsSelectingAccount(false);
-    }
+      refetchStatus(); onUpdate();
+    } catch { toast.error("Erro ao selecionar conta."); }
+    finally { setIsSelectingAccount(false); }
   };
 
   const isConnected = metaStatus?.connected && !metaStatus?.expired;
   const isExpired = metaStatus?.expired;
-  const needsAccount = isConnected && !metaStatus?.hasAdAccount;
 
   const formatExpiry = (date: Date | string | null) => {
     if (!date) return "";
-    const d = new Date(date);
-    return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+    return new Date(date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
   };
 
   return (
-    <Card className="glass-card group overflow-hidden border-white/10 hover:border-primary/30 transition-all duration-500">
-      <CardHeader className="pb-4 relative overflow-hidden">
-        <div className="absolute top-0 right-0 -mr-8 -mt-8 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-colors" />
+    <>
+      {/* ── Card da empresa ── */}
+      <Card className="glass-card group overflow-hidden border-white/10 hover:border-primary/30 transition-all duration-500">
+        <CardHeader className="pb-4 relative overflow-hidden">
+          <div className="absolute top-0 right-0 -mr-8 -mt-8 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-colors" />
 
-        <div className="flex items-start justify-between relative z-10">
-          <div className="flex gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-primary glow-blue">
-              <Building2 className="h-6 w-6" />
+          <div className="flex items-start justify-between relative z-10">
+            <div className="flex gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-primary glow-blue">
+                <Building2 className="h-6 w-6" />
+              </div>
+              <div>
+                <CardTitle className="text-xl font-bold font-display group-hover:text-primary transition-colors">
+                  {company.name}
+                </CardTitle>
+                {company.description && (
+                  <CardDescription className="line-clamp-1 mt-0.5 text-muted-foreground/80">
+                    {company.description}
+                  </CardDescription>
+                )}
+              </div>
             </div>
-            <div>
-              <CardTitle className="text-xl font-bold font-display group-hover:text-primary transition-colors">
-                {company.name}
-              </CardTitle>
-              {company.description && (
-                <CardDescription className="line-clamp-1 mt-0.5 text-muted-foreground/80">
-                  {company.description}
-                </CardDescription>
-              )}
+
+            <div className="flex items-center gap-2">
+              {/* Badge Meta */}
+              <button
+                onClick={() => setShowMetaPanel(!showMetaPanel)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  isConnected
+                    ? "bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/30"
+                    : isExpired
+                    ? "bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 border border-amber-500/30"
+                    : "bg-[#1877F2]/10 text-[#1877F2] hover:bg-[#1877F2]/20 border border-[#1877F2]/30"
+                }`}
+                title="Configurar Meta Ads"
+              >
+                <Zap className="h-3 w-3" />
+                {isConnected ? "Meta ✓" : isExpired ? "Expirado" : "Meta"}
+              </button>
+
+              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={() => setIsEditingCompany(true)}
+                  className="p-2 rounded-lg hover:bg-blue-500/10 text-blue-400/70 hover:text-blue-400 transition-all"
+                  title="Editar empresa"
+                >
+                  <Edit2 className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleteMutation.isPending}
+                  className="p-2 rounded-lg hover:bg-red-500/10 text-red-400/70 hover:text-red-400 transition-all"
+                  title="Excluir empresa"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
+        </CardHeader>
 
-          <div className="flex items-center gap-2">
-            {/* Badge de status Meta — sempre visível */}
-            <button
-              onClick={() => setShowMetaPanel(!showMetaPanel)}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                isConnected
-                  ? "bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/30"
-                  : isExpired
-                  ? "bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 border border-amber-500/30"
-                  : "bg-[#1877F2]/10 text-[#1877F2] hover:bg-[#1877F2]/20 border border-[#1877F2]/30"
-              }`}
-              title="Configurar Meta Ads"
-            >
-              <Zap className="h-3 w-3" />
-              {isConnected ? "Meta ✓" : isExpired ? "Expirado" : "Meta"}
-            </button>
+        <CardContent className="space-y-4 pt-2">
 
-            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button
-                onClick={() => setIsEditingCompany(true)}
-                className="p-2 rounded-lg hover:bg-blue-500/10 text-blue-400/70 hover:text-blue-400 transition-all"
-                title="Editar"
+          {/* ── Painel Meta ── */}
+          <AnimatePresence>
+            {showMetaPanel && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
               >
-                <Edit2 className="h-4 w-4" />
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleteMutation.isPending}
-                className="p-2 rounded-lg hover:bg-red-500/10 text-red-400/70 hover:text-red-400 transition-all"
-                title="Excluir"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </CardHeader>
+                <div className={`p-4 rounded-2xl space-y-3 border ${
+                  isConnected
+                    ? "bg-emerald-500/5 border-emerald-500/20"
+                    : isExpired
+                    ? "bg-amber-500/5 border-amber-500/20"
+                    : "bg-[#1877F2]/10 border-[#1877F2]/30"
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <Zap className={`h-4 w-4 ${isConnected ? "text-emerald-400" : "text-[#1877F2]"}`} />
+                    <h4 className={`text-sm font-bold uppercase tracking-wider ${isConnected ? "text-emerald-400" : "text-[#1877F2]"}`}>
+                      Meta Ads
+                    </h4>
+                    {isConnected && (
+                      <span className="ml-auto flex items-center gap-1 text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-medium">
+                        <CheckCircle2 className="h-3 w-3" /> Conectado
+                      </span>
+                    )}
+                    {isExpired && (
+                      <span className="ml-auto flex items-center gap-1 text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full font-medium">
+                        <AlertCircle className="h-3 w-3" /> Token expirado
+                      </span>
+                    )}
+                    {!isConnected && !isExpired && (
+                      <span className="ml-auto text-xs text-muted-foreground">Não conectado</span>
+                    )}
+                  </div>
 
-      <CardContent className="space-y-6 pt-2">
-
-        {/* ── Painel Meta Ads ── */}
-        <AnimatePresence>
-          {showMetaPanel && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden"
-            >
-              <div className={`p-5 rounded-2xl space-y-4 border ${
-                isConnected
-                  ? "bg-emerald-500/5 border-emerald-500/20"
-                  : isExpired
-                  ? "bg-amber-500/5 border-amber-500/20"
-                  : "bg-[#1877F2]/10 border-[#1877F2]/30"
-              }`}>
-
-                {/* Header do painel */}
-                <div className="flex items-center gap-2">
-                  <Zap className={`h-4 w-4 ${isConnected ? "text-emerald-400" : "text-[#1877F2]"}`} />
-                  <h4 className={`text-sm font-bold uppercase tracking-wider ${isConnected ? "text-emerald-400" : "text-[#1877F2]"}`}>
-                    Meta Ads
-                  </h4>
                   {isConnected && (
-                    <span className="ml-auto flex items-center gap-1 text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-medium">
-                      <CheckCircle2 className="h-3 w-3" /> Conectado
-                    </span>
-                  )}
-                  {isExpired && (
-                    <span className="ml-auto flex items-center gap-1 text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full font-medium">
-                      <AlertCircle className="h-3 w-3" /> Token expirado
-                    </span>
-                  )}
-                  {!isConnected && !isExpired && (
-                    <span className="ml-auto text-xs text-muted-foreground">Não conectado</span>
-                  )}
-                </div>
-
-                {/* Status detalhado quando conectado */}
-                {isConnected && (
-                  <div className="space-y-3">
-                    <div className="text-xs text-muted-foreground space-y-1">
+                    <div className="space-y-3">
                       {metaStatus?.expiresAt && (
-                        <p>Token válido até: <span className="text-white font-medium">{formatExpiry(metaStatus.expiresAt)}</span></p>
+                        <p className="text-xs text-muted-foreground">
+                          Token válido até: <span className="text-white font-medium">{formatExpiry(metaStatus.expiresAt)}</span>
+                        </p>
                       )}
-                    </div>
 
-                    {/* Contas de anúncios */}
-                    <div className="space-y-2">
-                      {/* Conta JÁ selecionada — mostra somente ela, sem lista para trocar */}
                       {metaStatus?.hasAdAccount ? (
                         <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
                           <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
@@ -225,7 +208,6 @@ export default function CompanyList({ company, onUpdate, autoOpenMeta = false }:
                           </div>
                         </div>
                       ) : (
-                        /* Sem conta — mostra lista para selecionar */
                         <>
                           <p className="text-xs font-bold text-amber-400 flex items-center gap-1">
                             <AlertCircle className="h-3 w-3" /> Selecione a conta de anúncios
@@ -235,7 +217,7 @@ export default function CompanyList({ company, onUpdate, autoOpenMeta = false }:
                               <Loader2 className="h-4 w-4 animate-spin" /> Buscando suas contas...
                             </div>
                           ) : adAccounts && adAccounts.length > 0 ? (
-                            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                            <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
                               {adAccounts.map((acc) => (
                                 <button
                                   key={acc.id}
@@ -252,160 +234,239 @@ export default function CompanyList({ company, onUpdate, autoOpenMeta = false }:
                               ))}
                             </div>
                           ) : (
-                            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-400 space-y-1">
+                            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-400">
                               <p className="font-bold">Nenhuma conta encontrada</p>
-                              <p className="text-white/60">Verifique o Business Manager desta conta Meta.</p>
+                              <p className="text-white/60 mt-0.5">Verifique o Business Manager desta conta Meta.</p>
                             </div>
                           )}
                         </>
                       )}
+
+                      <button
+                        onClick={handleDisconnect}
+                        disabled={isDisconnecting}
+                        className="flex items-center gap-2 text-xs text-red-400/70 hover:text-red-400 transition-colors"
+                      >
+                        {isDisconnecting ? <Loader2 className="h-3 w-3 animate-spin" /> : <LogOut className="h-3 w-3" />}
+                        Desconectar Meta Ads
+                      </button>
                     </div>
+                  )}
 
-                    <button
-                      onClick={handleDisconnect}
-                      disabled={isDisconnecting}
-                      className="flex items-center gap-2 text-xs text-red-400/70 hover:text-red-400 transition-colors"
-                    >
-                      {isDisconnecting ? <Loader2 className="h-3 w-3 animate-spin" /> : <LogOut className="h-3 w-3" />}
-                      Desconectar Meta Ads
-                    </button>
-                  </div>
-                )}
+                  {(!isConnected || isExpired) && (
+                    <div className="space-y-3">
+                      {isExpired && (
+                        <p className="text-xs text-amber-400">
+                          Seu token expirou. Reconecte para continuar importando dados.
+                        </p>
+                      )}
+                      {!isConnected && !isExpired && (
+                        <p className="text-xs text-muted-foreground">
+                          Conecte ao Meta Ads para importar métricas automaticamente ao criar relatórios.
+                        </p>
+                      )}
+                      <Button
+                        onClick={handleConnectMeta}
+                        className="w-full rounded-xl bg-[#1877F2] hover:bg-[#1466d8] text-white font-bold py-5"
+                      >
+                        <Zap className="h-4 w-4 mr-2" />
+                        {isExpired ? "Reconectar com Meta" : "Conectar com Meta"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-                {/* Botão conectar */}
-                {(!isConnected || isExpired) && (
-                  <div className="space-y-3">
-                    {isExpired && (
-                      <p className="text-xs text-amber-400">
-                        Seu token expirou. Reconecte para continuar importando dados automaticamente.
-                      </p>
-                    )}
-                    {!isConnected && !isExpired && (
-                      <p className="text-xs text-muted-foreground">
-                        Conecte esta empresa ao Meta Ads para importar métricas automaticamente ao criar relatórios.
-                        Serão solicitadas as permissões <code className="text-[#1877F2]">ads_read</code> e{" "}
-                        <code className="text-[#1877F2]">read_insights</code>.
-                      </p>
-                    )}
-                    <Button
-                      onClick={handleConnectMeta}
-                      className="w-full rounded-xl bg-[#1877F2] hover:bg-[#1466d8] text-white font-bold py-5"
-                    >
-                      <Zap className="h-4 w-4 mr-2" />
-                      {isExpired ? "Reconectar com Meta" : "Conectar com Meta"}
-                    </Button>
-                  </div>
+          {/* Editar empresa inline */}
+          <AnimatePresence>
+            {isEditingCompany && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="p-4 rounded-2xl bg-primary/5 border border-primary/20">
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-primary mb-4 flex items-center gap-2">
+                    <div className="w-1 h-4 bg-primary rounded-full" />
+                    Editar Empresa
+                  </h4>
+                  <CompanyForm
+                    company={company}
+                    onSuccess={() => { setIsEditingCompany(false); onUpdate(); }}
+                    onCancel={() => setIsEditingCompany(false)}
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* ── Rodapé do card: contagem + botões ── */}
+          {!isEditingCompany && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm px-1">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <BarChart2 className="h-4 w-4" />
+                  <span>Relatórios</span>
+                </div>
+                {isConnected && metaStatus?.adAccountId && (
+                  <span className="text-xs text-emerald-400 font-mono truncate max-w-[120px]" title={metaStatus.adAccountId}>
+                    {metaStatus.adAccountId}
+                  </span>
                 )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  onClick={() => setShowListDialog(true)}
+                  variant="outline"
+                  className="w-full rounded-xl border-white/10 hover:bg-white/5 font-medium transition-all"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Ver Lista
+                </Button>
+                <Button
+                  onClick={() => setShowReportDialog(true)}
+                  className="w-full rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium border border-white/10"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Novo
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── Modal: Novo Relatório ── */}
+      <AnimatePresence>
+        {showReportDialog && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-start justify-center z-50 p-4 overflow-y-auto"
+            onClick={(e) => { if (e.target === e.currentTarget) setShowReportDialog(false); }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="bg-[#0d1422] border border-white/10 rounded-2xl w-full max-w-2xl shadow-2xl my-6"
+            >
+              {/* Header do modal */}
+              <div className="sticky top-0 flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#0d1422]/95 backdrop-blur rounded-t-2xl z-10">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-primary/20 flex items-center justify-center">
+                    <Plus className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-white">Novo Relatório</h2>
+                    <p className="text-xs text-muted-foreground">{company.name}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowReportDialog(false)}
+                  className="p-2 rounded-xl hover:bg-white/10 text-muted-foreground hover:text-white transition-all"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Corpo do formulário */}
+              <div className="p-6">
+                <ReportForm
+                  companyId={company.id}
+                  metaConnected={!!metaStatus?.connected && !metaStatus?.expired}
+                  metaHasAccount={!!metaStatus?.hasAdAccount}
+                  onSuccess={() => {
+                    setShowReportDialog(false);
+                    setShowListDialog(true);
+                    refetchReports();
+                    onUpdate();
+                  }}
+                  onCancel={() => setShowReportDialog(false)}
+                />
               </div>
             </motion.div>
-          )}
-        </AnimatePresence>
-
-        {isEditingCompany ? (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-5 rounded-2xl bg-primary/5 border border-primary/20 -mx-2"
-          >
-            <h4 className="text-sm font-bold uppercase tracking-wider text-primary mb-5 flex items-center gap-2">
-              <div className="w-1 h-4 bg-primary rounded-full" />
-              Editar Informações
-            </h4>
-            <CompanyForm
-              company={company}
-              onSuccess={() => {
-                setIsEditingCompany(false);
-                onUpdate();
-              }}
-              onCancel={() => setIsEditingCompany(false)}
-            />
           </motion.div>
-        ) : (
-          <>
-            <div className="flex items-center justify-between text-sm px-1">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <BarChart2 className="h-4 w-4" />
-                <span>{reports?.length ?? 0} Relatório{(reports?.length ?? 0) !== 1 ? "s" : ""}</span>
-              </div>
-              {isConnected && metaStatus?.adAccountId && (
-                <span className="text-xs text-emerald-400 font-mono truncate max-w-[120px]" title={metaStatus.adAccountId}>
-                  {metaStatus.adAccountId}
-                </span>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                onClick={() => setShowReports(!showReports)}
-                variant="outline"
-                className={`w-full rounded-xl border-white/5 hover:bg-white/5 font-medium transition-all ${showReports ? "bg-primary/10 border-primary/30 text-primary" : ""}`}
-              >
-                {showReports ? "Fechar" : "Ver Lista"}
-              </Button>
-              <Button
-                onClick={() => setShowReportForm(!showReportForm)}
-                className="w-full rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium border border-white/10"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Novo
-              </Button>
-            </div>
-
-            <AnimatePresence>
-              {showReportForm && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden"
-                >
-                  <div className="p-5 rounded-2xl bg-white/5 border border-white/10 -mx-2">
-                    <h4 className="text-sm font-bold uppercase tracking-wider mb-5">Novo Relatório</h4>
-                    <ReportForm
-                      companyId={company.id}
-                      metaConnected={!!metaStatus?.connected && !metaStatus?.expired}
-                      metaHasAccount={!!metaStatus?.hasAdAccount}
-                      onSuccess={() => {
-                        setShowReportForm(false);
-                        setShowReports(true);
-                      }}
-                      onCancel={() => setShowReportForm(false)}
-                    />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <AnimatePresence>
-              {showReports && !showReportForm && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                >
-                  <div className="pt-2">
-                    <ReportList
-                      reports={reports || []}
-                      companyId={company.id}
-                      onEditReport={(report) => setEditingReport(report)}
-                      onUpdate={() => onUpdate()}
-                    />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </>
         )}
+      </AnimatePresence>
 
-        <EditReportModal
-          report={editingReport}
-          onClose={() => setEditingReport(null)}
-          onSuccess={() => {
-            setEditingReport(null);
-            onUpdate();
-          }}
-        />
-      </CardContent>
-    </Card>
+      {/* ── Modal: Lista de Relatórios ── */}
+      <AnimatePresence>
+        {showListDialog && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-start justify-center z-50 p-4 overflow-y-auto"
+            onClick={(e) => { if (e.target === e.currentTarget) setShowListDialog(false); }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="bg-[#0d1422] border border-white/10 rounded-2xl w-full max-w-2xl shadow-2xl my-6"
+            >
+              {/* Header */}
+              <div className="sticky top-0 flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#0d1422]/95 backdrop-blur rounded-t-2xl z-10">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-cyan-500/20 flex items-center justify-center">
+                    <FileText className="h-4 w-4 text-cyan-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-white">Relatórios</h2>
+                    <p className="text-xs text-muted-foreground">{company.name}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => { setShowListDialog(false); setShowReportDialog(true); }}
+                    className="h-8 text-xs rounded-xl bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30"
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1.5" />
+                    Novo
+                  </Button>
+                  <button
+                    onClick={() => setShowListDialog(false)}
+                    className="p-2 rounded-xl hover:bg-white/10 text-muted-foreground hover:text-white transition-all"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Lista */}
+              <div className="p-6">
+                <ReportList
+                  reports={reports || []}
+                  companyId={company.id}
+                  onEditReport={(report) => { setEditingReport(report); setShowListDialog(false); }}
+                  onUpdate={() => { refetchReports(); onUpdate(); }}
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal de edição */}
+      <EditReportModal
+        report={editingReport}
+        onClose={() => { setEditingReport(null); setShowListDialog(true); }}
+        onSuccess={() => {
+          setEditingReport(null);
+          setShowListDialog(true);
+          refetchReports();
+          onUpdate();
+        }}
+      />
+    </>
   );
 }

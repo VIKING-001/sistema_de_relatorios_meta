@@ -76,9 +76,18 @@ async function ensureTables(pool: InstanceType<typeof Pool>) {
       "costPerProfileVisit" numeric(10, 2) DEFAULT '0.00' NOT NULL,
       "cpm" numeric(10, 2) DEFAULT '0.00' NOT NULL,
       "ctr" numeric(5, 2) DEFAULT '0.00' NOT NULL,
+      "purchases" integer DEFAULT 0 NOT NULL,
+      "purchaseValue" numeric(12, 2) DEFAULT '0.00' NOT NULL,
+      "costPerPurchase" numeric(10, 2) DEFAULT '0.00' NOT NULL,
+      "costPerMessage" numeric(10, 2) DEFAULT '0.00' NOT NULL,
       "createdAt" timestamp DEFAULT now() NOT NULL,
       "updatedAt" timestamp DEFAULT now() NOT NULL
     )`,
+    // Adiciona novas colunas de conversão em tabelas já existentes (idempotente)
+    `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "purchases" integer DEFAULT 0 NOT NULL`,
+    `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "purchaseValue" numeric(12, 2) DEFAULT '0.00' NOT NULL`,
+    `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "costPerPurchase" numeric(10, 2) DEFAULT '0.00' NOT NULL`,
+    `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "costPerMessage" numeric(10, 2) DEFAULT '0.00' NOT NULL`,
   ];
   try {
     for (const sql of statements) {

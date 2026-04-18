@@ -83,6 +83,12 @@ export const reportMetrics = pgTable("reportMetrics", {
   costPerProfileVisit: decimal("costPerProfileVisit", { precision: 10, scale: 2 }).notNull().default("0.00"),
   cpm: decimal("cpm", { precision: 10, scale: 2 }).notNull().default("0.00"),
   ctr: decimal("ctr", { precision: 5, scale: 2 }).notNull().default("0.00"),
+  /** Conversões / Compras */
+  purchases: integer("purchases").notNull().default(0),
+  purchaseValue: decimal("purchaseValue", { precision: 12, scale: 2 }).notNull().default("0.00"),
+  costPerPurchase: decimal("costPerPurchase", { precision: 10, scale: 2 }).notNull().default("0.00"),
+  /** Custo por mensagem iniciada */
+  costPerMessage: decimal("costPerMessage", { precision: 10, scale: 2 }).notNull().default("0.00"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });

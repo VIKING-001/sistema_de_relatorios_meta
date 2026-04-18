@@ -40,6 +40,11 @@ const metricsSchema = z.object({
   costPerProfileVisit: z.number().min(0).default(0),
   cpm: z.number().min(0).default(0),
   ctr: z.number().min(0).max(100).default(0),
+  // Conversões / Compras
+  purchases: z.number().int().min(0).default(0),
+  purchaseValue: z.number().min(0).default(0),
+  costPerPurchase: z.number().min(0).default(0),
+  costPerMessage: z.number().min(0).default(0),
 }).transform((data) => ({
   ...data,
   totalSpent: data.totalSpent.toString(),
@@ -48,6 +53,9 @@ const metricsSchema = z.object({
   costPerProfileVisit: data.costPerProfileVisit.toString(),
   cpm: data.cpm.toString(),
   ctr: data.ctr.toString(),
+  purchaseValue: data.purchaseValue.toString(),
+  costPerPurchase: data.costPerPurchase.toString(),
+  costPerMessage: data.costPerMessage.toString(),
 }));
 
 // ─── Meta Marketing API helpers ───────────────────────────────────────────────
@@ -64,7 +72,7 @@ async function fetchMetaInsights(
   // 1. Insights gerais da conta
   const baseUrl = `https://graph.facebook.com/v19.0/${accountId}/insights`;
   const params = new URLSearchParams({
-    fields: "reach,impressions,spend,clicks,cpc,cpm,ctr,actions",
+    fields: "reach,impressions,spend,clicks,cpc,cpm,ctr,actions,action_values",
     time_range: timeRange,
     level: "account",
     access_token: accessToken,
@@ -95,6 +103,10 @@ async function fetchMetaInsights(
       videoRetentionRate: 0,
       profileVisitsThroughCampaigns: 0,
       costPerProfileVisit: 0,
+      purchases: 0,
+      purchaseValue: 0,
+      costPerPurchase: 0,
+      costPerMessage: 0,
       _warning: "Nenhum dado encontrado para o período selecionado. Os campos foram zerados — verifique o período ou preencha manualmente.",
     };
   }
@@ -107,10 +119,30 @@ async function fetchMetaInsights(
   };
 
   const actions = ins.actions || [];
+  const actionValues = ins.action_values || [];
+
+  const getActionValue = (av: any[], type: string): number => {
+    const a = (av || []).find((x: any) => x.action_type === type);
+    return a ? parseFloat(a.value) : 0;
+  };
+
   const messagesInitiated =
     getAction(actions, "onsite_conversion.messaging_conversation_started_7d") ||
     getAction(actions, "onsite_conversion.messaging_first_reply") ||
     getAction(actions, "onsite_conversion.total_messaging_connection") ||
+    0;
+
+  // Compras / Conversões
+  const purchases =
+    getAction(actions, "offsite_conversion.fb_pixel_purchase") ||
+    getAction(actions, "purchase") ||
+    getAction(actions, "omni_purchase") ||
+    0;
+
+  const purchaseValue =
+    getActionValue(actionValues, "offsite_conversion.fb_pixel_purchase") ||
+    getActionValue(actionValues, "purchase") ||
+    getActionValue(actionValues, "omni_purchase") ||
     0;
 
   // 2. Breakdown por publisher_platform para métricas do Instagram
@@ -172,6 +204,12 @@ async function fetchMetaInsights(
       instagramProfileVisits > 0
         ? parseFloat((totalSpent / instagramProfileVisits).toFixed(2))
         : 0,
+    purchases,
+    purchaseValue: parseFloat(purchaseValue.toFixed(2)),
+    costPerPurchase:
+      purchases > 0 ? parseFloat((totalSpent / purchases).toFixed(2)) : 0,
+    costPerMessage:
+      messagesInitiated > 0 ? parseFloat((totalSpent / messagesInitiated).toFixed(2)) : 0,
   };
 }
 
@@ -632,6 +670,54 @@ export const appRouter = router({
             lifetime_budget?: string;
           }>,
         };
+      }),
+
+    /** Retorna insights agregados de todas as contas conectadas */
+    getAllAccountsInsights: protectedProcedure
+      .input(z.object({
+        days: z.number().int().min(1).max(90).default(30),
+        companyId: z.number().int().positive().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const companies = await db.getCompaniesByUserId(ctx.user.id);
+        const filtered = companies.filter((c: any) =>
+          c.metaAccessToken && c.metaAdAccountId &&
+          (!input.companyId || c.id === input.companyId)
+        );
+
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - input.days);
+        const fmt = (d: Date) => d.toISOString().split("T")[0];
+
+        const results = await Promise.allSettled(
+          filtered.map(async (company: any) => {
+            const metrics = await fetchMetaInsights(
+              company.metaAdAccountId,
+              company.metaAccessToken,
+              fmt(startDate),
+              fmt(endDate)
+            );
+            return { companyId: company.id, companyName: company.name, adAccountId: company.metaAdAccountId, metrics };
+          })
+        );
+
+        const accounts = results
+          .filter((r): r is PromiseFulfilledResult<any> => r.status === "fulfilled")
+          .map(r => r.value);
+
+        const failed = results
+          .filter((r): r is PromiseRejectedResult => r.status === "rejected")
+          .map((r, i) => ({ companyName: filtered[i]?.name ?? "?", error: r.reason?.message ?? "Erro" }));
+
+        const totals = accounts.reduce((acc, a) => ({
+          totalSpent: acc.totalSpent + (a.metrics.totalSpent ?? 0),
+          totalImpressions: acc.totalImpressions + (a.metrics.totalImpressions ?? 0),
+          totalReach: acc.totalReach + (a.metrics.totalReach ?? 0),
+          totalClicks: acc.totalClicks + (a.metrics.totalClicks ?? 0),
+        }), { totalSpent: 0, totalImpressions: 0, totalReach: 0, totalClicks: 0 });
+
+        return { accounts, totals, failed, days: input.days };
       }),
   }),
 });
