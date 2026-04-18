@@ -2,6 +2,7 @@ import { Report } from "@shared/types";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { Copy, Trash2, Eye, Loader2, Edit2, Share2, Globe, Clock, CheckCircle2, Calendar } from "lucide-react";
+import { displayDate } from "@shared/dateParser";
 import { toast } from "sonner";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -86,9 +87,9 @@ export default function ReportList({ reports, companyId, onUpdate, onEditReport 
                 <div className="flex items-center gap-3 text-[11px] text-muted-foreground font-medium">
                   <div className="flex items-center gap-1">
                     <Calendar className="h-3 w-3 opacity-50" />
-                    {new Date(report.startDate).toLocaleDateString("pt-BR")}
+                    {displayDate(report.startDate)}
                     <span className="mx-1 opacity-30">→</span>
-                    {new Date(report.endDate).toLocaleDateString("pt-BR")}
+                    {displayDate(report.endDate)}
                   </div>
                 </div>
               </div>

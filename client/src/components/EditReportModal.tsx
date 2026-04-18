@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2, X, Target, DollarSign, MessageCircle, ShoppingBag } from "lucide-react";
 import { parseBrazilianNumber } from "@shared/numberParser";
-import { formatLocalDate, parseLocalDate } from "@shared/dateParser";
+import { formatLocalDate, parseLocalDate, displayDate } from "@shared/dateParser";
 
 interface EditReportModalProps {
   report: Report | null;
@@ -59,8 +59,9 @@ export default function EditReportModal({ report, onClose, onSuccess }: EditRepo
     if (!fullReport) return;
     setTitle(fullReport.title || "");
     setDescription(fullReport.description || "");
-    setStartDate(formatLocalDate(new Date(fullReport.startDate)));
-    setEndDate(formatLocalDate(new Date(fullReport.endDate)));
+    // parseLocalDate evita o bug de timezone (new Date("YYYY-MM-DD") = UTC midnight = dia anterior no BR)
+    setStartDate(formatLocalDate(parseLocalDate(String(fullReport.startDate).split("T")[0])));
+    setEndDate(formatLocalDate(parseLocalDate(String(fullReport.endDate).split("T")[0])));
   }, [fullReport]);
 
   useEffect(() => {

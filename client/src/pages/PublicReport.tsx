@@ -2,9 +2,11 @@ import { useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Loader2, Copy, Download } from "lucide-react";
 import { formatCurrency, formatNumber, formatPercentage } from "@shared/metrics";
+import { displayDate } from "@shared/dateParser";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import ConsultiveReport from "@/components/ConsultiveReport";
+import FunnelChart from "@/components/FunnelChart";
 
 export default function PublicReport() {
   const { slug } = useParams<{ slug: string }>();
@@ -83,8 +85,8 @@ export default function PublicReport() {
         {/* Período */}
         <div className="mb-10 text-center">
           <p className="text-lg text-cyan-300 font-bold">
-            Período: {new Date(report.startDate).toLocaleDateString("pt-BR")} a{" "}
-            {new Date(report.endDate).toLocaleDateString("pt-BR")}
+            Período: {displayDate(report.startDate)} a{" "}
+            {displayDate(report.endDate)}
           </p>
           {report.description && <p className="text-gray-400 mt-2">{report.description}</p>}
         </div>
@@ -160,14 +162,35 @@ export default function PublicReport() {
               </>
             )}
 
-            {/* Resumo Executivo */}
+            {/* Funil de Marketing */}
             <div className="mt-10 bg-white/5 border border-white/10 rounded-2xl p-8">
+              <h2 className="text-xl font-bold text-white mb-2">🔻 Funil de Marketing</h2>
+              <p className="text-sm text-gray-400 mb-6">Jornada completa do usuário — desde a impressão até a conversão</p>
+              <FunnelChart
+                dark
+                totalImpressions={metrics.totalImpressions}
+                totalReach={metrics.totalReach}
+                totalClicks={metrics.totalClicks}
+                instagramProfileVisits={metrics.instagramProfileVisits}
+                messagesInitiated={metrics.messagesInitiated}
+                purchases={purchases}
+                totalSpent={parseFloat(metrics.totalSpent)}
+                costPerClick={parseFloat(metrics.costPerClick)}
+                costPerProfileVisit={parseFloat(metrics.costPerProfileVisit)}
+                costPerMessage={costPerMessage}
+                costPerPurchase={costPerPurchase}
+                purchaseValue={purchaseValue}
+              />
+            </div>
+
+            {/* Resumo Executivo */}
+            <div className="mt-6 bg-white/5 border border-white/10 rounded-2xl p-8">
               <h2 className="text-xl font-bold text-white mb-6">Resumo Executivo</h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <tbody className="divide-y divide-white/10">
                     <TableRow label="Período"
-                      value={`${new Date(report.startDate).toLocaleDateString("pt-BR")} a ${new Date(report.endDate).toLocaleDateString("pt-BR")}`} />
+                      value={`${displayDate(report.startDate)} a ${displayDate(report.endDate)}`} />
                     <TableRow label="Alcance Total" value={formatNumber(metrics.totalReach)} />
                     <TableRow label="Impressões" value={formatNumber(metrics.totalImpressions)} />
                     <TableRow label="Investimento Total" value={formatCurrency(parseFloat(metrics.totalSpent))} />

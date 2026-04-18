@@ -59,65 +59,224 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-// ─── UTM Builder inline ───────────────────────────────────────────────────────
-function UtmBuilder({ campaignName, onClose }: { campaignName: string; onClose: () => void }) {
+// ─── UTM Builder inline (estilo UTMify) ──────────────────────────────────────
+function UtmBuilder({
+  campaignName, campaignId, companyId, onClose,
+}: { campaignName: string; campaignId: string; companyId: number; onClose: () => void }) {
   const [baseUrl, setBaseUrl] = useState("");
-  const [utmCampaign] = useState(campaignName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-_]/g, ""));
+  const [utmSource, setUtmSource] = useState("facebook");
+  const [utmMedium, setUtmMedium] = useState("cpc");
+  const [utmCampaign, setUtmCampaign] = useState("{{campaign.name}}");
   const [utmContent, setUtmContent] = useState("{{ad.name}}");
   const [utmTerm, setUtmTerm] = useState("{{adset.name}}");
-  const [copied, setCopied] = useState(false);
+  const [activeTab, setActiveTab] = useState<"params" | "ads">("params");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const finalUrl = useMemo(() => {
-    if (!baseUrl) return "";
+  const { data: adsData, isLoading: loadingAds } = trpc.meta.listAds.useQuery(
+    { companyId, campaignId },
+    { enabled: activeTab === "ads" }
+  );
+
+  const paramsString = useMemo(() => {
+    const parts: string[] = [];
+    if (utmSource) parts.push(`utm_source=${encodeURIComponent(utmSource)}`);
+    if (utmMedium) parts.push(`utm_medium=${encodeURIComponent(utmMedium)}`);
+    if (utmCampaign) parts.push(`utm_campaign=${encodeURIComponent(utmCampaign)}`);
+    if (utmContent) parts.push(`utm_content=${encodeURIComponent(utmContent)}`);
+    if (utmTerm) parts.push(`utm_term=${encodeURIComponent(utmTerm)}`);
+    return parts.join("&");
+  }, [utmSource, utmMedium, utmCampaign, utmContent, utmTerm]);
+
+  const buildUrl = (base: string) => {
+    if (!base) return "";
     try {
-      const url = new URL(baseUrl.startsWith("http") ? baseUrl : `https://${baseUrl}`);
-      url.searchParams.set("utm_source", "facebook");
-      url.searchParams.set("utm_medium", "cpc");
-      url.searchParams.set("utm_campaign", utmCampaign);
+      const url = new URL(base.startsWith("http") ? base : `https://${base}`);
+      if (utmSource) url.searchParams.set("utm_source", utmSource);
+      if (utmMedium) url.searchParams.set("utm_medium", utmMedium);
+      if (utmCampaign) url.searchParams.set("utm_campaign", utmCampaign);
       if (utmContent) url.searchParams.set("utm_content", utmContent);
       if (utmTerm) url.searchParams.set("utm_term", utmTerm);
       return url.toString();
     } catch { return ""; }
-  }, [baseUrl, utmCampaign, utmContent, utmTerm]);
-
-  const handleCopy = async () => {
-    const toCopy = finalUrl || `utm_source=facebook&utm_medium=cpc&utm_campaign=${utmCampaign}&utm_content=${utmContent}&utm_term=${utmTerm}`;
-    await navigator.clipboard.writeText(toCopy);
-    setCopied(true);
-    toast.success(finalUrl ? "URL copiada!" : "Parâmetros UTM copiados!");
-    setTimeout(() => setCopied(false), 2000);
   };
 
+  const finalUrl = useMemo(() => buildUrl(baseUrl), [baseUrl, paramsString]);
+
+  const copy = async (text: string, id: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    toast.success("Copiado!");
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  // Gera URL para anúncio específico (substitui variáveis dinâmicas)
+  const buildAdUrl = (adName: string, adsetName: string) => {
+    const campaign = utmCampaign.replace("{{campaign.name}}", campaignName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-_]/g, ""));
+    const content = utmContent.replace("{{ad.name}}", adName).replace("{{adset.name}}", adsetName);
+    const term = utmTerm.replace("{{adset.name}}", adsetName).replace("{{ad.name}}", adName);
+    if (!baseUrl) {
+      return `utm_source=${utmSource}&utm_medium=${utmMedium}&utm_campaign=${encodeURIComponent(campaign)}&utm_content=${encodeURIComponent(content)}&utm_term=${encodeURIComponent(term)}`;
+    }
+    try {
+      const url = new URL(baseUrl.startsWith("http") ? baseUrl : `https://${baseUrl}`);
+      url.searchParams.set("utm_source", utmSource);
+      url.searchParams.set("utm_medium", utmMedium);
+      url.searchParams.set("utm_campaign", campaign);
+      url.searchParams.set("utm_content", content);
+      url.searchParams.set("utm_term", term);
+      return url.toString();
+    } catch { return ""; }
+  };
+
+  const DYNAMIC_TAGS = ["{{campaign.name}}", "{{campaign.id}}", "{{adset.name}}", "{{adset.id}}", "{{ad.name}}", "{{ad.id}}", "{{placement}}"];
+
   return (
-    <div className="mt-2 p-3 rounded-xl bg-white/3 border border-white/10 space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-bold text-primary flex items-center gap-1.5">
-          <Link2 className="h-3 w-3" /> UTM — <span className="truncate max-w-[150px] font-mono text-[10px]">{campaignName}</span>
-        </p>
-        <button onClick={onClose} className="text-[10px] text-muted-foreground hover:text-foreground px-1">✕</button>
-      </div>
-      <div>
-        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 block">URL do site (opcional)</Label>
-        <Input value={baseUrl} onChange={e => setBaseUrl(e.target.value)} placeholder="https://seusite.com.br/pagina"
-          className="h-8 text-xs bg-white/5 border-white/10 rounded-lg" />
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <Label className="text-[10px] uppercase text-muted-foreground mb-1 block">utm_content</Label>
-          <Input value={utmContent} onChange={e => setUtmContent(e.target.value)} className="h-8 text-xs bg-white/5 border-white/10 rounded-lg font-mono" />
+    <div className="mt-2 rounded-xl bg-[#0d1422] border border-white/10 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-[#1877F2]/10">
+        <div className="flex items-center gap-2">
+          <Link2 className="h-3.5 w-3.5 text-[#1877F2]" />
+          <p className="text-xs font-bold text-white">UTM Builder</p>
+          <span className="text-[10px] text-muted-foreground font-mono truncate max-w-[180px]">— {campaignName}</span>
         </div>
-        <div>
-          <Label className="text-[10px] uppercase text-muted-foreground mb-1 block">utm_term</Label>
-          <Input value={utmTerm} onChange={e => setUtmTerm(e.target.value)} className="h-8 text-xs bg-white/5 border-white/10 rounded-lg font-mono" />
-        </div>
+        <button onClick={onClose} className="text-muted-foreground hover:text-white p-1 rounded hover:bg-white/10 transition-colors">
+          <Check className="h-3.5 w-3.5 hidden" />
+          <span className="text-xs">✕</span>
+        </button>
       </div>
-      {finalUrl && (
-        <p className="text-[10px] font-mono text-muted-foreground break-all bg-white/5 p-2 rounded-lg">{finalUrl}</p>
-      )}
-      <Button onClick={handleCopy} size="sm" className="w-full h-8 rounded-lg text-xs gap-1.5">
-        {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-        {copied ? "Copiado!" : finalUrl ? "Copiar URL" : "Copiar Parâmetros UTM"}
-      </Button>
+
+      {/* Tabs */}
+      <div className="flex border-b border-white/10">
+        {[
+          { id: "params", label: "⚙ Parâmetros" },
+          { id: "ads", label: "📋 Por Anúncio" },
+        ].map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id as any)}
+            className={`flex-1 py-2 text-xs font-medium transition-colors ${
+              activeTab === tab.id ? "text-[#1877F2] border-b-2 border-[#1877F2] bg-[#1877F2]/5" : "text-muted-foreground hover:text-white"
+            }`}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="p-4 space-y-3">
+        {activeTab === "params" && (
+          <>
+            {/* URL base */}
+            <div>
+              <Label className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1 block">URL do Site (opcional)</Label>
+              <Input value={baseUrl} onChange={e => setBaseUrl(e.target.value)}
+                placeholder="https://seusite.com.br/pagina"
+                className="h-8 text-xs bg-white/5 border-white/10 rounded-lg" />
+            </div>
+
+            {/* Campos UTM */}
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: "utm_source", val: utmSource, set: setUtmSource, color: "text-emerald-400" },
+                { label: "utm_medium", val: utmMedium, set: setUtmMedium, color: "text-blue-400" },
+                { label: "utm_campaign", val: utmCampaign, set: setUtmCampaign, color: "text-primary" },
+                { label: "utm_content", val: utmContent, set: setUtmContent, color: "text-orange-400" },
+                { label: "utm_term", val: utmTerm, set: setUtmTerm, color: "text-purple-400" },
+              ].map(f => (
+                <div key={f.label} className="col-span-2 sm:col-span-1">
+                  <Label className={`text-[10px] uppercase mb-1 block font-bold ${f.color}`}>{f.label}</Label>
+                  <Input value={f.val} onChange={e => f.set(e.target.value)}
+                    className="h-8 text-xs bg-white/5 border-white/10 rounded-lg font-mono" />
+                </div>
+              ))}
+            </div>
+
+            {/* Tags dinâmicas */}
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Tags dinâmicas do Meta</p>
+              <div className="flex flex-wrap gap-1">
+                {DYNAMIC_TAGS.map(tag => (
+                  <button key={tag} onClick={() => setUtmCampaign(tag)}
+                    className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-muted-foreground hover:text-primary hover:border-primary/30 transition-colors font-mono">
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Preview */}
+            {paramsString && (
+              <div className="p-2.5 rounded-lg bg-white/5 border border-white/10">
+                <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wider">Preview dos parâmetros</p>
+                <p className="text-[10px] font-mono text-cyan-300 break-all">{paramsString}</p>
+              </div>
+            )}
+            {finalUrl && (
+              <div className="p-2.5 rounded-lg bg-white/5 border border-white/10">
+                <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wider">URL completa</p>
+                <p className="text-[10px] font-mono text-white/70 break-all">{finalUrl}</p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-2">
+              <Button size="sm" onClick={() => copy(paramsString, "params")}
+                variant="outline" className="h-8 text-xs rounded-lg border-white/15 gap-1">
+                {copiedId === "params" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                Copiar Parâmetros
+              </Button>
+              <Button size="sm" onClick={() => copy(finalUrl || paramsString, "url")}
+                className="h-8 text-xs rounded-lg bg-[#1877F2] hover:bg-[#1466d8] gap-1">
+                {copiedId === "url" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                {finalUrl ? "Copiar URL" : "Copiar Params"}
+              </Button>
+            </div>
+
+            <div className="text-[10px] text-muted-foreground bg-white/3 p-2.5 rounded-lg border border-white/8 leading-relaxed">
+              💡 <strong className="text-white/70">Como usar:</strong> No Gerenciador de Anúncios do Meta, abra o anúncio → Editar → URL do site → cole os parâmetros UTM após o <code className="text-cyan-400">?</code> da URL.
+            </div>
+          </>
+        )}
+
+        {activeTab === "ads" && (
+          <>
+            <p className="text-[10px] text-muted-foreground">
+              Configure a URL base na aba Parâmetros e depois copie a URL com UTMs para cada anúncio abaixo.
+            </p>
+            {!baseUrl && (
+              <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[10px] text-amber-300">
+                ⚠ Preencha a URL base na aba Parâmetros para gerar URLs por anúncio.
+              </div>
+            )}
+            {loadingAds ? (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground py-3">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Buscando anúncios...
+              </div>
+            ) : adsData?.ads && adsData.ads.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-2">Nenhum anúncio encontrado nesta campanha.</p>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                {adsData?.ads.map(ad => {
+                  const adUrl = buildAdUrl(ad.name, ad.adsetName);
+                  return (
+                    <div key={ad.id} className="p-2.5 rounded-lg bg-white/3 border border-white/8 space-y-1.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium text-white truncate">{ad.name}</p>
+                          <p className="text-[10px] text-muted-foreground">{ad.adsetName}</p>
+                        </div>
+                        <Button size="sm" onClick={() => copy(adUrl, ad.id)}
+                          className="h-6 text-[10px] rounded-lg bg-[#1877F2] hover:bg-[#1466d8] px-2 shrink-0">
+                          {copiedId === ad.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                        </Button>
+                      </div>
+                      {adUrl && (
+                        <p className="text-[9px] font-mono text-white/40 break-all line-clamp-2">{adUrl}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -246,7 +405,12 @@ function CompanyCampaigns({
               </div>
               {openUtm === campaign.id && (
                 <div className="px-3 pb-3">
-                  <UtmBuilder campaignName={campaign.name} onClose={() => setOpenUtm(null)} />
+                  <UtmBuilder
+                    campaignName={campaign.name}
+                    campaignId={campaign.id}
+                    companyId={company.id}
+                    onClose={() => setOpenUtm(null)}
+                  />
                 </div>
               )}
             </div>

@@ -672,6 +672,53 @@ export const appRouter = router({
         };
       }),
 
+    /** Lista anúncios de uma campanha (para gerar UTMs por anúncio) */
+    listAds: protectedProcedure
+      .input(z.object({
+        companyId: z.number().int().positive(),
+        campaignId: z.string().min(1),
+      }))
+      .query(async ({ ctx, input }) => {
+        const company = await db.getCompanyById(input.companyId);
+        if (!company || company.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+        }
+        if (!company.metaAccessToken) {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Empresa não conectada ao Meta." });
+        }
+
+        // Busca adsets da campanha
+        const adsetsUrl = new URL(`https://graph.facebook.com/v19.0/${input.campaignId}/adsets`);
+        adsetsUrl.searchParams.set("fields", "id,name,status");
+        adsetsUrl.searchParams.set("limit", "50");
+        adsetsUrl.searchParams.set("access_token", company.metaAccessToken);
+        const adsetsRes = await fetch(adsetsUrl.toString());
+        const adsetsData = await adsetsRes.json();
+        if (adsetsData.error) throw new TRPCError({ code: "BAD_REQUEST", message: `Meta API: ${adsetsData.error.message}` });
+
+        const adsets: Array<{ id: string; name: string; status: string }> = adsetsData.data ?? [];
+
+        // Para cada adset, busca anúncios
+        const allAds: Array<{ id: string; name: string; adsetName: string; adsetId: string; status: string }> = [];
+        await Promise.all(
+          adsets.slice(0, 10).map(async (adset) => {
+            const adsUrl = new URL(`https://graph.facebook.com/v19.0/${adset.id}/ads`);
+            adsUrl.searchParams.set("fields", "id,name,status,effective_status");
+            adsUrl.searchParams.set("limit", "30");
+            adsUrl.searchParams.set("access_token", company.metaAccessToken!);
+            const adsRes = await fetch(adsUrl.toString());
+            const adsData = await adsRes.json();
+            if (!adsData.error && adsData.data) {
+              for (const ad of adsData.data) {
+                allAds.push({ id: ad.id, name: ad.name, adsetName: adset.name, adsetId: adset.id, status: ad.effective_status || ad.status });
+              }
+            }
+          })
+        );
+
+        return { ads: allAds, adsets };
+      }),
+
     /** Retorna insights agregados de todas as contas conectadas */
     getAllAccountsInsights: protectedProcedure
       .input(z.object({

@@ -42,6 +42,21 @@ export function formatLocalDate(date: Date): string {
 }
 
 /**
+ * Format a date string from DB (YYYY-MM-DD) to pt-BR display format (DD/MM/YYYY)
+ * without UTC conversion. Use this instead of new Date(str).toLocaleDateString()
+ *
+ * @param dateStr - Date string in format "YYYY-MM-DD" or Date object
+ * @returns Formatted date string "DD/MM/YYYY"
+ */
+export function displayDate(dateStr: string | Date | null | undefined): string {
+  if (!dateStr) return "—";
+  const str = dateStr instanceof Date ? formatLocalDate(dateStr) : String(dateStr).split("T")[0];
+  const [year, month, day] = str.split("-").map(Number);
+  if (!year || !month || !day) return String(dateStr);
+  return `${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}/${year}`;
+}
+
+/**
  * Validate that a date string is in correct ISO format
  *
  * @param dateString - Date string to validate

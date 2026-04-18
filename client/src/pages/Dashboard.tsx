@@ -8,6 +8,7 @@ import {
   MousePointerClick, Eye, Users, RefreshCw, ArrowUpRight,
   FileText, CheckCircle2,
 } from "lucide-react";
+import FunnelChart from "@/components/FunnelChart";
 import { useLocation } from "wouter";
 
 function StatCard({
@@ -55,6 +56,14 @@ export default function Dashboard() {
   const totalClicks = allReports.reduce((s: number, r: any) => s + (r.metrics?.totalClicks ?? 0), 0);
   const totalImpressions = allReports.reduce((s: number, r: any) => s + (r.metrics?.totalImpressions ?? 0), 0);
   const totalReach = allReports.reduce((s: number, r: any) => s + (r.metrics?.totalReach ?? 0), 0);
+  const totalMessages = allReports.reduce((s: number, r: any) => s + (r.metrics?.messagesInitiated ?? 0), 0);
+  const totalProfileVisits = allReports.reduce((s: number, r: any) => s + (r.metrics?.instagramProfileVisits ?? 0), 0);
+  const totalPurchases = allReports.reduce((s: number, r: any) => s + (parseInt(r.metrics?.purchases ?? "0") || 0), 0);
+  const totalPurchaseValue = allReports.reduce((s: number, r: any) => s + parseFloat(r.metrics?.purchaseValue || "0"), 0);
+  const totalCostPerClick = totalClicks > 0 ? totalSpent / totalClicks : 0;
+  const totalCostPerVisit = totalProfileVisits > 0 ? totalSpent / totalProfileVisits : 0;
+  const totalCostPerMessage = totalMessages > 0 ? totalSpent / totalMessages : 0;
+  const totalCostPerPurchase = totalPurchases > 0 ? totalSpent / totalPurchases : 0;
 
   const fmt = (n: number) => n.toLocaleString("pt-BR");
   const fmtR = (n: number) =>
@@ -165,6 +174,34 @@ export default function Dashboard() {
           color="text-indigo-400"
         />
       </div>
+
+      {/* Funil Agregado */}
+      {totalImpressions > 0 && (
+        <Card className="glass-card border-white/10">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+              🔻 Funil de Marketing — Todos os Relatórios
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">Acumulado de todos os seus relatórios</p>
+          </CardHeader>
+          <CardContent>
+            <FunnelChart
+              totalImpressions={totalImpressions}
+              totalReach={totalReach}
+              totalClicks={totalClicks}
+              instagramProfileVisits={totalProfileVisits}
+              messagesInitiated={totalMessages}
+              purchases={totalPurchases}
+              totalSpent={totalSpent}
+              costPerClick={totalCostPerClick}
+              costPerProfileVisit={totalCostPerVisit}
+              costPerMessage={totalCostPerMessage}
+              costPerPurchase={totalCostPerPurchase}
+              purchaseValue={totalPurchaseValue}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Bottom row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
