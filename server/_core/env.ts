@@ -8,8 +8,10 @@ export const ENV = {
   /** Meta / Facebook Developer App */
   metaAppId: (process.env.META_APP_ID || "").trim(),
   metaAppSecret: (process.env.META_APP_SECRET || "").trim(),
-  /** Base URL do sistema (ex: https://sistemaderelatoriosmeta.vercel.app) */
-  appBaseUrl: process.env.APP_BASE_URL || "https://sistemaderelatoriosmetaof.vercel.app",
+  /** URL base para OAuth callback (onde o Meta devolve o código) */
+  appBaseUrl: process.env.APP_BASE_URL || "https://sistemaderelatoriosmeta.vercel.app",
+  /** URL do frontend para redirecionar após OAuth (pode ser diferente do callback) */
+  frontendUrl: process.env.FRONTEND_URL || process.env.APP_BASE_URL || "https://sistemaderelatoriosmetaof.vercel.app",
 };
 
 // Log basic status (DO NOT LOG DATABASE_URL FOR SECURITY)

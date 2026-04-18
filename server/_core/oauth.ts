@@ -199,16 +199,19 @@ export function registerOAuthRoutes(app: Express) {
     const error = getQueryParam(req, "error");
     const errorReason = getQueryParam(req, "error_reason");
 
+    // Usa frontendUrl para redirecionar o usuário de volta ao site principal
+    const frontendBase = ENV.frontendUrl;
+
     if (error) {
       const msg = errorReason === "user_denied"
         ? "Autorização cancelada pelo usuário."
         : error;
-      res.redirect(302, "/?meta_error=" + encodeURIComponent(msg));
+      res.redirect(302, `${frontendBase}/?meta_error=` + encodeURIComponent(msg));
       return;
     }
 
     if (!code || !state) {
-      res.redirect(302, "/?meta_error=" + encodeURIComponent("Parâmetros inválidos no retorno do Meta."));
+      res.redirect(302, `${frontendBase}/?meta_error=` + encodeURIComponent("Parâmetros inválidos no retorno do Meta."));
       return;
     }
 
@@ -216,7 +219,7 @@ export function registerOAuthRoutes(app: Express) {
       // Verifica state anti-CSRF
       const stateData = await verifyOAuthState(state);
       if (!stateData) {
-        res.redirect(302, "/?meta_error=" + encodeURIComponent("State inválido ou expirado. Tente novamente."));
+        res.redirect(302, `${frontendBase}/?meta_error=` + encodeURIComponent("State inválido ou expirado. Tente novamente."));
         return;
       }
 
@@ -237,12 +240,12 @@ export function registerOAuthRoutes(app: Express) {
 
       console.log(`[Meta OAuth] Empresa ${companyId} conectada. Contas encontradas: ${adAccounts.length}. Auto-selecionada: ${autoAccountId || "nenhuma"}`);
 
-      // Redireciona de volta ao dashboard com sucesso
+      // Redireciona de volta ao frontend principal com sucesso
       const accountsParam = encodeURIComponent(JSON.stringify(adAccounts));
-      res.redirect(302, `/?meta_connected=1&companyId=${companyId}&accounts=${accountsParam}`);
+      res.redirect(302, `${frontendBase}/?meta_connected=1&companyId=${companyId}&accounts=${accountsParam}`);
     } catch (err: any) {
       console.error("[Meta OAuth] Callback error:", err);
-      res.redirect(302, "/?meta_error=" + encodeURIComponent(err?.message || "Erro desconhecido no OAuth do Meta."));
+      res.redirect(302, `${frontendBase}/?meta_error=` + encodeURIComponent(err?.message || "Erro desconhecido no OAuth do Meta."));
     }
   });
 }
