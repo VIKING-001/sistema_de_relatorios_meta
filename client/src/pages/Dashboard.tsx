@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import {
   Building2, BarChart3, Zap, TrendingUp, DollarSign,
   MousePointerClick, Eye, Users, RefreshCw, ArrowUpRight,
-  FileText, CheckCircle2,
+  FileText, CheckCircle2, Loader2,
 } from "lucide-react";
 import FunnelChart from "@/components/FunnelChart";
 import { useLocation } from "wouter";
+import { useEffect, useState } from "react";
 
 function StatCard({
   label, value, sub, icon: Icon, color, onClick,
@@ -41,11 +42,31 @@ function StatCard({
 export default function Dashboard() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
   const { data: companies, isLoading: loadingCompanies, refetch: refetchCompanies } = trpc.company.list.useQuery();
   const { data: allReportsRaw, isLoading: loadingReports, refetch: refetchReports } = trpc.report.listAll.useQuery();
 
   const isLoading = loadingCompanies || loadingReports;
-  const refetch = () => { refetchCompanies(); refetchReports(); };
+
+  const refetch = async () => {
+    setIsManualRefreshing(true);
+    await Promise.all([refetchCompanies(), refetchReports()]);
+    setLastUpdated(new Date());
+    setIsManualRefreshing(false);
+  };
+
+  // Auto-refresh a cada 30 segundos
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetchCompanies();
+      refetchReports();
+      setLastUpdated(new Date());
+    }, 30000); // 30 segundos
+
+    return () => clearInterval(interval);
+  }, [refetchCompanies, refetchReports]);
 
   const totalCompanies = companies?.length ?? 0;
   const connectedMeta = companies?.filter((c: any) => c.metaAccessToken).length ?? 0;
@@ -103,12 +124,32 @@ export default function Dashboard() {
           <h1 className="text-xl sm:text-2xl font-bold">
             Olá, {user?.name?.split(" ")[0] ?? "Viking"} 👋
           </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            Resumo geral de todas as suas campanhas
-          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Resumo geral de todas as suas campanhas
+            </p>
+            {lastUpdated && (
+              <span className="text-[10px] text-white/40">
+                • Atualizado {lastUpdated.toLocaleTimeString("pt-BR")}
+              </span>
+            )}
+          </div>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-2 shrink-0">
-          <RefreshCw className="h-4 w-4" /> <span className="hidden sm:inline">Atualizar</span>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => refetch()}
+          disabled={isManualRefreshing}
+          className="gap-2 shrink-0"
+        >
+          {isManualRefreshing ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="h-4 w-4" />
+          )}
+          <span className="hidden sm:inline">
+            {isManualRefreshing ? "Atualizando..." : "Atualizar"}
+          </span>
         </Button>
       </div>
 
