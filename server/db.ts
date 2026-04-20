@@ -254,7 +254,14 @@ export async function createReport(
 
 export async function getReportsByCompanyId(companyId: number) {
   const db = await getDb();
-  return db.select().from(reports).where(eq(reports.companyId, companyId)).orderBy(desc(reports.createdAt));
+  // Inclui métricas via LEFT JOIN para que o diagnóstico estratégico funcione na listagem
+  const rows = await db
+    .select({ report: reports, metrics: reportMetrics })
+    .from(reports)
+    .leftJoin(reportMetrics, eq(reportMetrics.reportId, reports.id))
+    .where(eq(reports.companyId, companyId))
+    .orderBy(desc(reports.createdAt));
+  return rows.map(row => ({ ...row.report, metrics: row.metrics ?? null }));
 }
 
 export async function getReportsWithMetricsByUserId(userId: number) {
