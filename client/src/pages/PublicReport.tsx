@@ -1,12 +1,118 @@
 import { useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { Loader2, Copy, Download } from "lucide-react";
+import {
+  Loader2, Copy, Download,
+  Eye, Users, MousePointerClick, MessageCircle,
+  DollarSign, TrendingUp, BarChart3, ShoppingBag,
+  Star, Link, Video, Target,
+} from "lucide-react";
 import { formatCurrency, formatNumber, formatPercentage } from "@shared/metrics";
 import { displayDate } from "@shared/dateParser";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import ConsultiveReport from "@/components/ConsultiveReport";
 import FunnelChart from "@/components/FunnelChart";
+import type { LucideIcon } from "lucide-react";
+
+// ══════════════════════════════════════════════════════════════════
+// TIPOS DE ACENTO (paleta por seção)
+// ══════════════════════════════════════════════════════════════════
+
+type Accent = "blue" | "violet" | "amber" | "pink" | "emerald" | "cyan";
+
+const ACCENTS: Record<Accent, {
+  text: string; bg: string; border: string;
+  sectionBg: string; sectionBorder: string; iconBg: string; bar: string;
+}> = {
+  blue:    { text: "text-blue-300",    bg: "bg-blue-500/10",    border: "border-blue-500/25",    sectionBg: "from-blue-900/40 to-blue-950/20",    sectionBorder: "border-blue-500/15",    iconBg: "bg-blue-500/20",    bar: "bg-blue-400" },
+  violet:  { text: "text-violet-300",  bg: "bg-violet-500/10",  border: "border-violet-500/25",  sectionBg: "from-violet-900/40 to-violet-950/20",  sectionBorder: "border-violet-500/15",  iconBg: "bg-violet-500/20",  bar: "bg-violet-400" },
+  amber:   { text: "text-amber-300",   bg: "bg-amber-500/10",   border: "border-amber-500/25",   sectionBg: "from-amber-900/30 to-amber-950/20",   sectionBorder: "border-amber-500/15",   iconBg: "bg-amber-500/20",   bar: "bg-amber-400" },
+  pink:    { text: "text-pink-300",    bg: "bg-pink-500/10",    border: "border-pink-500/25",    sectionBg: "from-pink-900/30 to-pink-950/20",    sectionBorder: "border-pink-500/15",    iconBg: "bg-pink-500/20",    bar: "bg-pink-400" },
+  emerald: { text: "text-emerald-300", bg: "bg-emerald-500/10", border: "border-emerald-500/25", sectionBg: "from-emerald-900/30 to-emerald-950/20", sectionBorder: "border-emerald-500/15", iconBg: "bg-emerald-500/20", bar: "bg-emerald-400" },
+  cyan:    { text: "text-cyan-300",    bg: "bg-cyan-500/10",    border: "border-cyan-500/25",    sectionBg: "from-cyan-900/30 to-cyan-950/20",    sectionBorder: "border-cyan-500/15",    iconBg: "bg-cyan-500/20",    bar: "bg-cyan-400" },
+};
+
+// ══════════════════════════════════════════════════════════════════
+// COMPONENTES PREMIUM
+// ══════════════════════════════════════════════════════════════════
+
+// KPI hero — números grandes no topo
+function HeroKPI({ label, value, sub, accent, icon: Icon }: {
+  label: string; value: string; sub?: string;
+  accent: Accent; icon: LucideIcon;
+}) {
+  const a = ACCENTS[accent];
+  return (
+    <div className={`relative rounded-2xl p-5 sm:p-6 border ${a.border} ${a.bg} backdrop-blur-sm overflow-hidden`}>
+      {/* Barra de acento superior */}
+      <div className={`absolute top-0 left-0 right-0 h-[2px] ${a.bar} opacity-60`} />
+      {/* Ícone */}
+      <div className={`w-9 h-9 rounded-xl ${a.iconBg} flex items-center justify-center mb-4`}>
+        <Icon className={`h-4.5 w-4.5 ${a.text}`} style={{ width: 18, height: 18 }} />
+      </div>
+      <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/40 mb-1">{label}</p>
+      <p className="text-2xl sm:text-3xl font-black text-white leading-none tracking-tight">{value}</p>
+      {sub && <p className="text-xs text-white/30 mt-1.5">{sub}</p>}
+    </div>
+  );
+}
+
+// Card de métrica padrão
+function MetricCard({ label, value, sub, accent, large }: {
+  label: string; value: string; sub?: string;
+  accent: Accent; large?: boolean;
+}) {
+  const a = ACCENTS[accent];
+  return (
+    <div className={`relative rounded-2xl p-4 sm:p-5 border border-white/8 bg-white/[0.04] backdrop-blur-sm overflow-hidden group hover:border-white/15 transition-colors`}>
+      <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${a.bar} opacity-50 group-hover:opacity-80 transition-opacity rounded-l-2xl`} />
+      <p className="text-[10px] font-medium uppercase tracking-widest text-white/35 mb-2 pl-1">{label}</p>
+      <p className={`font-black text-white leading-none tracking-tight pl-1 ${large ? "text-2xl sm:text-3xl" : "text-xl sm:text-2xl"}`}>
+        {value}
+      </p>
+      {sub && <p className="text-[10px] text-white/30 mt-1.5 pl-1">{sub}</p>}
+    </div>
+  );
+}
+
+// Card de destaque (conversões, investimento principal)
+function HighlightCard({ label, value, sub, accent }: {
+  label: string; value: string; sub?: string; accent: Accent;
+}) {
+  const a = ACCENTS[accent];
+  return (
+    <div className={`relative rounded-2xl p-5 sm:p-6 border ${a.border} ${a.bg} backdrop-blur-sm overflow-hidden`}>
+      <div className={`absolute top-0 left-0 right-0 h-[2px] ${a.bar} opacity-70`} />
+      <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/50 mb-2">{label}</p>
+      <p className={`text-2xl sm:text-3xl font-black ${a.text} leading-none tracking-tight`}>{value}</p>
+      {sub && <p className="text-xs text-white/40 mt-1.5">{sub}</p>}
+    </div>
+  );
+}
+
+// Header de seção
+function SectionHeader({ icon: Icon, title, accent }: {
+  icon: LucideIcon; title: string; accent: Accent;
+}) {
+  const a = ACCENTS[accent];
+  return (
+    <div className={`flex items-center gap-3 mb-4 sm:mb-5 px-4 py-3 rounded-2xl bg-gradient-to-r ${a.sectionBg} border ${a.sectionBorder}`}>
+      <div className={`w-8 h-8 rounded-xl ${a.iconBg} flex items-center justify-center shrink-0`}>
+        <Icon className={`${a.text}`} style={{ width: 16, height: 16 }} />
+      </div>
+      <h2 className={`text-xs font-black uppercase tracking-[0.2em] ${a.text}`}>{title}</h2>
+    </div>
+  );
+}
+
+// Divisor entre seções
+function Divider() {
+  return <div className="my-8 sm:my-10 h-px bg-gradient-to-r from-transparent via-white/8 to-transparent" />;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PÁGINA PRINCIPAL
+// ══════════════════════════════════════════════════════════════════
 
 export default function PublicReport() {
   const { slug } = useParams<{ slug: string }>();
@@ -18,18 +124,22 @@ export default function PublicReport() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-orange-900 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
+      <div className="min-h-screen bg-[#060c18] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
+          <p className="text-white/30 text-sm">Carregando relatório...</p>
+        </div>
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-orange-900 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-white mb-4">Relatório não encontrado</h1>
-          <p className="text-gray-400">O relatório que você está procurando não existe ou não está publicado.</p>
+      <div className="min-h-screen bg-[#060c18] flex items-center justify-center">
+        <div className="text-center px-6">
+          <p className="text-5xl mb-6">📭</p>
+          <h1 className="text-2xl font-bold text-white mb-3">Relatório não encontrado</h1>
+          <p className="text-white/40 text-sm">Este link pode ter expirado ou não estar publicado.</p>
         </div>
       </div>
     );
@@ -42,246 +152,254 @@ export default function PublicReport() {
     toast.success("Link copiado!");
   };
 
-  const handleDownload = () => {
-    toast.info("Download em PDF em breve!");
-  };
-
-  const m = metrics as any;
-  const purchases = parseInt(m?.purchases ?? "0", 10) || 0;
-  const purchaseValue = parseFloat(m?.purchaseValue ?? "0") || 0;
-  const costPerPurchase = parseFloat(m?.costPerPurchase ?? "0") || 0;
+  const m              = metrics as any;
+  const purchases      = parseInt(m?.purchases ?? "0", 10)    || 0;
+  const purchaseValue  = parseFloat(m?.purchaseValue ?? "0")  || 0;
+  const costPerPurchase= parseFloat(m?.costPerPurchase ?? "0")|| 0;
   const costPerMessage = parseFloat(m?.costPerMessage ?? "0") || 0;
-  const hasPurchases = purchases > 0 || purchaseValue > 0;
+  const hasPurchases   = purchases > 0 || purchaseValue > 0;
+  const totalSpent     = parseFloat(metrics?.totalSpent ?? "0");
+  const roas           = totalSpent > 0 && purchaseValue > 0 ? (purchaseValue / totalSpent).toFixed(2) : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-orange-900 relative overflow-hidden">
-      {/* Background effects */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-pulse" />
+    <div className="min-h-screen relative" style={{ background: "linear-gradient(135deg, #060c18 0%, #080f20 50%, #060c18 100%)" }}>
+
+      {/* Glows de fundo */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] left-[10%] w-[500px] h-[500px] rounded-full opacity-[0.04]"
+          style={{ background: "radial-gradient(circle, #3B82F6, transparent)" }} />
+        <div className="absolute bottom-[10%] right-[5%] w-[400px] h-[400px] rounded-full opacity-[0.04]"
+          style={{ background: "radial-gradient(circle, #8B5CF6, transparent)" }} />
       </div>
 
-      {/* Header */}
-      <header className="border-b border-white/10 bg-black/30 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between gap-3">
+      {/* ── Header sticky ── */}
+      <header className="sticky top-0 z-50 border-b border-white/6 bg-black/50 backdrop-blur-xl">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="text-lg sm:text-2xl font-bold text-white truncate">{company?.name}</h1>
-            <p className="text-xs sm:text-sm text-cyan-300 mt-0.5 truncate">{report.title}</p>
+            <h1 className="text-base sm:text-lg font-black text-white truncate leading-tight">
+              {company?.name}
+            </h1>
+            <p className="text-[10px] sm:text-xs text-white/35 mt-0.5 truncate">
+              {report.title} · {displayDate(report.startDate)} — {displayDate(report.endDate)}
+            </p>
           </div>
           <div className="flex gap-2 shrink-0">
-            <Button onClick={handleCopyUrl} variant="outline" size="sm"
-              className="border-white/20 text-white hover:bg-white/10 px-2 sm:px-3">
-              <Copy className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Copiar Link</span>
-            </Button>
-            <Button onClick={handleDownload} size="sm"
-              className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-2 sm:px-3">
-              <Download className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Baixar</span>
+            <Button
+              onClick={handleCopyUrl}
+              variant="outline"
+              size="sm"
+              className="border-white/15 text-white/70 hover:bg-white/8 hover:text-white h-8 text-xs gap-1.5"
+            >
+              <Copy className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Copiar Link</span>
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10 relative z-10">
-        {/* Período */}
-        <div className="mb-10 text-center">
-          <p className="text-lg text-cyan-300 font-bold">
-            Período: {displayDate(report.startDate)} a{" "}
-            {displayDate(report.endDate)}
-          </p>
-          {report.description && <p className="text-gray-400 mt-2">{report.description}</p>}
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 relative z-10 space-y-0">
+
+        {/* ── Título do período ── */}
+        <div className="text-center mb-10 sm:mb-14">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-5">
+            <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+            <span className="text-xs text-white/50 font-medium">
+              {displayDate(report.startDate)} a {displayDate(report.endDate)}
+            </span>
+          </div>
+          <h2 className="text-2xl sm:text-4xl font-black text-white leading-tight">
+            Relatório de Performance
+          </h2>
+          <p className="text-white/30 text-sm mt-2">{company?.name}</p>
+          {report.description && (
+            <p className="text-white/40 text-sm mt-3 max-w-lg mx-auto">{report.description}</p>
+          )}
         </div>
 
         {metrics && (
           <>
-            {/* Alcance e Impressões */}
-            <SectionTitle>📊 Alcance e Impressões</SectionTitle>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-4 sm:mb-6">
-              <MetricCard label="Alcance Instagram" value={formatNumber(metrics.instagramReach)} icon="📱" />
-              <MetricCard label="Alcance Total" value={formatNumber(metrics.totalReach)} icon="🌍" />
-              <MetricCard label="Impressões" value={formatNumber(metrics.totalImpressions)} icon="👁️" />
-              <MetricCard label="Visitas Perfil IG" value={formatNumber(metrics.instagramProfileVisits)} icon="🏠" />
-            </div>
-
-            {/* Engajamento */}
-            <SectionTitle>⭐ Engajamento</SectionTitle>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-4 sm:mb-6">
-              <MetricCard label="Novos Seguidores" value={formatNumber(metrics.newInstagramFollowers)} icon="⭐" />
-              <MetricCard label="Visitas via Campanhas" value={formatNumber(metrics.profileVisitsThroughCampaigns)} icon="🔗" />
-              <MetricCard label="Retenção de Vídeo" value={formatPercentage(parseFloat(metrics.videoRetentionRate))} icon="🎬" />
-              <MetricCard label="CTR (Taxa de Cliques)" value={formatPercentage(parseFloat(metrics.ctr))} icon="📈" />
-            </div>
-
-            {/* Mensagens */}
-            <SectionTitle>💬 Mensagens</SectionTitle>
-            <div className="grid grid-cols-2 gap-3 sm:gap-5 mb-4 sm:mb-6">
-              <MetricCard label="Mensagens Iniciadas" value={formatNumber(metrics.messagesInitiated)} icon="💬" />
-              <MetricCard
-                label="Custo por Mensagem"
-                value={costPerMessage > 0 ? formatCurrency(costPerMessage) : "—"}
-                icon="💵"
+            {/* ── Hero KPIs ── */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-10 sm:mb-14">
+              <HeroKPI
+                label="Investimento"
+                value={formatCurrency(totalSpent)}
+                accent="amber"
+                icon={DollarSign}
               />
+              <HeroKPI
+                label="Alcance"
+                value={formatNumber(metrics.totalReach)}
+                sub={`${formatNumber(metrics.totalImpressions)} impressões`}
+                accent="blue"
+                icon={Users}
+              />
+              <HeroKPI
+                label="Cliques"
+                value={formatNumber(metrics.totalClicks)}
+                sub={`CTR ${formatPercentage(parseFloat(metrics.ctr))}`}
+                accent="violet"
+                icon={MousePointerClick}
+              />
+              {hasPurchases ? (
+                <HeroKPI
+                  label="Faturado"
+                  value={formatCurrency(purchaseValue)}
+                  sub={roas ? `ROAS ${roas}x` : undefined}
+                  accent="emerald"
+                  icon={TrendingUp}
+                />
+              ) : (
+                <HeroKPI
+                  label="Mensagens"
+                  value={formatNumber(metrics.messagesInitiated)}
+                  sub={costPerMessage > 0 ? `${formatCurrency(costPerMessage)} cada` : undefined}
+                  accent="pink"
+                  icon={MessageCircle}
+                />
+              )}
             </div>
 
-            {/* Investimento */}
-            <SectionTitle>💰 Investimento</SectionTitle>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-4 sm:mb-6">
-              <MetricCard label="Valor Investido" value={formatCurrency(parseFloat(metrics.totalSpent))} icon="💰" highlight />
-              <MetricCard label="Cliques Totais" value={formatNumber(metrics.totalClicks)} icon="🖱️" />
-              <MetricCard label="CPC" value={formatCurrency(parseFloat(metrics.costPerClick))} icon="💵" />
-              <MetricCard label="CPM" value={formatCurrency(parseFloat(metrics.cpm))} icon="📊" />
-            </div>
-            <div className="grid grid-cols-2 gap-3 sm:gap-5 mb-4 sm:mb-6">
-              <MetricCard label="Custo por Visita" value={formatCurrency(parseFloat(metrics.costPerProfileVisit))} icon="💳" />
+            {/* ── SEÇÃO: Alcance & Visibilidade ── */}
+            <SectionHeader icon={Eye} title="Alcance e Visibilidade" accent="blue" />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-10">
+              <MetricCard label="Alcance Instagram"  value={formatNumber(metrics.instagramReach)}          accent="blue" />
+              <MetricCard label="Alcance Total"      value={formatNumber(metrics.totalReach)}              accent="blue" large />
+              <MetricCard label="Impressões"         value={formatNumber(metrics.totalImpressions)}        accent="blue" />
+              <MetricCard label="Visitas ao Perfil"  value={formatNumber(metrics.instagramProfileVisits)}  accent="blue" />
             </div>
 
-            {/* Conversões — só mostra se tiver dados */}
-            {hasPurchases && (
+            <Divider />
+
+            {/* ── SEÇÃO: Performance de Anúncios ── */}
+            <SectionHeader icon={BarChart3} title="Performance dos Anúncios" accent="violet" />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-10">
+              <MetricCard label="Cliques Totais"  value={formatNumber(metrics.totalClicks)}                           accent="violet" large />
+              <MetricCard label="CTR"             value={formatPercentage(parseFloat(metrics.ctr))}                   accent="violet" />
+              <MetricCard label="Novos Seguidores"value={formatNumber(metrics.newInstagramFollowers)}                  accent="violet" />
+              <MetricCard label="Retenção de Vídeo" value={formatPercentage(parseFloat(metrics.videoRetentionRate))} accent="violet" />
+            </div>
+
+            <Divider />
+
+            {/* ── SEÇÃO: Investimento ── */}
+            <SectionHeader icon={DollarSign} title="Eficiência do Investimento" accent="amber" />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-10">
+              <HighlightCard
+                label="Total Investido"
+                value={formatCurrency(totalSpent)}
+                accent="amber"
+              />
+              <MetricCard label="CPC" value={formatCurrency(parseFloat(metrics.costPerClick))}       accent="amber" />
+              <MetricCard label="CPM" value={formatCurrency(parseFloat(metrics.cpm))}                accent="amber" />
+              <MetricCard label="Custo por Visita" value={formatCurrency(parseFloat(metrics.costPerProfileVisit))} accent="amber" />
+            </div>
+
+            {/* ── SEÇÃO: Mensagens ── */}
+            {metrics.messagesInitiated > 0 && (
               <>
-                <SectionTitle color="text-emerald-300">🛒 Conversões e Compras</SectionTitle>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-5 mb-4 sm:mb-6">
-                  <MetricCard
-                    label="Nº de Compras"
-                    value={formatNumber(purchases)}
-                    icon="🛒"
-                    highlight
-                    highlightColor="from-emerald-500/20 to-teal-600/20 border-emerald-500/50 hover:border-emerald-400"
+                <Divider />
+                <SectionHeader icon={MessageCircle} title="Mensagens e Conversas" accent="pink" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-10">
+                  <HighlightCard
+                    label="Mensagens Iniciadas"
+                    value={formatNumber(metrics.messagesInitiated)}
+                    sub="pessoas que enviaram mensagem"
+                    accent="pink"
                   />
                   <MetricCard
-                    label="Valor Faturado (Conversões)"
-                    value={formatCurrency(purchaseValue)}
-                    icon="💎"
-                    highlight
-                    highlightColor="from-emerald-500/20 to-teal-600/20 border-emerald-500/50 hover:border-emerald-400"
-                  />
-                  <MetricCard
-                    label="Custo por Compra"
-                    value={costPerPurchase > 0 ? formatCurrency(costPerPurchase) : "—"}
-                    icon="🏷️"
+                    label="Custo por Mensagem"
+                    value={costPerMessage > 0 ? formatCurrency(costPerMessage) : "—"}
+                    accent="pink"
+                    large
                   />
                 </div>
               </>
             )}
 
-            {/* Funil de Marketing */}
-            <div className="mt-6 sm:mt-10 bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-8">
-              <h2 className="text-xl font-bold text-white mb-2">🔻 Funil de Marketing</h2>
-              <p className="text-sm text-gray-400 mb-6">Jornada completa do usuário — desde a impressão até a conversão</p>
-              <FunnelChart
-                dark
-                totalImpressions={metrics.totalImpressions}
-                totalReach={metrics.totalReach}
-                totalClicks={metrics.totalClicks}
-                instagramProfileVisits={metrics.instagramProfileVisits}
-                messagesInitiated={metrics.messagesInitiated}
-                purchases={purchases}
-                totalSpent={parseFloat(metrics.totalSpent)}
-                costPerClick={parseFloat(metrics.costPerClick)}
-                costPerProfileVisit={parseFloat(metrics.costPerProfileVisit)}
-                costPerMessage={costPerMessage}
-                costPerPurchase={costPerPurchase}
-                purchaseValue={purchaseValue}
-              />
-            </div>
+            {/* ── SEÇÃO: Conversões ── */}
+            {hasPurchases && (
+              <>
+                <Divider />
+                <SectionHeader icon={ShoppingBag} title="Conversões e Vendas" accent="emerald" />
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-10">
+                  <HighlightCard
+                    label="Total Faturado"
+                    value={formatCurrency(purchaseValue)}
+                    sub={roas ? `ROAS de ${roas}x` : undefined}
+                    accent="emerald"
+                  />
+                  <HighlightCard
+                    label="Nº de Compras"
+                    value={formatNumber(purchases)}
+                    sub="conversões rastreadas"
+                    accent="emerald"
+                  />
+                  <MetricCard
+                    label="Custo por Compra"
+                    value={costPerPurchase > 0 ? formatCurrency(costPerPurchase) : "—"}
+                    accent="emerald"
+                  />
+                  <MetricCard
+                    label="Retorno sobre Investimento"
+                    value={roas ? `${roas}x` : "—"}
+                    sub="ROAS"
+                    accent="emerald"
+                    large
+                  />
+                </div>
+              </>
+            )}
 
-            {/* Resumo Executivo */}
-            <div className="mt-4 sm:mt-6 bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-8">
-              <h2 className="text-xl font-bold text-white mb-6">Resumo Executivo</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <tbody className="divide-y divide-white/10">
-                    <TableRow label="Período"
-                      value={`${displayDate(report.startDate)} a ${displayDate(report.endDate)}`} />
-                    <TableRow label="Alcance Total" value={formatNumber(metrics.totalReach)} />
-                    <TableRow label="Impressões" value={formatNumber(metrics.totalImpressions)} />
-                    <TableRow label="Investimento Total" value={formatCurrency(parseFloat(metrics.totalSpent))} />
-                    <TableRow label="Cliques" value={formatNumber(metrics.totalClicks)} />
-                    <TableRow label="CPC" value={formatCurrency(parseFloat(metrics.costPerClick))} />
-                    <TableRow label="CPM" value={formatCurrency(parseFloat(metrics.cpm))} />
-                    <TableRow label="CTR" value={formatPercentage(parseFloat(metrics.ctr))} />
-                    <TableRow label="Mensagens Iniciadas" value={formatNumber(metrics.messagesInitiated)} />
-                    {costPerMessage > 0 && <TableRow label="Custo por Mensagem" value={formatCurrency(costPerMessage)} />}
-                    {hasPurchases && (
-                      <>
-                        <TableRow label="Compras / Conversões" value={formatNumber(purchases)} />
-                        <TableRow label="Valor Faturado (Conversões)" value={formatCurrency(purchaseValue)} />
-                        {costPerPurchase > 0 && <TableRow label="Custo por Compra" value={formatCurrency(costPerPurchase)} />}
-                      </>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+            {/* ── Funil de Marketing ── */}
+            <Divider />
+            <div className="mb-3 sm:mb-5">
+              <SectionHeader icon={Target} title="Funil de Marketing" accent="cyan" />
             </div>
+            <FunnelChart
+              dark
+              totalImpressions={metrics.totalImpressions}
+              totalReach={metrics.totalReach}
+              totalClicks={metrics.totalClicks}
+              instagramProfileVisits={metrics.instagramProfileVisits}
+              messagesInitiated={metrics.messagesInitiated}
+              purchases={purchases}
+              totalSpent={totalSpent}
+              costPerClick={parseFloat(metrics.costPerClick)}
+              costPerProfileVisit={parseFloat(metrics.costPerProfileVisit)}
+              costPerMessage={costPerMessage}
+              costPerPurchase={costPerPurchase}
+              purchaseValue={purchaseValue}
+            />
 
-            {/* Relatório Consultivo */}
+            {/* ── Análise de Performance (simplificada para o cliente) ── */}
+            <Divider />
             <ConsultiveReport
               metrics={{
-                ctr: parseFloat(metrics.ctr),
-                cpm: parseFloat(metrics.cpm),
-                totalReach: metrics.totalReach,
-                totalImpressions: metrics.totalImpressions,
-                totalSpent: parseFloat(metrics.totalSpent),
-                totalClicks: metrics.totalClicks,
-                costPerClick: parseFloat(metrics.costPerClick),
-                videoRetentionRate: parseFloat(metrics.videoRetentionRate),
-                newInstagramFollowers: metrics.newInstagramFollowers,
-                messagesInitiated: metrics.messagesInitiated,
+                ctr:                    parseFloat(metrics.ctr),
+                cpm:                    parseFloat(metrics.cpm),
+                totalReach:             metrics.totalReach,
+                totalImpressions:       metrics.totalImpressions,
+                totalSpent:             totalSpent,
+                totalClicks:            metrics.totalClicks,
+                costPerClick:           parseFloat(metrics.costPerClick),
+                videoRetentionRate:     parseFloat(metrics.videoRetentionRate),
+                newInstagramFollowers:  metrics.newInstagramFollowers,
+                messagesInitiated:      metrics.messagesInitiated,
                 instagramProfileVisits: metrics.instagramProfileVisits,
-                costPerProfileVisit: parseFloat(metrics.costPerProfileVisit),
+                costPerProfileVisit:    parseFloat(metrics.costPerProfileVisit),
               }}
             />
           </>
         )}
       </main>
 
-      <footer className="border-t border-white/10 bg-black/30 backdrop-blur-md mt-16 py-6">
-        <div className="max-w-6xl mx-auto px-6 text-center text-gray-400 text-sm">
+      {/* ── Footer ── */}
+      <footer className="border-t border-white/6 bg-black/30 backdrop-blur-md mt-16 py-8">
+        <div className="max-w-5xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-white/25 text-xs">
           <p>Relatório gerado em {new Date().toLocaleDateString("pt-BR")}</p>
+          <p>{company?.name} · {report.title}</p>
         </div>
       </footer>
-    </div>
-  );
-}
-
-// ── Componentes auxiliares ─────────────────────────────────────────────────────
-
-function SectionTitle({ children, color = "text-white" }: { children: React.ReactNode; color?: string }) {
-  return (
-    <h2 className={`text-sm font-bold uppercase tracking-widest ${color} mb-4 mt-8 first:mt-0 flex items-center gap-2`}>
-      {children}
-    </h2>
-  );
-}
-
-function TableRow({ label, value }: { label: string; value: string }) {
-  return (
-    <tr>
-      <td className="py-3 text-gray-400">{label}</td>
-      <td className="py-3 text-white font-semibold">{value}</td>
-    </tr>
-  );
-}
-
-interface MetricCardProps {
-  label: string;
-  value: string;
-  icon: string;
-  highlight?: boolean;
-  highlightColor?: string;
-}
-
-function MetricCard({ label, value, icon, highlight, highlightColor }: MetricCardProps) {
-  const defaultHighlight = "from-cyan-500/20 to-blue-600/20 border-cyan-500/50 hover:border-cyan-400";
-  return (
-    <div
-      className={`rounded-xl p-3 sm:p-5 backdrop-blur-sm border transition-all ${
-        highlight
-          ? `bg-gradient-to-br ${highlightColor || defaultHighlight}`
-          : "bg-white/5 border-white/10 hover:border-cyan-500/30"
-      }`}
-    >
-      <span className="text-xl sm:text-2xl">{icon}</span>
-      <p className="text-gray-400 text-[10px] sm:text-xs mt-2 sm:mt-3 mb-0.5 sm:mb-1 uppercase tracking-wide font-medium leading-tight">{label}</p>
-      <p className="text-base sm:text-xl font-bold text-white">{value}</p>
     </div>
   );
 }
