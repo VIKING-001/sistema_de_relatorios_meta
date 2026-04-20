@@ -1,9 +1,10 @@
 /**
- * FunnelChart — Funil de Marketing Premium
- * Design profissional com trapézios reais, gradientes e métricas limpas
+ * FunnelChart — Funil de Marketing com trapézios reais
+ * Cada etapa é um trapézio CSS (clip-path) que estreita progressivamente,
+ * formando um funil visual de verdade de cima para baixo.
  */
 
-import { formatCurrency, formatNumber } from "@shared/metrics";
+import { formatCurrency } from "@shared/metrics";
 
 interface FunnelChartProps {
   totalImpressions: number;
@@ -27,8 +28,8 @@ interface Step {
   value: number;
   cost?: number;
   costLabel?: string;
-  gradient: string;
-  glow: string;
+  colorFrom: string;
+  colorTo: string;
   dot: string;
 }
 
@@ -39,8 +40,13 @@ function pct(a: number, b: number) {
 
 function fmt(n: number) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
-  if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
+  if (n >= 1_000)     return (n / 1_000).toFixed(1) + "K";
   return n.toLocaleString("pt-BR");
+}
+
+// Largura proporcional para cada passo (% da largura total, min 22%)
+function getWPct(val: number, maxVal: number): number {
+  return Math.max(22, (val / maxVal) * 100);
 }
 
 export default function FunnelChart({
@@ -64,16 +70,16 @@ export default function FunnelChart({
       key: "impressions",
       label: "Impressões",
       value: totalImpressions,
-      gradient: "from-[#3B82F6] to-[#1D4ED8]",
-      glow: "shadow-blue-500/30",
+      colorFrom: "#3B82F6",
+      colorTo: "#1D4ED8",
       dot: "bg-blue-400",
     },
     {
       key: "reach",
       label: "Alcance",
       value: totalReach,
-      gradient: "from-[#06B6D4] to-[#0891B2]",
-      glow: "shadow-cyan-500/30",
+      colorFrom: "#06B6D4",
+      colorTo: "#0891B2",
       dot: "bg-cyan-400",
     },
     {
@@ -82,8 +88,8 @@ export default function FunnelChart({
       value: totalClicks,
       cost: costPerClick,
       costLabel: "CPC",
-      gradient: "from-[#8B5CF6] to-[#6D28D9]",
-      glow: "shadow-violet-500/30",
+      colorFrom: "#8B5CF6",
+      colorTo: "#6D28D9",
       dot: "bg-violet-400",
     },
     {
@@ -92,8 +98,8 @@ export default function FunnelChart({
       value: instagramProfileVisits,
       cost: costPerProfileVisit,
       costLabel: "Custo/Visita",
-      gradient: "from-[#F59E0B] to-[#D97706]",
-      glow: "shadow-amber-500/30",
+      colorFrom: "#F59E0B",
+      colorTo: "#D97706",
       dot: "bg-amber-400",
     },
     {
@@ -101,9 +107,9 @@ export default function FunnelChart({
       label: "Mensagens",
       value: messagesInitiated,
       cost: costPerMessage,
-      costLabel: "Custo/Mensagem",
-      gradient: "from-[#EC4899] to-[#BE185D]",
-      glow: "shadow-pink-500/30",
+      costLabel: "Custo/Msg",
+      colorFrom: "#EC4899",
+      colorTo: "#BE185D",
       dot: "bg-pink-400",
     },
     ...(purchases > 0
@@ -113,8 +119,8 @@ export default function FunnelChart({
           value: purchases,
           cost: costPerPurchase,
           costLabel: "Custo/Compra",
-          gradient: "from-[#10B981] to-[#047857]",
-          glow: "shadow-emerald-500/30",
+          colorFrom: "#10B981",
+          colorTo: "#047857",
           dot: "bg-emerald-400",
         }]
       : []),
@@ -124,13 +130,7 @@ export default function FunnelChart({
 
   const maxVal = allSteps[0].value;
 
-  // Largura do trapézio: 100% no topo, decresce. Mínimo 30%
-  const getW = (val: number) => Math.max(30, (val / maxVal) * 100);
-
-  const bg = dark
-    ? "bg-gradient-to-br from-[#070d1a] to-[#0d1628]"
-    : "bg-gradient-to-br from-white/3 to-white/[0.02]";
-
+  const bg     = dark ? "bg-gradient-to-br from-[#070d1a] to-[#0d1628]" : "bg-gradient-to-br from-white/3 to-white/[0.02]";
   const border = dark ? "border-white/8" : "border-white/10";
 
   return (
@@ -143,7 +143,6 @@ export default function FunnelChart({
             <h3 className="text-base font-bold text-white tracking-tight">Funil de Conversão</h3>
             <p className="text-xs text-white/40 mt-0.5">Jornada completa do usuário</p>
           </div>
-          {/* KPIs topo */}
           <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
             <div>
               <p className="text-[10px] text-white/40 uppercase tracking-widest">Investimento</p>
@@ -169,95 +168,96 @@ export default function FunnelChart({
         </div>
       </div>
 
-      {/* ── Funil + Métricas lado a lado ── */}
-      <div className="flex flex-col lg:flex-row gap-0">
+      {/* ── Funil + Sidebar ── */}
+      <div className="flex flex-col lg:flex-row">
 
-        {/* Funil visual */}
-        <div className="flex-1 px-3 sm:px-6 py-4 sm:py-6 space-y-0">
+        {/* ── Funil visual (trapézios) ── */}
+        <div className="flex-1 px-3 sm:px-6 py-5 sm:py-7">
           {allSteps.map((step, i) => {
-            const w = getW(step.value);
-            const prevVal = i > 0 ? allSteps[i - 1].value : step.value;
-            const rate = i > 0 ? pct(step.value, prevVal) : null;
-            const dropPct = rate ? (100 - parseFloat(rate)).toFixed(1) : null;
+            const topPct  = getWPct(step.value, maxVal);
+            const nextPct = i < allSteps.length - 1
+              ? getWPct(allSteps[i + 1].value, maxVal)
+              : Math.max(14, topPct * 0.75);
+
+            // Offsets para o clip-path (0–50 de cada lado)
+            const tl = (100 - topPct)  / 2;  // top-left x%
+            const tr = 100 - tl;             // top-right x%
+            const bl = (100 - nextPct) / 2;  // bottom-left x%
+            const br = 100 - bl;             // bottom-right x%
+
+            const clipPath = `polygon(${tl}% 0%, ${tr}% 0%, ${br}% 100%, ${bl}% 100%)`;
+
+            // Área de texto = largura do meio do trapézio (evita overflow)
+            const midPct  = (topPct + nextPct) / 2;
+            const textLeft  = `${(100 - midPct) / 2}%`;
+            const textWidth = `${midPct}%`;
+
+            const rate    = i > 0 ? pct(step.value, allSteps[i - 1].value) : null;
 
             return (
               <div key={step.key}>
-                {/* Conector entre steps */}
+                {/* Conector entre passos */}
                 {i > 0 && (
-                  <div className="flex justify-center items-center h-8 relative">
-                    {/* Linha conectora */}
-                    <div
-                      style={{ width: `${Math.min(getW(allSteps[i - 1].value), w)}%` }}
-                      className="h-full flex flex-col items-center justify-center relative"
-                    >
-                      <div className="absolute inset-x-0 top-0 bottom-0 flex flex-col items-center justify-center gap-0.5">
-                        <div className="w-px flex-1 bg-gradient-to-b from-white/10 to-white/5" />
-                        {/* Badge de taxa */}
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/10 shrink-0">
-                          <span className="text-[10px] font-bold text-white/50">↓</span>
-                          <span className="text-[10px] font-bold text-white/70">
-                            {rate}%
-                          </span>
-                          <span className="text-[10px] text-white/30">({fmt(step.value)})</span>
-                        </div>
-                        <div className="w-px flex-1 bg-gradient-to-b from-white/5 to-transparent" />
-                      </div>
+                  <div className="flex justify-center items-center" style={{ height: 26 }}>
+                    <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/30 border border-white/8">
+                      <span className="text-[10px] text-white/40">↓</span>
+                      <span className="text-[10px] font-bold text-white/70">{rate}%</span>
+                      <span className="text-[10px] text-white/30">({fmt(step.value)})</span>
                     </div>
                   </div>
                 )}
 
-                {/* Barra do step */}
-                <div className="flex justify-center">
+                {/* Trapézio */}
+                <div className="relative" style={{ height: 68 }}>
+                  {/* Fundo colorido recortado em trapézio */}
                   <div
-                    style={{ width: `${w}%` }}
-                    className="relative group transition-all duration-700"
+                    className="absolute inset-0"
+                    style={{
+                      background: `linear-gradient(135deg, ${step.colorFrom}, ${step.colorTo})`,
+                      clipPath,
+                      boxShadow: `0 4px 20px ${step.colorFrom}33`,
+                    }}
+                  />
+                  {/* Brilho sutil no topo */}
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      clipPath,
+                      background: "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 60%)",
+                    }}
+                  />
+
+                  {/* Conteúdo (label + valor + custo) */}
+                  <div
+                    className="absolute top-0 bottom-0 flex items-center justify-between gap-2 px-3 sm:px-4"
+                    style={{ left: textLeft, width: textWidth }}
                   >
-                    {/* Trapézio via clip-path */}
-                    <div
-                      className={`
-                        relative bg-gradient-to-r ${step.gradient}
-                        rounded-xl px-3 sm:px-5 py-2.5 sm:py-4 shadow-xl ${step.glow}
-                        border border-white/10
-                        hover:brightness-110 transition-all duration-300
-                      `}
-                    >
-                      {/* Número do passo */}
-                      <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-black/40 border border-white/20 flex items-center justify-center">
-                        <span className="text-[9px] font-bold text-white/70">{i + 1}</span>
-                      </div>
-
-                      <div className="flex items-center justify-between gap-2 sm:gap-3">
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-black uppercase tracking-[0.15em] text-white/60 mb-0.5">
-                            {step.label}
-                          </p>
-                          <p className="text-lg sm:text-2xl font-black text-white leading-none tracking-tight">
-                            {fmt(step.value)}
-                          </p>
-                        </div>
-
-                        {step.cost != null && step.cost > 0 && (
-                          <div className="text-right shrink-0 bg-black/20 rounded-lg px-2 sm:px-3 py-1 sm:py-1.5">
-                            <p className="text-[9px] font-bold uppercase tracking-wider text-white/50">
-                              {step.costLabel}
-                            </p>
-                            <p className="text-xs sm:text-sm font-black text-white leading-tight">
-                              {formatCurrency(step.cost)}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Barra de progresso interna */}
-                      {i > 0 && (
-                        <div className="mt-2.5 h-0.5 bg-black/20 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-white/30 rounded-full transition-all duration-1000"
-                            style={{ width: `${pct(step.value, maxVal)}%` }}
-                          />
-                        </div>
-                      )}
+                    {/* Número do passo */}
+                    <div className="w-5 h-5 rounded-full bg-black/30 border border-white/20 flex items-center justify-center shrink-0">
+                      <span className="text-[9px] font-bold text-white/70">{i + 1}</span>
                     </div>
+
+                    {/* Label + Valor */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.12em] text-white/60 leading-none mb-0.5 truncate">
+                        {step.label}
+                      </p>
+                      <p className="text-lg sm:text-2xl font-black text-white leading-none tracking-tight">
+                        {fmt(step.value)}
+                      </p>
+                    </div>
+
+                    {/* Custo */}
+                    {step.cost != null && step.cost > 0 && (
+                      <div className="shrink-0 bg-black/25 rounded-lg px-2 sm:px-2.5 py-1 text-right">
+                        <p className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wide text-white/50 leading-none mb-0.5">
+                          {step.costLabel}
+                        </p>
+                        <p className="text-xs sm:text-sm font-black text-white leading-none">
+                          {formatCurrency(step.cost)}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -265,52 +265,59 @@ export default function FunnelChart({
           })}
         </div>
 
-        {/* ── Painel lateral de métricas ── */}
-        <div className="lg:w-56 border-t lg:border-t-0 lg:border-l border-white/5 bg-white/[0.02]">
-          <div className="p-3 sm:p-5 space-y-1">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-3">Taxas de Conversão</p>
+        {/* ── Painel lateral — Taxas de Conversão ── */}
+        <div className="lg:w-52 border-t lg:border-t-0 lg:border-l border-white/5 bg-white/[0.015]">
+          <div className="p-3 sm:p-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-3">
+              Taxas de Conversão
+            </p>
 
-            {allSteps.map((step, i) => {
-              if (i === 0) return null;
-              const prev = allSteps[i - 1];
-              const rate = pct(step.value, prev.value);
-              const vsTop = pct(step.value, allSteps[0].value);
+            <div className="space-y-0.5">
+              {allSteps.map((step, i) => {
+                if (i === 0) return null;
+                const prev  = allSteps[i - 1];
+                const rate  = pct(step.value, prev.value);
+                const vsTop = pct(step.value, allSteps[0].value);
 
-              return (
-                <div key={step.key} className="py-2.5 border-b border-white/5 last:border-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className={`w-1.5 h-1.5 rounded-full ${step.dot} shrink-0`} />
-                    <p className="text-[10px] font-semibold text-white/60 truncate">{step.label}</p>
-                  </div>
-                  <div className="flex items-center justify-between gap-2 pl-3.5">
-                    <div>
-                      <p className="text-xs font-bold text-white">{rate}%</p>
-                      <p className="text-[9px] text-white/30">do passo anterior</p>
+                return (
+                  <div key={step.key} className="py-2 border-b border-white/5 last:border-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div
+                        className="w-1.5 h-1.5 rounded-full shrink-0"
+                        style={{ background: step.colorFrom }}
+                      />
+                      <p className="text-[10px] font-semibold text-white/60 truncate">{step.label}</p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs font-bold text-white/50">{vsTop}%</p>
-                      <p className="text-[9px] text-white/30">do topo</p>
+                    <div className="flex items-center justify-between gap-2 pl-3.5">
+                      <div>
+                        <p className="text-xs font-bold text-white">{rate}%</p>
+                        <p className="text-[9px] text-white/30">do anterior</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-bold text-white/50">{vsTop}%</p>
+                        <p className="text-[9px] text-white/30">do topo</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
 
-            {/* Gasto total */}
-            <div className="pt-3 space-y-2">
-              <div className="p-3 rounded-xl bg-white/5 border border-white/8">
-                <p className="text-[9px] text-white/40 uppercase tracking-widest mb-0.5">Investimento Total</p>
+            {/* KPIs extras */}
+            <div className="mt-3 space-y-2">
+              <div className="p-2.5 rounded-xl bg-white/5 border border-white/8">
+                <p className="text-[9px] text-white/40 uppercase tracking-widest mb-0.5">Investimento</p>
                 <p className="text-sm font-black text-white">{formatCurrency(totalSpent)}</p>
               </div>
               {totalClicks > 0 && (
-                <div className="p-3 rounded-xl bg-white/5 border border-white/8">
+                <div className="p-2.5 rounded-xl bg-white/5 border border-white/8">
                   <p className="text-[9px] text-white/40 uppercase tracking-widest mb-0.5">CTR Geral</p>
                   <p className="text-sm font-black text-white">{pct(totalClicks, totalImpressions)}%</p>
                 </div>
               )}
               {purchases > 0 && purchaseValue > 0 && (
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                  <p className="text-[9px] text-emerald-400/70 uppercase tracking-widest mb-0.5">Valor Faturado</p>
+                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                  <p className="text-[9px] text-emerald-400/70 uppercase tracking-widest mb-0.5">Faturado</p>
                   <p className="text-sm font-black text-emerald-400">{formatCurrency(purchaseValue)}</p>
                 </div>
               )}
