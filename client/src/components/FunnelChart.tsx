@@ -1,7 +1,6 @@
 /**
  * FunnelChart — Funil de Marketing com trapézios reais
- * Cada etapa é um trapézio CSS (clip-path) que estreita progressivamente,
- * formando um funil visual de verdade de cima para baixo.
+ * Trapézios são puramente visuais; dados ficam em linha horizontal abaixo de cada etapa.
  */
 
 import { formatCurrency } from "@shared/metrics";
@@ -30,7 +29,6 @@ interface Step {
   costLabel?: string;
   colorFrom: string;
   colorTo: string;
-  dot: string;
 }
 
 function pct(a: number, b: number) {
@@ -44,9 +42,8 @@ function fmt(n: number) {
   return n.toLocaleString("pt-BR");
 }
 
-// Largura proporcional para cada passo (% da largura total, min 22%)
 function getWPct(val: number, maxVal: number): number {
-  return Math.max(22, (val / maxVal) * 100);
+  return Math.max(20, (val / maxVal) * 100);
 }
 
 export default function FunnelChart({
@@ -72,7 +69,6 @@ export default function FunnelChart({
       value: totalImpressions,
       colorFrom: "#3B82F6",
       colorTo: "#1D4ED8",
-      dot: "bg-blue-400",
     },
     {
       key: "reach",
@@ -80,7 +76,6 @@ export default function FunnelChart({
       value: totalReach,
       colorFrom: "#06B6D4",
       colorTo: "#0891B2",
-      dot: "bg-cyan-400",
     },
     {
       key: "clicks",
@@ -90,7 +85,6 @@ export default function FunnelChart({
       costLabel: "CPC",
       colorFrom: "#8B5CF6",
       colorTo: "#6D28D9",
-      dot: "bg-violet-400",
     },
     {
       key: "visits",
@@ -100,7 +94,6 @@ export default function FunnelChart({
       costLabel: "Custo/Visita",
       colorFrom: "#F59E0B",
       colorTo: "#D97706",
-      dot: "bg-amber-400",
     },
     {
       key: "messages",
@@ -110,7 +103,6 @@ export default function FunnelChart({
       costLabel: "Custo/Msg",
       colorFrom: "#EC4899",
       colorTo: "#BE185D",
-      dot: "bg-pink-400",
     },
     ...(purchases > 0
       ? [{
@@ -121,7 +113,6 @@ export default function FunnelChart({
           costLabel: "Custo/Compra",
           colorFrom: "#10B981",
           colorTo: "#047857",
-          dot: "bg-emerald-400",
         }]
       : []),
   ].filter(s => s.value > 0);
@@ -171,34 +162,28 @@ export default function FunnelChart({
       {/* ── Funil + Sidebar ── */}
       <div className="flex flex-col lg:flex-row">
 
-        {/* ── Funil visual (trapézios) ── */}
-        <div className="flex-1 px-3 sm:px-6 py-5 sm:py-7">
+        {/* ── Funil visual ── */}
+        <div className="flex-1 px-4 sm:px-8 py-5 sm:py-7">
           {allSteps.map((step, i) => {
             const topPct  = getWPct(step.value, maxVal);
             const nextPct = i < allSteps.length - 1
               ? getWPct(allSteps[i + 1].value, maxVal)
-              : Math.max(14, topPct * 0.75);
+              : Math.max(14, topPct * 0.72);
 
-            // Offsets para o clip-path (0–50 de cada lado)
-            const tl = (100 - topPct)  / 2;  // top-left x%
-            const tr = 100 - tl;             // top-right x%
-            const bl = (100 - nextPct) / 2;  // bottom-left x%
-            const br = 100 - bl;             // bottom-right x%
-
+            const tl = (100 - topPct)  / 2;
+            const tr = 100 - tl;
+            const bl = (100 - nextPct) / 2;
+            const br = 100 - bl;
             const clipPath = `polygon(${tl}% 0%, ${tr}% 0%, ${br}% 100%, ${bl}% 100%)`;
 
-            // Área de texto = largura do meio do trapézio (evita overflow)
-            const midPct  = (topPct + nextPct) / 2;
-            const textLeft  = `${(100 - midPct) / 2}%`;
-            const textWidth = `${midPct}%`;
-
-            const rate    = i > 0 ? pct(step.value, allSteps[i - 1].value) : null;
+            const rate = i > 0 ? pct(step.value, allSteps[i - 1].value) : null;
 
             return (
               <div key={step.key}>
+
                 {/* Conector entre passos */}
                 {i > 0 && (
-                  <div className="flex justify-center items-center" style={{ height: 26 }}>
+                  <div className="flex justify-center items-center" style={{ height: 22 }}>
                     <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/30 border border-white/8">
                       <span className="text-[10px] text-white/40">↓</span>
                       <span className="text-[10px] font-bold text-white/70">{rate}%</span>
@@ -207,9 +192,8 @@ export default function FunnelChart({
                   </div>
                 )}
 
-                {/* Trapézio */}
-                <div className="relative" style={{ height: 68 }}>
-                  {/* Fundo colorido recortado em trapézio */}
+                {/* Trapézio — apenas visual, sem texto dentro */}
+                <div className="relative" style={{ height: 44 }}>
                   <div
                     className="absolute inset-0"
                     style={{
@@ -218,48 +202,55 @@ export default function FunnelChart({
                       boxShadow: `0 4px 20px ${step.colorFrom}33`,
                     }}
                   />
-                  {/* Brilho sutil no topo */}
+                  {/* Brilho */}
                   <div
                     className="absolute inset-0 pointer-events-none"
                     style={{
                       clipPath,
-                      background: "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 60%)",
+                      background: "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, transparent 60%)",
                     }}
                   />
-
-                  {/* Conteúdo (label + valor + custo) */}
-                  <div
-                    className="absolute top-0 bottom-0 flex items-center justify-between gap-2 px-3 sm:px-4"
-                    style={{ left: textLeft, width: textWidth }}
-                  >
-                    {/* Número do passo */}
-                    <div className="w-5 h-5 rounded-full bg-black/30 border border-white/20 flex items-center justify-center shrink-0">
-                      <span className="text-[9px] font-bold text-white/70">{i + 1}</span>
-                    </div>
-
-                    {/* Label + Valor */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.12em] text-white/60 leading-none mb-0.5 truncate">
-                        {step.label}
-                      </p>
-                      <p className="text-lg sm:text-2xl font-black text-white leading-none tracking-tight">
-                        {fmt(step.value)}
-                      </p>
-                    </div>
-
-                    {/* Custo */}
-                    {step.cost != null && step.cost > 0 && (
-                      <div className="shrink-0 bg-black/25 rounded-lg px-2 sm:px-2.5 py-1 text-right">
-                        <p className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wide text-white/50 leading-none mb-0.5">
-                          {step.costLabel}
-                        </p>
-                        <p className="text-xs sm:text-sm font-black text-white leading-none">
-                          {formatCurrency(step.cost)}
-                        </p>
-                      </div>
-                    )}
-                  </div>
                 </div>
+
+                {/* ── Linha de dados: número do passo + label + valor + custo ── */}
+                <div className="flex items-center gap-2 sm:gap-3 px-1 pt-2 pb-1">
+
+                  {/* Número do passo */}
+                  <div
+                    className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 border border-white/15"
+                    style={{ background: step.colorFrom + "33" }}
+                  >
+                    <span className="text-[9px] font-black" style={{ color: step.colorFrom }}>{i + 1}</span>
+                  </div>
+
+                  {/* Label */}
+                  <span
+                    className="text-[10px] sm:text-xs font-bold uppercase tracking-widest shrink-0"
+                    style={{ color: step.colorFrom }}
+                  >
+                    {step.label}
+                  </span>
+
+                  {/* Separador */}
+                  <div className="flex-1 h-px bg-white/5" />
+
+                  {/* Valor principal */}
+                  <span className="text-base sm:text-xl font-black text-white tracking-tight shrink-0">
+                    {fmt(step.value)}
+                  </span>
+
+                  {/* Custo (badge à direita) */}
+                  {step.cost != null && step.cost > 0 && (
+                    <div
+                      className="flex items-center gap-1 px-2 py-1 rounded-lg shrink-0"
+                      style={{ background: step.colorFrom + "22", border: `1px solid ${step.colorFrom}44` }}
+                    >
+                      <span className="text-[9px] font-semibold text-white/50">{step.costLabel}</span>
+                      <span className="text-[11px] sm:text-xs font-black text-white">{formatCurrency(step.cost)}</span>
+                    </div>
+                  )}
+                </div>
+
               </div>
             );
           })}
@@ -282,10 +273,7 @@ export default function FunnelChart({
                 return (
                   <div key={step.key} className="py-2 border-b border-white/5 last:border-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <div
-                        className="w-1.5 h-1.5 rounded-full shrink-0"
-                        style={{ background: step.colorFrom }}
-                      />
+                      <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: step.colorFrom }} />
                       <p className="text-[10px] font-semibold text-white/60 truncate">{step.label}</p>
                     </div>
                     <div className="flex items-center justify-between gap-2 pl-3.5">
