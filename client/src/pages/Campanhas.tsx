@@ -480,7 +480,7 @@ export default function Campanhas() {
               {p.label}
             </button>
           ))}
-          <span className="text-[10px] text-muted-foreground ml-1">
+          <span className="text-[10px] text-muted-foreground ml-1 hidden sm:inline">
             {dateRange.since} → {dateRange.until}
           </span>
         </div>

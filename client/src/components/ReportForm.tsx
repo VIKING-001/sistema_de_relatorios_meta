@@ -303,7 +303,7 @@ export default function ReportForm({
           </Button>
         </div>
       ) : (
-        <div className="flex items-center gap-4 p-4 rounded-2xl bg-[#1877F2]/10 border border-[#1877F2]/30">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-2xl bg-[#1877F2]/10 border border-[#1877F2]/30">
           <div className="flex-1">
             <p className="text-sm font-bold text-white">Importar métricas do Meta Ads</p>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -314,7 +314,7 @@ export default function ReportForm({
             type="button"
             onClick={handleImportMeta}
             disabled={isImporting || isLoading || !startDate || !endDate}
-            className="shrink-0 rounded-xl bg-[#1877F2] hover:bg-[#1466d8] text-white font-bold px-5 py-2 h-auto disabled:opacity-40"
+            className="w-full sm:w-auto shrink-0 rounded-xl bg-[#1877F2] hover:bg-[#1466d8] text-white font-bold px-5 py-2 h-auto disabled:opacity-40"
           >
             {isImporting ? (
               <><Loader2 className="h-4 w-4 animate-spin mr-2" />Importando...</>

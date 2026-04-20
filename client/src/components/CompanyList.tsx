@@ -358,26 +358,26 @@ export default function CompanyList({ company, onUpdate, autoOpenMeta = false }:
               className="bg-[#0d1422] border border-white/10 rounded-2xl w-full max-w-2xl shadow-2xl my-6"
             >
               {/* Header do modal */}
-              <div className="sticky top-0 flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#0d1422]/95 backdrop-blur rounded-t-2xl z-10">
+              <div className="sticky top-0 flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/10 bg-[#0d1422]/95 backdrop-blur rounded-t-2xl z-10">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-primary/20 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
                     <Plus className="h-4 w-4 text-primary" />
                   </div>
                   <div>
                     <h2 className="text-base font-bold text-white">Novo Relatório</h2>
-                    <p className="text-xs text-muted-foreground">{company.name}</p>
+                    <p className="text-xs text-muted-foreground truncate max-w-[180px] sm:max-w-none">{company.name}</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowReportDialog(false)}
-                  className="p-2 rounded-xl hover:bg-white/10 text-muted-foreground hover:text-white transition-all"
+                  className="p-2 rounded-xl hover:bg-white/10 text-muted-foreground hover:text-white transition-all shrink-0"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
               {/* Corpo do formulário */}
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 <ReportForm
                   companyId={company.id}
                   metaConnected={!!metaStatus?.connected && !metaStatus?.expired}
@@ -414,24 +414,24 @@ export default function CompanyList({ company, onUpdate, autoOpenMeta = false }:
               className="bg-[#0d1422] border border-white/10 rounded-2xl w-full max-w-2xl shadow-2xl my-6"
             >
               {/* Header */}
-              <div className="sticky top-0 flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#0d1422]/95 backdrop-blur rounded-t-2xl z-10">
+              <div className="sticky top-0 flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/10 bg-[#0d1422]/95 backdrop-blur rounded-t-2xl z-10">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-cyan-500/20 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-xl bg-cyan-500/20 flex items-center justify-center shrink-0">
                     <FileText className="h-4 w-4 text-cyan-400" />
                   </div>
                   <div>
                     <h2 className="text-base font-bold text-white">Relatórios</h2>
-                    <p className="text-xs text-muted-foreground">{company.name}</p>
+                    <p className="text-xs text-muted-foreground truncate max-w-[140px] sm:max-w-none">{company.name}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <Button
                     size="sm"
                     onClick={() => { setShowListDialog(false); setShowReportDialog(true); }}
                     className="h-8 text-xs rounded-xl bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30"
                   >
-                    <Plus className="h-3.5 w-3.5 mr-1.5" />
-                    Novo
+                    <Plus className="h-3.5 w-3.5 sm:mr-1.5" />
+                    <span className="hidden sm:inline">Novo</span>
                   </Button>
                   <button
                     onClick={() => setShowListDialog(false)}
@@ -443,7 +443,7 @@ export default function CompanyList({ company, onUpdate, autoOpenMeta = false }:
               </div>
 
               {/* Lista */}
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 <ReportList
                   reports={reports || []}
                   companyId={company.id}

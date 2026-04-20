@@ -63,25 +63,25 @@ export default function PublicReport() {
 
       {/* Header */}
       <header className="border-b border-white/10 bg-black/30 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-white">{company?.name}</h1>
-            <p className="text-sm text-cyan-300 mt-0.5">{report.title}</p>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-2xl font-bold text-white truncate">{company?.name}</h1>
+            <p className="text-xs sm:text-sm text-cyan-300 mt-0.5 truncate">{report.title}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 shrink-0">
             <Button onClick={handleCopyUrl} variant="outline" size="sm"
-              className="border-white/20 text-white hover:bg-white/10">
-              <Copy className="h-4 w-4 mr-2" />Copiar Link
+              className="border-white/20 text-white hover:bg-white/10 px-2 sm:px-3">
+              <Copy className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Copiar Link</span>
             </Button>
             <Button onClick={handleDownload} size="sm"
-              className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white">
-              <Download className="h-4 w-4 mr-2" />Baixar
+              className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-2 sm:px-3">
+              <Download className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Baixar</span>
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-10 relative z-10">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10 relative z-10">
         {/* Período */}
         <div className="mb-10 text-center">
           <p className="text-lg text-cyan-300 font-bold">
@@ -95,7 +95,7 @@ export default function PublicReport() {
           <>
             {/* Alcance e Impressões */}
             <SectionTitle>📊 Alcance e Impressões</SectionTitle>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-4 sm:mb-6">
               <MetricCard label="Alcance Instagram" value={formatNumber(metrics.instagramReach)} icon="📱" />
               <MetricCard label="Alcance Total" value={formatNumber(metrics.totalReach)} icon="🌍" />
               <MetricCard label="Impressões" value={formatNumber(metrics.totalImpressions)} icon="👁️" />
@@ -104,7 +104,7 @@ export default function PublicReport() {
 
             {/* Engajamento */}
             <SectionTitle>⭐ Engajamento</SectionTitle>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-4 sm:mb-6">
               <MetricCard label="Novos Seguidores" value={formatNumber(metrics.newInstagramFollowers)} icon="⭐" />
               <MetricCard label="Visitas via Campanhas" value={formatNumber(metrics.profileVisitsThroughCampaigns)} icon="🔗" />
               <MetricCard label="Retenção de Vídeo" value={formatPercentage(parseFloat(metrics.videoRetentionRate))} icon="🎬" />
@@ -113,7 +113,7 @@ export default function PublicReport() {
 
             {/* Mensagens */}
             <SectionTitle>💬 Mensagens</SectionTitle>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+            <div className="grid grid-cols-2 gap-3 sm:gap-5 mb-4 sm:mb-6">
               <MetricCard label="Mensagens Iniciadas" value={formatNumber(metrics.messagesInitiated)} icon="💬" />
               <MetricCard
                 label="Custo por Mensagem"
@@ -124,13 +124,13 @@ export default function PublicReport() {
 
             {/* Investimento */}
             <SectionTitle>💰 Investimento</SectionTitle>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-4 sm:mb-6">
               <MetricCard label="Valor Investido" value={formatCurrency(parseFloat(metrics.totalSpent))} icon="💰" highlight />
               <MetricCard label="Cliques Totais" value={formatNumber(metrics.totalClicks)} icon="🖱️" />
               <MetricCard label="CPC" value={formatCurrency(parseFloat(metrics.costPerClick))} icon="💵" />
               <MetricCard label="CPM" value={formatCurrency(parseFloat(metrics.cpm))} icon="📊" />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+            <div className="grid grid-cols-2 gap-3 sm:gap-5 mb-4 sm:mb-6">
               <MetricCard label="Custo por Visita" value={formatCurrency(parseFloat(metrics.costPerProfileVisit))} icon="💳" />
             </div>
 
@@ -138,7 +138,7 @@ export default function PublicReport() {
             {hasPurchases && (
               <>
                 <SectionTitle color="text-emerald-300">🛒 Conversões e Compras</SectionTitle>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-5 mb-4 sm:mb-6">
                   <MetricCard
                     label="Nº de Compras"
                     value={formatNumber(purchases)}
@@ -163,7 +163,7 @@ export default function PublicReport() {
             )}
 
             {/* Funil de Marketing */}
-            <div className="mt-10 bg-white/5 border border-white/10 rounded-2xl p-8">
+            <div className="mt-6 sm:mt-10 bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-8">
               <h2 className="text-xl font-bold text-white mb-2">🔻 Funil de Marketing</h2>
               <p className="text-sm text-gray-400 mb-6">Jornada completa do usuário — desde a impressão até a conversão</p>
               <FunnelChart
@@ -184,7 +184,7 @@ export default function PublicReport() {
             </div>
 
             {/* Resumo Executivo */}
-            <div className="mt-6 bg-white/5 border border-white/10 rounded-2xl p-8">
+            <div className="mt-4 sm:mt-6 bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-8">
               <h2 className="text-xl font-bold text-white mb-6">Resumo Executivo</h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -273,15 +273,15 @@ function MetricCard({ label, value, icon, highlight, highlightColor }: MetricCar
   const defaultHighlight = "from-cyan-500/20 to-blue-600/20 border-cyan-500/50 hover:border-cyan-400";
   return (
     <div
-      className={`rounded-xl p-5 backdrop-blur-sm border transition-all ${
+      className={`rounded-xl p-3 sm:p-5 backdrop-blur-sm border transition-all ${
         highlight
           ? `bg-gradient-to-br ${highlightColor || defaultHighlight}`
           : "bg-white/5 border-white/10 hover:border-cyan-500/30"
       }`}
     >
-      <span className="text-2xl">{icon}</span>
-      <p className="text-gray-400 text-xs mt-3 mb-1 uppercase tracking-wide font-medium">{label}</p>
-      <p className="text-xl font-bold text-white">{value}</p>
+      <span className="text-xl sm:text-2xl">{icon}</span>
+      <p className="text-gray-400 text-[10px] sm:text-xs mt-2 sm:mt-3 mb-0.5 sm:mb-1 uppercase tracking-wide font-medium leading-tight">{label}</p>
+      <p className="text-base sm:text-xl font-bold text-white">{value}</p>
     </div>
   );
 }

@@ -38,15 +38,15 @@ export default function Relatorios() {
   }, []);
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Relatórios</h1>
-          <p className="text-sm text-muted-foreground mt-1">Gerencie empresas e relatórios de campanhas</p>
+          <h1 className="text-xl sm:text-2xl font-bold">Relatórios</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">Gerencie empresas e relatórios</p>
         </div>
-        <Button onClick={() => setShowForm(!showForm)} className="gap-2">
+        <Button onClick={() => setShowForm(!showForm)} className="gap-2 shrink-0">
           <Plus className="h-4 w-4" />
-          Nova Empresa
+          <span className="hidden sm:inline">Nova </span>Empresa
         </Button>
       </div>
 
@@ -70,7 +70,7 @@ export default function Relatorios() {
           <p className="text-sm mt-1">Clique em "Nova Empresa" para começar</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
           {companies.map((company) => (
             <CompanyList
               key={company.id}

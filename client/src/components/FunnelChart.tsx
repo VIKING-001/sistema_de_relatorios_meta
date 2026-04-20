@@ -137,27 +137,27 @@ export default function FunnelChart({
     <div className={`rounded-2xl ${bg} border ${border} overflow-hidden`}>
 
       {/* ── Header ── */}
-      <div className="px-6 pt-6 pb-4 border-b border-white/5">
-        <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-white/5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h3 className="text-base font-bold text-white tracking-tight">Funil de Conversão</h3>
             <p className="text-xs text-white/40 mt-0.5">Jornada completa do usuário</p>
           </div>
           {/* KPIs topo */}
-          <div className="flex items-center gap-6">
-            <div className="text-right">
+          <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
+            <div>
               <p className="text-[10px] text-white/40 uppercase tracking-widest">Investimento</p>
               <p className="text-sm font-bold text-white">{formatCurrency(totalSpent)}</p>
             </div>
             {purchases > 0 && purchaseValue > 0 && (
               <>
-                <div className="w-px h-8 bg-white/10" />
-                <div className="text-right">
+                <div className="w-px h-8 bg-white/10 hidden sm:block" />
+                <div>
                   <p className="text-[10px] text-white/40 uppercase tracking-widest">Faturado</p>
                   <p className="text-sm font-bold text-emerald-400">{formatCurrency(purchaseValue)}</p>
                 </div>
-                <div className="w-px h-8 bg-white/10" />
-                <div className="text-right">
+                <div className="w-px h-8 bg-white/10 hidden sm:block" />
+                <div>
                   <p className="text-[10px] text-white/40 uppercase tracking-widest">ROAS</p>
                   <p className="text-sm font-bold text-emerald-400">
                     {totalSpent > 0 ? (purchaseValue / totalSpent).toFixed(2) + "x" : "—"}
@@ -173,7 +173,7 @@ export default function FunnelChart({
       <div className="flex flex-col lg:flex-row gap-0">
 
         {/* Funil visual */}
-        <div className="flex-1 px-6 py-6 space-y-0">
+        <div className="flex-1 px-3 sm:px-6 py-4 sm:py-6 space-y-0">
           {allSteps.map((step, i) => {
             const w = getW(step.value);
             const prevVal = i > 0 ? allSteps[i - 1].value : step.value;
@@ -216,7 +216,7 @@ export default function FunnelChart({
                     <div
                       className={`
                         relative bg-gradient-to-r ${step.gradient}
-                        rounded-xl px-5 py-4 shadow-xl ${step.glow}
+                        rounded-xl px-3 sm:px-5 py-2.5 sm:py-4 shadow-xl ${step.glow}
                         border border-white/10
                         hover:brightness-110 transition-all duration-300
                       `}
@@ -226,22 +226,22 @@ export default function FunnelChart({
                         <span className="text-[9px] font-bold text-white/70">{i + 1}</span>
                       </div>
 
-                      <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center justify-between gap-2 sm:gap-3">
                         <div className="min-w-0">
                           <p className="text-[10px] font-black uppercase tracking-[0.15em] text-white/60 mb-0.5">
                             {step.label}
                           </p>
-                          <p className="text-2xl font-black text-white leading-none tracking-tight">
+                          <p className="text-lg sm:text-2xl font-black text-white leading-none tracking-tight">
                             {fmt(step.value)}
                           </p>
                         </div>
 
                         {step.cost != null && step.cost > 0 && (
-                          <div className="text-right shrink-0 bg-black/20 rounded-lg px-3 py-1.5">
+                          <div className="text-right shrink-0 bg-black/20 rounded-lg px-2 sm:px-3 py-1 sm:py-1.5">
                             <p className="text-[9px] font-bold uppercase tracking-wider text-white/50">
                               {step.costLabel}
                             </p>
-                            <p className="text-sm font-black text-white leading-tight">
+                            <p className="text-xs sm:text-sm font-black text-white leading-tight">
                               {formatCurrency(step.cost)}
                             </p>
                           </div>
@@ -267,7 +267,7 @@ export default function FunnelChart({
 
         {/* ── Painel lateral de métricas ── */}
         <div className="lg:w-56 border-t lg:border-t-0 lg:border-l border-white/5 bg-white/[0.02]">
-          <div className="p-5 space-y-1">
+          <div className="p-3 sm:p-5 space-y-1">
             <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-3">Taxas de Conversão</p>
 
             {allSteps.map((step, i) => {

@@ -22,15 +22,15 @@ function StatCard({
       className={`glass-card border-white/10 transition-all ${onClick ? "cursor-pointer hover:border-white/20" : ""}`}
       onClick={onClick}
     >
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
-            <p className="text-2xl font-bold">{value}</p>
-            {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex items-start justify-between gap-2">
+          <div className="space-y-1 min-w-0">
+            <p className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
+            <p className="text-lg sm:text-2xl font-bold truncate">{value}</p>
+            {sub && <p className="text-[10px] sm:text-xs text-muted-foreground">{sub}</p>}
           </div>
-          <div className={`w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center ${color}`}>
-            <Icon className="h-5 w-5" />
+          <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 ${color}`}>
+            <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
         </div>
       </CardContent>
@@ -80,15 +80,15 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-6">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {[1, 2, 3, 4].map(i => (
-            <div key={i} className="h-28 rounded-2xl bg-white/5 animate-pulse" />
+            <div key={i} className="h-24 sm:h-28 rounded-2xl bg-white/5 animate-pulse" />
           ))}
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {[1, 2, 3, 4].map(i => (
-            <div key={i} className="h-28 rounded-2xl bg-white/5 animate-pulse" />
+            <div key={i} className="h-24 sm:h-28 rounded-2xl bg-white/5 animate-pulse" />
           ))}
         </div>
       </div>
@@ -96,24 +96,24 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">
+          <h1 className="text-xl sm:text-2xl font-bold">
             Olá, {user?.name?.split(" ")[0] ?? "Viking"} 👋
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Aqui está o resumo geral de todas as suas campanhas
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+            Resumo geral de todas as suas campanhas
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-2">
-          <RefreshCw className="h-4 w-4" /> Atualizar
+        <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-2 shrink-0">
+          <RefreshCw className="h-4 w-4" /> <span className="hidden sm:inline">Atualizar</span>
         </Button>
       </div>
 
       {/* Row 1 — Business stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
           label="Empresas"
           value={totalCompanies}
@@ -148,7 +148,7 @@ export default function Dashboard() {
       </div>
 
       {/* Row 2 — Campaign metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
           label="Cliques totais"
           value={fmt(totalClicks)}
@@ -204,7 +204,7 @@ export default function Dashboard() {
       )}
 
       {/* Bottom row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
         {/* Recent reports */}
         <Card className="glass-card border-white/10">
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
