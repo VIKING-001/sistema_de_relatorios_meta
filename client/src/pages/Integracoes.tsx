@@ -60,10 +60,48 @@ const INTEGRATIONS = [
 ];
 
 const WEBHOOK_PLATFORMS = [
+  // Plataformas principais
   { id: "shopify", name: "Shopify", icon: "🛍️" },
   { id: "woocommerce", name: "WooCommerce", icon: "🔧" },
-  { id: "custom", name: "Custom/Genérico", icon: "⚙️" },
   { id: "zapier", name: "Zapier", icon: "⚡" },
+
+  // Plataformas de infoproduto
+  { id: "hotmart", name: "Hotmart", icon: "🔥" },
+  { id: "kiwify", name: "Kiwify", icon: "🥝" },
+  { id: "eduzz", name: "Eduzz", icon: "📚" },
+  { id: "braip", name: "Braip", icon: "🧠" },
+  { id: "monetizze", name: "Monetizze", icon: "💰" },
+
+  // Outras plataformas de vendas
+  { id: "cartpanda", name: "CartPanda", icon: "🐼" },
+  { id: "vega1", name: "Vega 1", icon: "✨" },
+  { id: "kirvano", name: "Kirvano", icon: "🎯" },
+  { id: "perfectpay", name: "PerfectPay", icon: "✅" },
+  { id: "yampi", name: "Yampi", icon: "🎨" },
+  { id: "lastlink", name: "Lastlink", icon: "🔗" },
+  { id: "payt", name: "Payt", icon: "💳" },
+  { id: "logzz", name: "Logzz", icon: "📊" },
+  { id: "adoorel", name: "Adoorel", icon: "🎁" },
+  { id: "tribopay", name: "TriboPay", icon: "🔔" },
+  { id: "clickbank", name: "Clickbank", icon: "💸" },
+  { id: "ticto", name: "Ticto", icon: "⏱️" },
+  { id: "pepper", name: "Pepper", icon: "🌶️" },
+  { id: "buygoods", name: "BuyGoods", icon: "🛒" },
+  { id: "mundpay", name: "MundPay", icon: "🌎" },
+  { id: "disrupty", name: "Disrupty", icon: "⚡" },
+  { id: "greenn", name: "Greenn", icon: "💚" },
+  { id: "guru", name: "Guru", icon: "🧘" },
+  { id: "digistore", name: "Digistore24", icon: "🏪" },
+  { id: "hubla", name: "Hubla", icon: "🌐" },
+  { id: "doppus", name: "Doppus", icon: "🚀" },
+  { id: "frendz", name: "Frendz", icon: "👥" },
+  { id: "invictuspay", name: "InvictusPay", icon: "🎖️" },
+  { id: "appmax", name: "Appmax", icon: "📱" },
+  { id: "nitropagamentos", name: "Nitro Pagamentos", icon: "💨" },
+  { id: "goatpay", name: "GoatPay", icon: "🐐" },
+
+  // Genérico por último
+  { id: "custom", name: "Customizado/Genérico", icon: "⚙️" },
 ] as const;
 
 export default function Integracoes() {

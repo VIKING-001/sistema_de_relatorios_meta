@@ -16,7 +16,16 @@ async function executeQuery(sql: string, params: any[] = []) {
 
 const createWebhookSchema = z.object({
   companyId: z.number().int().positive(),
-  platform: z.enum(["shopify", "woocommerce", "custom", "zapier"]),
+  platform: z.enum([
+    "shopify", "woocommerce", "custom", "zapier",
+    "hotmart", "kiwify", "cartpanda", "vega1", "kirvano",
+    "perfectpay", "yampi", "lastlink", "payt", "logzz",
+    "adoorel", "tribopay", "clickbank", "ticto", "eduzz",
+    "braip", "pepper", "buygoods", "mundpay", "disrupty",
+    "greenn", "monetizze", "guru", "digistore", "hubla",
+    "doppus", "frendz", "invictuspay", "appmax", "nitropagamentos",
+    "goatpay"
+  ]),
 });
 
 const updateWebhookStatusSchema = z.object({
