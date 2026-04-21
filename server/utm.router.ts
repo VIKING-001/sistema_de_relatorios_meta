@@ -1,9 +1,17 @@
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
+import { getRawPool } from "./db";
 import { TRPCError } from "@trpc/server";
 import { nanoid } from "nanoid";
 import crypto from "crypto";
+
+// ─── Database query helper ──────────────────────────────────────────────────
+async function executeQuery(sql: string, params: any[] = []) {
+  const pool = await getRawPool();
+  if (!pool) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database connection failed" });
+  return pool.query(sql, params);
+}
 
 // ─── Validações ────────────────────────────────────────────────────────────
 
@@ -75,7 +83,7 @@ export const utmRouter = router({
       const shortCode = nanoid(8);
 
       // Inserir no banco
-      const result = await db.db.query(
+      const result = await executeQuery(
         `INSERT INTO "utmTracking" (
           "companyId", "userId", "baseUrl", "utmSource", "utmMedium",
           "utmCampaign", "utmContent", "utmTerm", "trackingUrl", "shortCode"
@@ -112,7 +120,7 @@ export const utmRouter = router({
         throw new TRPCError({ code: "FORBIDDEN" });
       }
 
-      const result = await db.db.query(
+      const result = await executeQuery(
         `SELECT * FROM "utmTracking" WHERE "companyId" = $1 ORDER BY "createdAt" DESC`,
         [input.companyId]
       );
@@ -133,7 +141,7 @@ export const utmRouter = router({
     )
     .query(async ({ input }) => {
       // Encontrar o link de rastreamento
-      const trackResult = await db.db.query(
+      const trackResult = await executeQuery(
         `SELECT * FROM "utmTracking" WHERE "shortCode" = $1 OR id::text = $1 LIMIT 1`,
         [input.utm_id]
       );
@@ -146,13 +154,13 @@ export const utmRouter = router({
       const sessionId = input.sessionId || nanoid();
 
       // Registrar clique/sessão
-      await db.db.query(
+      await executeQuery(
         `INSERT INTO "utmSessions" ("trackingId", "sessionId") VALUES ($1, $2)`,
         [tracking.id, sessionId]
       );
 
       // Incrementar contador de cliques
-      await db.db.query(
+      await executeQuery(
         `UPDATE "utmTracking" SET "clickCount" = "clickCount" + 1 WHERE "id" = $1`,
         [tracking.id]
       );
@@ -173,7 +181,7 @@ export const utmRouter = router({
     .input(recordSaleSchema)
     .mutation(async ({ input }) => {
       // Validar que a empresa existe
-      const companyResult = await db.db.query(
+      const companyResult = await executeQuery(
         `SELECT id FROM "companies" WHERE "id" = $1`,
         [input.companyId]
       );
@@ -185,7 +193,7 @@ export const utmRouter = router({
       // Procurar tracking ID baseado nos parâmetros UTM
       let trackingId = null;
       if (input.utmCampaign) {
-        const trackResult = await db.db.query(
+        const trackResult = await executeQuery(
           `SELECT id FROM "utmTracking"
            WHERE "companyId" = $1
              AND "utmCampaign" = $2
@@ -199,7 +207,7 @@ export const utmRouter = router({
           trackingId = trackResult.rows[0].id;
 
           // Incrementar contador de conversões
-          await db.db.query(
+          await executeQuery(
             `UPDATE "utmTracking" SET "conversionCount" = "conversionCount" + 1 WHERE "id" = $1`,
             [trackingId]
           );
@@ -207,7 +215,7 @@ export const utmRouter = router({
       }
 
       // Registrar a venda
-      const saleResult = await db.db.query(
+      const saleResult = await executeQuery(
         `INSERT INTO "trackedSales" (
           "companyId", "userId", "trackingId", "orderId", "orderValue",
           "utmSource", "utmMedium", "utmCampaign", "utmContent", "utmTerm",
@@ -271,7 +279,7 @@ export const utmRouter = router({
       }
 
       // Agregação total
-      const statsResult = await db.db.query(
+      const statsResult = await executeQuery(
         `SELECT
           COUNT(DISTINCT "id") as total_sales,
           SUM("orderValue") as total_revenue,
@@ -283,7 +291,7 @@ export const utmRouter = router({
       );
 
       // Por campanha
-      const byUTMResult = await db.db.query(
+      const byUTMResult = await executeQuery(
         `SELECT
           "utmCampaign",
           "utmSource",
@@ -332,7 +340,7 @@ export const utmRouter = router({
       // Total gasto em Meta Ads
       let metaSpentResult;
       if (startDate && endDate) {
-        metaSpentResult = await db.db.query(
+        metaSpentResult = await executeQuery(
           `SELECT SUM(CAST("totalSpent" AS DECIMAL)) as total_spent
            FROM "reportMetrics"
            WHERE "reportId" IN (
@@ -342,7 +350,7 @@ export const utmRouter = router({
           [input.companyId, startDate, endDate]
         );
       } else {
-        metaSpentResult = await db.db.query(
+        metaSpentResult = await executeQuery(
           `SELECT SUM(CAST("totalSpent" AS DECIMAL)) as total_spent
            FROM "reportMetrics"
            WHERE "reportId" IN (SELECT id FROM "reports" WHERE "companyId" = $1)`,
@@ -353,14 +361,14 @@ export const utmRouter = router({
       // Total faturado via UTM
       let utmRevenueResult;
       if (startDate && endDate) {
-        utmRevenueResult = await db.db.query(
+        utmRevenueResult = await executeQuery(
           `SELECT SUM("orderValue") as total_revenue
            FROM "trackedSales"
            WHERE "companyId" = $1 AND "saleDate"::date BETWEEN $2 AND $3`,
           [input.companyId, startDate, endDate]
         );
       } else {
-        utmRevenueResult = await db.db.query(
+        utmRevenueResult = await executeQuery(
           `SELECT SUM("orderValue") as total_revenue FROM "trackedSales" WHERE "companyId" = $1`,
           [input.companyId]
         );

@@ -40572,8 +40572,16 @@ __export(schema_exports, {
   reportMetricsRelations: () => reportMetricsRelations,
   reports: () => reports,
   reportsRelations: () => reportsRelations,
+  trackedSales: () => trackedSales,
+  trackedSalesRelations: () => trackedSalesRelations,
   users: () => users,
-  usersRelations: () => usersRelations
+  usersRelations: () => usersRelations,
+  utmSessions: () => utmSessions,
+  utmSessionsRelations: () => utmSessionsRelations,
+  utmTracking: () => utmTracking,
+  utmTrackingRelations: () => utmTrackingRelations,
+  webhookConfigs: () => webhookConfigs,
+  webhookConfigsRelations: () => webhookConfigsRelations
 });
 var users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -40669,6 +40677,128 @@ var reportMetricsRelations = relations(reportMetrics, ({ one }) => ({
   report: one(reports, {
     fields: [reportMetrics.reportId],
     references: [reports.id]
+  })
+}));
+var utmTracking = pgTable("utmTracking", {
+  id: serial("id").primaryKey(),
+  companyId: integer("companyId").notNull(),
+  userId: integer("userId").notNull(),
+  /** URL original (sem UTMs) */
+  baseUrl: text("baseUrl").notNull(),
+  /** Parâmetros UTM completos */
+  utmSource: varchar("utmSource", { length: 255 }),
+  utmMedium: varchar("utmMedium", { length: 255 }),
+  utmCampaign: varchar("utmCampaign", { length: 255 }).notNull(),
+  utmContent: varchar("utmContent", { length: 255 }),
+  utmTerm: varchar("utmTerm", { length: 255 }),
+  /** URL completa com UTMs para usar em campanhas */
+  trackingUrl: text("trackingUrl").notNull(),
+  /** Hash curto para encurtador de URL (opcional) */
+  shortCode: varchar("shortCode", { length: 20 }).unique(),
+  /** Quantas vezes o link foi clicado (rastreado via redirect) */
+  clickCount: integer("clickCount").notNull().default(0),
+  /** Quantas conversões vieram deste link */
+  conversionCount: integer("conversionCount").notNull().default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull()
+});
+var utmSessions = pgTable("utmSessions", {
+  id: serial("id").primaryKey(),
+  trackingId: integer("trackingId").notNull(),
+  /** ID único da sessão (pode ser cookie/browser fingerprint) */
+  sessionId: varchar("sessionId", { length: 255 }).notNull(),
+  /** IP do usuário */
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  /** User agent do navegador */
+  userAgent: text("userAgent"),
+  /** Referrer */
+  referrer: text("referrer"),
+  clickedAt: timestamp("clickedAt").defaultNow().notNull(),
+  convertedAt: timestamp("convertedAt"),
+  conversionValue: decimal("conversionValue", { precision: 12, scale: 2 }),
+  /** Ex: "purchase", "signup", "email_lead" */
+  conversionType: varchar("conversionType", { length: 64 }),
+  /** ID externo da conversão (ex: order ID, customer ID) */
+  externalConversionId: varchar("externalConversionId", { length: 255 })
+});
+var trackedSales = pgTable("trackedSales", {
+  id: serial("id").primaryKey(),
+  companyId: integer("companyId").notNull(),
+  userId: integer("userId").notNull(),
+  /** Sessão que originou a compra */
+  sessionId: integer("sessionId"),
+  /** UTM que originou */
+  trackingId: integer("trackingId"),
+  /** Parâmetros UTM no momento da venda (snapshot) */
+  utmSource: varchar("utmSource", { length: 255 }),
+  utmMedium: varchar("utmMedium", { length: 255 }),
+  utmCampaign: varchar("utmCampaign", { length: 255 }),
+  utmContent: varchar("utmContent", { length: 255 }),
+  utmTerm: varchar("utmTerm", { length: 255 }),
+  /** Dados da venda */
+  orderId: varchar("orderId", { length: 255 }).notNull(),
+  orderValue: decimal("orderValue", { precision: 12, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 3 }).default("BRL"),
+  /** Marca de tempo da venda */
+  saleDate: timestamp("saleDate").notNull(),
+  /** Dados do cliente (anonimizados) */
+  customerEmail: varchar("customerEmail", { length: 320 }),
+  customerPhone: varchar("customerPhone", { length: 20 }),
+  /** Qual plataforma capturou (webhook Shopify, webhook custom, Meta API, etc) */
+  source: varchar("source", { length: 64 }).notNull(),
+  /** Identificador da plataforma (ex: Shopify order ID, WooCommerce order ID) */
+  externalId: varchar("externalId", { length: 255 }),
+  /** Status da venda (pending, confirmed, refunded) */
+  status: varchar("status", { length: 64 }).default("confirmed"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull()
+});
+var webhookConfigs = pgTable("webhookConfigs", {
+  id: serial("id").primaryKey(),
+  companyId: integer("companyId").notNull(),
+  userId: integer("userId").notNull(),
+  /** Tipo de plataforma: shopify, woocommerce, custom, zapier */
+  platform: varchar("platform", { length: 64 }).notNull(),
+  /** URL do webhook (gerado pelo sistema) que a plataforma vai chamar */
+  webhookUrl: text("webhookUrl").notNull(),
+  /** Secret para validar webhook (HMAC) */
+  webhookSecret: varchar("webhookSecret", { length: 255 }).notNull(),
+  /** Dados de configuração específicos da plataforma (JSON) */
+  config: text("config"),
+  /** Status da integração */
+  status: varchar("status", { length: 64 }).default("active"),
+  /** Último ping/teste bem-sucedido */
+  lastHealthCheck: timestamp("lastHealthCheck"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull()
+});
+var utmTrackingRelations = relations(utmTracking, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [utmTracking.companyId],
+    references: [companies.id]
+  }),
+  sessions: many(utmSessions)
+}));
+var utmSessionsRelations = relations(utmSessions, ({ one }) => ({
+  tracking: one(utmTracking, {
+    fields: [utmSessions.trackingId],
+    references: [utmTracking.id]
+  })
+}));
+var trackedSalesRelations = relations(trackedSales, ({ one }) => ({
+  company: one(companies, {
+    fields: [trackedSales.companyId],
+    references: [companies.id]
+  }),
+  tracking: one(utmTracking, {
+    fields: [trackedSales.trackingId],
+    references: [utmTracking.id]
+  })
+}));
+var webhookConfigsRelations = relations(webhookConfigs, ({ one }) => ({
+  company: one(companies, {
+    fields: [webhookConfigs.companyId],
+    references: [companies.id]
   })
 }));
 
@@ -40771,7 +40901,83 @@ async function ensureTables(pool2) {
     `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "purchases" integer DEFAULT 0 NOT NULL`,
     `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "purchaseValue" numeric(12, 2) DEFAULT '0.00' NOT NULL`,
     `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "costPerPurchase" numeric(10, 2) DEFAULT '0.00' NOT NULL`,
-    `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "costPerMessage" numeric(10, 2) DEFAULT '0.00' NOT NULL`
+    `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "costPerMessage" numeric(10, 2) DEFAULT '0.00' NOT NULL`,
+    // UTM Tracking tables
+    `CREATE TABLE IF NOT EXISTS "utmTracking" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "companyId" integer NOT NULL,
+      "userId" integer NOT NULL,
+      "baseUrl" text NOT NULL,
+      "utmSource" varchar(255),
+      "utmMedium" varchar(255),
+      "utmCampaign" varchar(255) NOT NULL,
+      "utmContent" varchar(255),
+      "utmTerm" varchar(255),
+      "trackingUrl" text NOT NULL,
+      "shortCode" varchar(20),
+      "clickCount" integer DEFAULT 0 NOT NULL,
+      "conversionCount" integer DEFAULT 0 NOT NULL,
+      "createdAt" timestamp DEFAULT now() NOT NULL,
+      "updatedAt" timestamp DEFAULT now() NOT NULL,
+      CONSTRAINT "utmTracking_shortCode_unique" UNIQUE("shortCode")
+    )`,
+    `CREATE TABLE IF NOT EXISTS "utmSessions" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "trackingId" integer NOT NULL,
+      "sessionId" varchar(255) NOT NULL,
+      "ipAddress" varchar(45),
+      "userAgent" text,
+      "referrer" text,
+      "clickedAt" timestamp DEFAULT now() NOT NULL,
+      "convertedAt" timestamp,
+      "conversionValue" numeric(12, 2),
+      "conversionType" varchar(64),
+      "externalConversionId" varchar(255)
+    )`,
+    `CREATE TABLE IF NOT EXISTS "trackedSales" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "companyId" integer NOT NULL,
+      "userId" integer NOT NULL,
+      "sessionId" integer,
+      "trackingId" integer,
+      "utmSource" varchar(255),
+      "utmMedium" varchar(255),
+      "utmCampaign" varchar(255),
+      "utmContent" varchar(255),
+      "utmTerm" varchar(255),
+      "orderId" varchar(255) NOT NULL,
+      "orderValue" numeric(12, 2) NOT NULL,
+      "currency" varchar(3) DEFAULT 'BRL',
+      "saleDate" timestamp NOT NULL,
+      "customerEmail" varchar(320),
+      "customerPhone" varchar(20),
+      "source" varchar(64) NOT NULL,
+      "externalId" varchar(255),
+      "status" varchar(64) DEFAULT 'confirmed',
+      "createdAt" timestamp DEFAULT now() NOT NULL,
+      "updatedAt" timestamp DEFAULT now() NOT NULL
+    )`,
+    `CREATE TABLE IF NOT EXISTS "webhookConfigs" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "companyId" integer NOT NULL,
+      "userId" integer NOT NULL,
+      "platform" varchar(64) NOT NULL,
+      "webhookUrl" text NOT NULL,
+      "webhookSecret" varchar(255) NOT NULL,
+      "config" text,
+      "status" varchar(64) DEFAULT 'active',
+      "lastHealthCheck" timestamp,
+      "createdAt" timestamp DEFAULT now() NOT NULL,
+      "updatedAt" timestamp DEFAULT now() NOT NULL
+    )`,
+    // UTM indices for performance
+    `CREATE INDEX IF NOT EXISTS "idx_utmTracking_companyId" ON "utmTracking"("companyId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_utmSessions_trackingId" ON "utmSessions"("trackingId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_utmSessions_sessionId" ON "utmSessions"("sessionId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_trackedSales_companyId" ON "trackedSales"("companyId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_trackedSales_trackingId" ON "trackedSales"("trackingId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_trackedSales_saleDate" ON "trackedSales"("saleDate")`,
+    `CREATE INDEX IF NOT EXISTS "idx_webhookConfigs_companyId" ON "webhookConfigs"("companyId")`
   ];
   try {
     for (const sql2 of statements) {
@@ -40807,6 +41013,10 @@ async function getDb() {
     console.error("[Database] Failed to connect:", err);
     return void 0;
   }
+}
+async function getRawPool() {
+  const db = await getDb();
+  return rawPool;
 }
 async function upsertUser(user) {
   const db = await getDb();
@@ -54058,6 +54268,313 @@ function calculateCTR(totalClicks, totalImpressions) {
   return totalClicks / totalImpressions * 100;
 }
 
+// server/utm.router.ts
+async function executeQuery(sql2, params = []) {
+  const pool2 = await getRawPool();
+  if (!pool2) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database connection failed" });
+  return pool2.query(sql2, params);
+}
+var createUtmTrackingSchema = external_exports.object({
+  companyId: external_exports.number().int().positive(),
+  baseUrl: external_exports.string().url(),
+  utmSource: external_exports.string().optional(),
+  utmMedium: external_exports.string().optional(),
+  utmCampaign: external_exports.string().min(1),
+  utmContent: external_exports.string().optional(),
+  utmTerm: external_exports.string().optional()
+});
+var trackConversionSchema = external_exports.object({
+  sessionId: external_exports.string(),
+  trackingId: external_exports.number().int().positive(),
+  conversionType: external_exports.string(),
+  conversionValue: external_exports.number().positive().optional()
+});
+var recordSaleSchema = external_exports.object({
+  companyId: external_exports.number().int().positive(),
+  orderId: external_exports.string().min(1),
+  orderValue: external_exports.number().positive(),
+  utmSource: external_exports.string().optional(),
+  utmMedium: external_exports.string().optional(),
+  utmCampaign: external_exports.string().optional(),
+  utmContent: external_exports.string().optional(),
+  utmTerm: external_exports.string().optional(),
+  customerEmail: external_exports.string().email().optional(),
+  customerPhone: external_exports.string().optional(),
+  source: external_exports.enum(["shopify", "woocommerce", "custom", "zapier"]),
+  externalId: external_exports.string().optional()
+});
+var utmRouter = router({
+  /**
+   * Criar um link de rastreamento UTM
+   * POST /api/trpc/utm.create
+   */
+  create: protectedProcedure.input(createUtmTrackingSchema).mutation(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado \xE0 empresa" });
+    }
+    const urlObj = new URL(input.baseUrl);
+    if (input.utmSource) urlObj.searchParams.set("utm_source", input.utmSource);
+    if (input.utmMedium) urlObj.searchParams.set("utm_medium", input.utmMedium);
+    urlObj.searchParams.set("utm_campaign", input.utmCampaign);
+    if (input.utmContent) urlObj.searchParams.set("utm_content", input.utmContent);
+    if (input.utmTerm) urlObj.searchParams.set("utm_term", input.utmTerm);
+    const trackingId = nanoid(12);
+    urlObj.searchParams.set("utm_id", trackingId);
+    const trackingUrl = urlObj.toString();
+    const shortCode = nanoid(8);
+    const result = await executeQuery(
+      `INSERT INTO "utmTracking" (
+          "companyId", "userId", "baseUrl", "utmSource", "utmMedium",
+          "utmCampaign", "utmContent", "utmTerm", "trackingUrl", "shortCode"
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING *`,
+      [
+        input.companyId,
+        userId,
+        input.baseUrl,
+        input.utmSource || null,
+        input.utmMedium || null,
+        input.utmCampaign,
+        input.utmContent || null,
+        input.utmTerm || null,
+        trackingUrl,
+        shortCode
+      ]
+    );
+    return result.rows[0];
+  }),
+  /**
+   * Listar todos os links de rastreamento da empresa
+   */
+  list: protectedProcedure.input(external_exports.object({ companyId: external_exports.number().int().positive() })).query(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+    const result = await executeQuery(
+      `SELECT * FROM "utmTracking" WHERE "companyId" = $1 ORDER BY "createdAt" DESC`,
+      [input.companyId]
+    );
+    return result.rows;
+  }),
+  /**
+   * Webhook público para rastrear cliques (redirect)
+   * GET /api/utm/redirect?utm_id=...
+   */
+  clickRedirect: publicProcedure.input(
+    external_exports.object({
+      utm_id: external_exports.string(),
+      sessionId: external_exports.string().optional()
+    })
+  ).query(async ({ input }) => {
+    const trackResult = await executeQuery(
+      `SELECT * FROM "utmTracking" WHERE "shortCode" = $1 OR id::text = $1 LIMIT 1`,
+      [input.utm_id]
+    );
+    if (trackResult.rows.length === 0) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Link n\xE3o encontrado" });
+    }
+    const tracking = trackResult.rows[0];
+    const sessionId = input.sessionId || nanoid();
+    await executeQuery(
+      `INSERT INTO "utmSessions" ("trackingId", "sessionId") VALUES ($1, $2)`,
+      [tracking.id, sessionId]
+    );
+    await executeQuery(
+      `UPDATE "utmTracking" SET "clickCount" = "clickCount" + 1 WHERE "id" = $1`,
+      [tracking.id]
+    );
+    return {
+      redirectUrl: tracking.baseUrl,
+      sessionId,
+      trackingId: tracking.id
+    };
+  }),
+  /**
+   * Webhook para registrar conversão/venda
+   * POST /api/trpc/utm.recordSale
+   */
+  recordSale: publicProcedure.input(recordSaleSchema).mutation(async ({ input }) => {
+    const companyResult = await executeQuery(
+      `SELECT id FROM "companies" WHERE "id" = $1`,
+      [input.companyId]
+    );
+    if (companyResult.rows.length === 0) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Empresa n\xE3o encontrada" });
+    }
+    let trackingId = null;
+    if (input.utmCampaign) {
+      const trackResult = await executeQuery(
+        `SELECT id FROM "utmTracking"
+           WHERE "companyId" = $1
+             AND "utmCampaign" = $2
+             AND "utmSource" IS NOT DISTINCT FROM $3
+             AND "utmMedium" IS NOT DISTINCT FROM $4
+           ORDER BY "createdAt" DESC LIMIT 1`,
+        [input.companyId, input.utmCampaign, input.utmSource || null, input.utmMedium || null]
+      );
+      if (trackResult.rows.length > 0) {
+        trackingId = trackResult.rows[0].id;
+        await executeQuery(
+          `UPDATE "utmTracking" SET "conversionCount" = "conversionCount" + 1 WHERE "id" = $1`,
+          [trackingId]
+        );
+      }
+    }
+    const saleResult = await executeQuery(
+      `INSERT INTO "trackedSales" (
+          "companyId", "userId", "trackingId", "orderId", "orderValue",
+          "utmSource", "utmMedium", "utmCampaign", "utmContent", "utmTerm",
+          "customerEmail", "customerPhone", "source", "externalId", "saleDate"
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW())
+        RETURNING *`,
+      [
+        input.companyId,
+        null,
+        // userId será preenchido pelo webhook
+        trackingId,
+        input.orderId,
+        input.orderValue,
+        input.utmSource || null,
+        input.utmMedium || null,
+        input.utmCampaign || null,
+        input.utmContent || null,
+        input.utmTerm || null,
+        input.customerEmail || null,
+        input.customerPhone || null,
+        input.source,
+        input.externalId || null
+      ]
+    );
+    return {
+      success: true,
+      sale: saleResult.rows[0],
+      trackingFound: !!trackingId
+    };
+  }),
+  /**
+   * Obter estatísticas de rastreamento (ROAS, conversões, etc)
+   */
+  getStats: protectedProcedure.input(
+    external_exports.object({
+      companyId: external_exports.number().int().positive(),
+      startDate: external_exports.date().optional(),
+      endDate: external_exports.date().optional()
+    })
+  ).query(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+    const startDate = input.startDate ? input.startDate.toISOString().split("T")[0] : null;
+    const endDate = input.endDate ? input.endDate.toISOString().split("T")[0] : null;
+    let dateFilter = "";
+    const params = [input.companyId];
+    if (startDate && endDate) {
+      dateFilter = `AND "saleDate"::date BETWEEN $2 AND $3`;
+      params.push(startDate, endDate);
+    }
+    const statsResult = await executeQuery(
+      `SELECT
+          COUNT(DISTINCT "id") as total_sales,
+          SUM("orderValue") as total_revenue,
+          COUNT(DISTINCT "trackingId") as tracked_campaigns,
+          AVG("orderValue") as avg_order_value
+        FROM "trackedSales"
+        WHERE "companyId" = $1 ${dateFilter}`,
+      params
+    );
+    const byUTMResult = await executeQuery(
+      `SELECT
+          "utmCampaign",
+          "utmSource",
+          "utmMedium",
+          COUNT(*) as sales_count,
+          SUM("orderValue") as revenue,
+          AVG("orderValue") as avg_value,
+          MIN("saleDate") as first_sale,
+          MAX("saleDate") as last_sale
+        FROM "trackedSales"
+        WHERE "companyId" = $1 ${dateFilter}
+        GROUP BY "utmCampaign", "utmSource", "utmMedium"
+        ORDER BY revenue DESC`,
+      params
+    );
+    return {
+      summary: statsResult.rows[0] || {},
+      byUTM: byUTMResult.rows
+    };
+  }),
+  /**
+   * Comparar ROAS: gasto em Meta Ads vs Faturamento via UTM
+   */
+  getRoasComparison: protectedProcedure.input(
+    external_exports.object({
+      companyId: external_exports.number().int().positive(),
+      startDate: external_exports.date().optional(),
+      endDate: external_exports.date().optional()
+    })
+  ).query(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+    const startDate = input.startDate?.toISOString().split("T")[0];
+    const endDate = input.endDate?.toISOString().split("T")[0];
+    let metaSpentResult;
+    if (startDate && endDate) {
+      metaSpentResult = await executeQuery(
+        `SELECT SUM(CAST("totalSpent" AS DECIMAL)) as total_spent
+           FROM "reportMetrics"
+           WHERE "reportId" IN (
+             SELECT id FROM "reports" WHERE "companyId" = $1
+             AND "startDate"::text >= $2 AND "endDate"::text <= $3
+           )`,
+        [input.companyId, startDate, endDate]
+      );
+    } else {
+      metaSpentResult = await executeQuery(
+        `SELECT SUM(CAST("totalSpent" AS DECIMAL)) as total_spent
+           FROM "reportMetrics"
+           WHERE "reportId" IN (SELECT id FROM "reports" WHERE "companyId" = $1)`,
+        [input.companyId]
+      );
+    }
+    let utmRevenueResult;
+    if (startDate && endDate) {
+      utmRevenueResult = await executeQuery(
+        `SELECT SUM("orderValue") as total_revenue
+           FROM "trackedSales"
+           WHERE "companyId" = $1 AND "saleDate"::date BETWEEN $2 AND $3`,
+        [input.companyId, startDate, endDate]
+      );
+    } else {
+      utmRevenueResult = await executeQuery(
+        `SELECT SUM("orderValue") as total_revenue FROM "trackedSales" WHERE "companyId" = $1`,
+        [input.companyId]
+      );
+    }
+    const metaSpent = parseFloat(metaSpentResult.rows[0]?.total_spent || "0");
+    const utmRevenue = parseFloat(utmRevenueResult.rows[0]?.total_revenue || "0");
+    const roasFromUTM = metaSpent > 0 ? (utmRevenue / metaSpent).toFixed(2) : "0";
+    return {
+      metaSpent,
+      utmRevenue,
+      roasFromUTM: parseFloat(roasFromUTM),
+      difference: (utmRevenue - metaSpent).toFixed(2)
+    };
+  })
+});
+
 // server/routers.ts
 var createCompanySchema = external_exports.object({
   name: external_exports.string().min(1, "Nome da empresa \xE9 obrigat\xF3rio"),
@@ -54632,7 +55149,9 @@ var appRouter = router({
       }), { totalSpent: 0, totalImpressions: 0, totalReach: 0, totalClicks: 0 });
       return { accounts, totals, failed, days: input.days };
     })
-  })
+  }),
+  // ── Rastreamento de UTMs e Vendas ─────────────────────────────────────────
+  utm: utmRouter
 });
 
 // server/_core/context.ts

@@ -203,6 +203,12 @@ async function getDb() {
   }
 }
 
+/** Exporta o pool raw para queries customizadas */
+export async function getRawPool() {
+  const db = await getDb(); // Garante inicialização
+  return rawPool;
+}
+
 // User queries
 export async function upsertUser(user: InsertUser): Promise<void> {
   const db = await getDb();
