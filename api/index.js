@@ -54585,12 +54585,18 @@ async function executeQuery2(sql2, params = []) {
 var createWebhookSchema = external_exports.object({
   companyId: external_exports.number().int().positive(),
   platform: external_exports.enum([
+    // Plataformas principais
     "shopify",
     "woocommerce",
     "custom",
     "zapier",
+    // Plataformas de infoproduto
     "hotmart",
     "kiwify",
+    "eduzz",
+    "braip",
+    "monetizze",
+    // E-commerce Brasil
     "cartpanda",
     "vega1",
     "kirvano",
@@ -54603,14 +54609,11 @@ var createWebhookSchema = external_exports.object({
     "tribopay",
     "clickbank",
     "ticto",
-    "eduzz",
-    "braip",
     "pepper",
     "buygoods",
     "mundpay",
     "disrupty",
     "greenn",
-    "monetizze",
     "guru",
     "digistore",
     "hubla",
@@ -54619,7 +54622,28 @@ var createWebhookSchema = external_exports.object({
     "invictuspay",
     "appmax",
     "nitropagamentos",
-    "goatpay"
+    "goatpay",
+    // Gateways de pagamento principais
+    "facilzap",
+    "mercadopago",
+    "pagseguro",
+    "stripe",
+    "paypal",
+    "cielo",
+    "rede",
+    "stone",
+    "getnet",
+    "todo",
+    "vindi",
+    // Marketplaces
+    "amazon",
+    "ebay",
+    "aliexpress",
+    "mercado_livre",
+    // Outros
+    "custom_api",
+    "n8n",
+    "make"
   ])
 });
 var updateWebhookStatusSchema = external_exports.object({

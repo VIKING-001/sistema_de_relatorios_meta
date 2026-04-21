@@ -60,19 +60,19 @@ const INTEGRATIONS = [
 ];
 
 const WEBHOOK_PLATFORMS = [
-  // Plataformas principais
+  // 🛍️ Plataformas principais
   { id: "shopify", name: "Shopify", icon: "🛍️" },
   { id: "woocommerce", name: "WooCommerce", icon: "🔧" },
   { id: "zapier", name: "Zapier", icon: "⚡" },
 
-  // Plataformas de infoproduto
+  // 📚 Plataformas de infoproduto
   { id: "hotmart", name: "Hotmart", icon: "🔥" },
   { id: "kiwify", name: "Kiwify", icon: "🥝" },
   { id: "eduzz", name: "Eduzz", icon: "📚" },
   { id: "braip", name: "Braip", icon: "🧠" },
   { id: "monetizze", name: "Monetizze", icon: "💰" },
 
-  // Outras plataformas de vendas
+  // 🏪 E-commerce & Vendas
   { id: "cartpanda", name: "CartPanda", icon: "🐼" },
   { id: "vega1", name: "Vega 1", icon: "✨" },
   { id: "kirvano", name: "Kirvano", icon: "🎯" },
@@ -100,8 +100,30 @@ const WEBHOOK_PLATFORMS = [
   { id: "nitropagamentos", name: "Nitro Pagamentos", icon: "💨" },
   { id: "goatpay", name: "GoatPay", icon: "🐐" },
 
-  // Genérico por último
-  { id: "custom", name: "Customizado/Genérico", icon: "⚙️" },
+  // 💳 Gateways de Pagamento
+  { id: "facilzap", name: "FácilZap", icon: "⚡" },
+  { id: "mercadopago", name: "Mercado Pago", icon: "💛" },
+  { id: "pagseguro", name: "PagSeguro", icon: "🔐" },
+  { id: "stripe", name: "Stripe", icon: "🌐" },
+  { id: "paypal", name: "PayPal", icon: "🅿️" },
+  { id: "cielo", name: "Cielo", icon: "💳" },
+  { id: "rede", name: "Rede", icon: "🔗" },
+  { id: "stone", name: "Stone", icon: "🪨" },
+  { id: "getnet", name: "GetNet", icon: "📡" },
+  { id: "todo", name: "Todo", icon: "✅" },
+  { id: "vindi", name: "Vindi", icon: "💎" },
+
+  // 🛒 Marketplaces
+  { id: "amazon", name: "Amazon", icon: "🅰️" },
+  { id: "ebay", name: "eBay", icon: "🔴" },
+  { id: "aliexpress", name: "AliExpress", icon: "🌏" },
+  { id: "mercado_livre", name: "Mercado Livre", icon: "🟡" },
+
+  // ⚙️ Automação & Custom
+  { id: "n8n", name: "n8n", icon: "🔄" },
+  { id: "make", name: "Make (Integromat)", icon: "🎭" },
+  { id: "custom_api", name: "API Customizada", icon: "🔌" },
+  { id: "custom", name: "Genérico/Webhook Bruto", icon: "⚙️" },
 ] as const;
 
 export default function Integracoes() {

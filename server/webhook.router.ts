@@ -17,14 +17,29 @@ async function executeQuery(sql: string, params: any[] = []) {
 const createWebhookSchema = z.object({
   companyId: z.number().int().positive(),
   platform: z.enum([
+    // Plataformas principais
     "shopify", "woocommerce", "custom", "zapier",
-    "hotmart", "kiwify", "cartpanda", "vega1", "kirvano",
-    "perfectpay", "yampi", "lastlink", "payt", "logzz",
-    "adoorel", "tribopay", "clickbank", "ticto", "eduzz",
-    "braip", "pepper", "buygoods", "mundpay", "disrupty",
-    "greenn", "monetizze", "guru", "digistore", "hubla",
+
+    // Plataformas de infoproduto
+    "hotmart", "kiwify", "eduzz", "braip", "monetizze",
+
+    // E-commerce Brasil
+    "cartpanda", "vega1", "kirvano", "perfectpay", "yampi",
+    "lastlink", "payt", "logzz", "adoorel", "tribopay",
+    "clickbank", "ticto", "pepper", "buygoods", "mundpay",
+    "disrupty", "greenn", "guru", "digistore", "hubla",
     "doppus", "frendz", "invictuspay", "appmax", "nitropagamentos",
-    "goatpay"
+    "goatpay",
+
+    // Gateways de pagamento principais
+    "facilzap", "mercadopago", "pagseguro", "stripe", "paypal",
+    "cielo", "rede", "stone", "getnet", "todo", "vindi",
+
+    // Marketplaces
+    "amazon", "ebay", "aliexpress", "mercado_livre",
+
+    // Outros
+    "custom_api", "n8n", "make"
   ]),
 });
 
