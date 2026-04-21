@@ -104,7 +104,7 @@ var require_main = __commonJS({
     var fs = require("fs");
     var path = require("path");
     var os = require("os");
-    var crypto4 = require("crypto");
+    var crypto5 = require("crypto");
     var packageJson = require_package();
     var version3 = packageJson.version;
     var TIPS = [
@@ -358,7 +358,7 @@ var require_main = __commonJS({
       const authTag = ciphertext.subarray(-16);
       ciphertext = ciphertext.subarray(12, -16);
       try {
-        const aesgcm = crypto4.createDecipheriv("aes-256-gcm", key, nonce);
+        const aesgcm = crypto5.createDecipheriv("aes-256-gcm", key, nonce);
         aesgcm.setAuthTag(authTag);
         return `${aesgcm.update(ciphertext)}${aesgcm.final()}`;
       } catch (error46) {
@@ -19030,14 +19030,14 @@ var require_etag = __commonJS({
   "node_modules/.pnpm/etag@1.8.1/node_modules/etag/index.js"(exports2, module2) {
     "use strict";
     module2.exports = etag;
-    var crypto4 = require("crypto");
+    var crypto5 = require("crypto");
     var Stats = require("fs").Stats;
     var toString = Object.prototype.toString;
     function entitytag(entity) {
       if (entity.length === 0) {
         return '"0-2jmj7l5rSw0yVb/vlWAYkK/YBwk"';
       }
-      var hash2 = crypto4.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
+      var hash2 = crypto5.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
       var len = typeof entity === "string" ? Buffer.byteLength(entity, "utf8") : entity.length;
       return '"' + len.toString(16) + "-" + hash2 + '"';
     }
@@ -21929,11 +21929,11 @@ var require_request = __commonJS({
 // node_modules/.pnpm/cookie-signature@1.0.6/node_modules/cookie-signature/index.js
 var require_cookie_signature = __commonJS({
   "node_modules/.pnpm/cookie-signature@1.0.6/node_modules/cookie-signature/index.js"(exports2) {
-    var crypto4 = require("crypto");
+    var crypto5 = require("crypto");
     exports2.sign = function(val, secret) {
       if ("string" != typeof val) throw new TypeError("Cookie value must be provided as a string.");
       if ("string" != typeof secret) throw new TypeError("Secret string must be provided.");
-      return val + "." + crypto4.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
+      return val + "." + crypto5.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
     };
     exports2.unsign = function(val, secret) {
       if ("string" != typeof val) throw new TypeError("Signed cookie string must be provided.");
@@ -21942,7 +21942,7 @@ var require_cookie_signature = __commonJS({
       return sha1(mac) == sha1(val) ? str : false;
     };
     function sha1(str) {
-      return crypto4.createHash("sha1").update(str).digest("hex");
+      return crypto5.createHash("sha1").update(str).digest("hex");
     }
   }
 });
@@ -24444,7 +24444,7 @@ var require_cert_signatures = __commonJS({
 var require_sasl = __commonJS({
   "node_modules/.pnpm/pg@8.20.0/node_modules/pg/lib/crypto/sasl.js"(exports2, module2) {
     "use strict";
-    var crypto4 = require_utils4();
+    var crypto5 = require_utils4();
     var { signatureAlgorithmHashFromCertificate } = require_cert_signatures();
     function startSession(mechanisms, stream) {
       const candidates = ["SCRAM-SHA-256"];
@@ -24456,7 +24456,7 @@ var require_sasl = __commonJS({
       if (mechanism === "SCRAM-SHA-256-PLUS" && typeof stream.getPeerCertificate !== "function") {
         throw new Error("SASL: Mechanism SCRAM-SHA-256-PLUS requires a certificate");
       }
-      const clientNonce = crypto4.randomBytes(18).toString("base64");
+      const clientNonce = crypto5.randomBytes(18).toString("base64");
       const gs2Header = mechanism === "SCRAM-SHA-256-PLUS" ? "p=tls-server-end-point" : stream ? "y" : "n";
       return {
         mechanism,
@@ -24491,20 +24491,20 @@ var require_sasl = __commonJS({
         const peerCert = stream.getPeerCertificate().raw;
         let hashName = signatureAlgorithmHashFromCertificate(peerCert);
         if (hashName === "MD5" || hashName === "SHA-1") hashName = "SHA-256";
-        const certHash = await crypto4.hashByName(hashName, peerCert);
+        const certHash = await crypto5.hashByName(hashName, peerCert);
         const bindingData = Buffer.concat([Buffer.from("p=tls-server-end-point,,"), Buffer.from(certHash)]);
         channelBinding = bindingData.toString("base64");
       }
       const clientFinalMessageWithoutProof = "c=" + channelBinding + ",r=" + sv.nonce;
       const authMessage = clientFirstMessageBare + "," + serverFirstMessage + "," + clientFinalMessageWithoutProof;
       const saltBytes = Buffer.from(sv.salt, "base64");
-      const saltedPassword = await crypto4.deriveKey(password, saltBytes, sv.iteration);
-      const clientKey = await crypto4.hmacSha256(saltedPassword, "Client Key");
-      const storedKey = await crypto4.sha256(clientKey);
-      const clientSignature = await crypto4.hmacSha256(storedKey, authMessage);
+      const saltedPassword = await crypto5.deriveKey(password, saltBytes, sv.iteration);
+      const clientKey = await crypto5.hmacSha256(saltedPassword, "Client Key");
+      const storedKey = await crypto5.sha256(clientKey);
+      const clientSignature = await crypto5.hmacSha256(storedKey, authMessage);
       const clientProof = xorBuffers(Buffer.from(clientKey), Buffer.from(clientSignature)).toString("base64");
-      const serverKey = await crypto4.hmacSha256(saltedPassword, "Server Key");
-      const serverSignatureBytes = await crypto4.hmacSha256(serverKey, authMessage);
+      const serverKey = await crypto5.hmacSha256(saltedPassword, "Server Key");
+      const serverSignatureBytes = await crypto5.hmacSha256(serverKey, authMessage);
       session.message = "SASLResponse";
       session.serverSignature = Buffer.from(serverSignatureBytes).toString("base64");
       session.response = clientFinalMessageWithoutProof + ",p=" + clientProof;
@@ -26672,7 +26672,7 @@ var require_client = __commonJS({
     var Query2 = require_query2();
     var defaults2 = require_defaults();
     var Connection2 = require_connection();
-    var crypto4 = require_utils4();
+    var crypto5 = require_utils4();
     var activeQueryDeprecationNotice = nodeUtils.deprecate(
       () => {
       },
@@ -26907,7 +26907,7 @@ var require_client = __commonJS({
       _handleAuthMD5Password(msg) {
         this._getPassword(async () => {
           try {
-            const hashedPassword = await crypto4.postgresMd5PasswordHash(this.user, this.password, msg.salt);
+            const hashedPassword = await crypto5.postgresMd5PasswordHash(this.user, this.password, msg.salt);
             this.connection.password(hashedPassword);
           } catch (e) {
             this.emit("error", e);
@@ -40566,6 +40566,8 @@ function drizzle(...params) {
 // drizzle/schema.ts
 var schema_exports = {};
 __export(schema_exports, {
+  apiCredentials: () => apiCredentials,
+  apiCredentialsRelations: () => apiCredentialsRelations,
   companies: () => companies,
   companiesRelations: () => companiesRelations,
   reportMetrics: () => reportMetrics,
@@ -40798,6 +40800,29 @@ var trackedSalesRelations = relations(trackedSales, ({ one }) => ({
 var webhookConfigsRelations = relations(webhookConfigs, ({ one }) => ({
   company: one(companies, {
     fields: [webhookConfigs.companyId],
+    references: [companies.id]
+  })
+}));
+var apiCredentials = pgTable("apiCredentials", {
+  id: serial("id").primaryKey(),
+  companyId: integer("companyId").notNull(),
+  userId: integer("userId").notNull(),
+  /** Nome/identificador da credencial (ex: "VIKING JEJUM", "RODRIGO") */
+  name: varchar("name", { length: 255 }).notNull(),
+  /** Token criptografado armazenado */
+  tokenHash: varchar("tokenHash", { length: 255 }).notNull(),
+  /** Plataforma/serviço para o qual a credencial é (ex: "shopify", "custom", etc) */
+  platform: varchar("platform", { length: 64 }).notNull(),
+  /** Status da credencial */
+  status: varchar("status", { length: 64 }).default("active"),
+  /** Última vez que foi usado */
+  lastUsedAt: timestamp("lastUsedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull()
+});
+var apiCredentialsRelations = relations(apiCredentials, ({ one }) => ({
+  company: one(companies, {
+    fields: [apiCredentials.companyId],
     references: [companies.id]
   })
 }));
@@ -54596,7 +54621,7 @@ var createWebhookSchema = external_exports.object({
     "eduzz",
     "braip",
     "monetizze",
-    // E-commerce Brasil
+    // E-commerce & Vendas (30+)
     "cartpanda",
     "vega1",
     "kirvano",
@@ -54623,7 +54648,8 @@ var createWebhookSchema = external_exports.object({
     "appmax",
     "nitropagamentos",
     "goatpay",
-    // Gateways de pagamento principais
+    "nuvemshop",
+    // Gateways de pagamento (100+)
     "facilzap",
     "mercadopago",
     "pagseguro",
@@ -54635,15 +54661,132 @@ var createWebhookSchema = external_exports.object({
     "getnet",
     "todo",
     "vindi",
+    "hebreus",
+    "iexperience",
+    "pagtrust",
+    "fortpay",
+    "systeme",
+    "ironpay",
+    "clinqpay",
+    "sharkpays",
+    "maxweb",
+    "zoutl",
+    "pantherfy",
+    "strivpay",
+    "atomopay",
+    "allpay",
+    "bullpay",
+    "octuspay",
+    "zippify",
+    "masterfy",
+    "inovapag",
+    "soutpay",
+    "wolfpay",
+    "sigmapagamentos",
+    "nexopavt",
+    "wegate",
+    "unicornify",
+    "alipes",
+    "vittapay",
+    "fluxionpay",
+    "nezzyay",
+    "pmhmpay",
+    "trivexpay",
+    "gatpay",
+    "bearpay",
+    "amandlspay",
+    "digipag",
+    "alphapay",
+    "assetpay",
+    "brgateway",
+    "creedx",
+    "hotfy",
+    "klivopay",
+    "plumify",
+    "primegate",
+    "wise2pay",
+    "visionpay",
+    "sharkbytepay",
+    "sigmapay",
+    "zeroeonepay",
+    "traxon",
+    "bloo",
+    "kitepay",
+    "b4you",
+    "risepay",
+    "urus",
+    "cakto",
+    "flashpay",
+    "digitalmart",
+    "exattus",
+    "lunarcash",
+    "youshop",
+    "blackpay",
+    "venuzpay",
+    "lunacheckout",
+    "fullsale",
+    "bullspay",
+    "moodl",
+    "nikpay",
+    "ghostspay",
+    "keedpay",
+    "salduu",
+    "viperpay",
+    "sunize",
+    "assiny",
+    "wiapy",
+    "unicopaq",
+    "imperialpay",
+    "zedy",
+    "sinlx",
+    "voomp",
+    "ombrelone",
+    "pushinpay",
+    "genesys",
+    "onprofit",
+    "sacapay",
+    "cloudfy",
+    "kuenha",
+    "ninjapay",
+    "xgrow",
+    "ggcheckout",
+    "panteracheckout",
+    "nublapay",
+    "cartly",
+    "pagah",
+    "pagsafe",
+    "nomadfy",
+    "sync",
+    "lpov",
+    "auryon369",
+    "paradise",
+    "firepay",
+    "lowify",
+    "hyppe",
+    "seedpay",
+    "membriz",
+    "cerefy",
+    "pagamerican",
+    "affiliaxpay",
+    "kambafy",
+    "approval",
+    "zuckpay",
+    "xynonpay",
+    "kavoo",
+    "fruitfy",
+    "coeud",
+    "clickpay",
+    "orlacheckout",
+    "tukanopay",
     // Marketplaces
     "amazon",
     "ebay",
     "aliexpress",
     "mercado_livre",
-    // Outros
-    "custom_api",
+    // Automação & Custom
     "n8n",
-    "make"
+    "make",
+    "custom_api"
   ])
 });
 var updateWebhookStatusSchema = external_exports.object({
@@ -54803,6 +54946,150 @@ var webhookRouter = router({
       trackedSales: parseInt(stats.tracked_sales || "0"),
       totalRevenue: parseFloat(stats.total_revenue || "0")
     };
+  })
+});
+
+// server/api-credentials.router.ts
+var import_crypto2 = __toESM(require("crypto"), 1);
+async function executeQuery3(sql2, params = []) {
+  const pool2 = await getRawPool();
+  if (!pool2) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database connection failed" });
+  return pool2.query(sql2, params);
+}
+function generateToken() {
+  return import_crypto2.default.randomBytes(32).toString("base64url");
+}
+function hashToken(token) {
+  return import_crypto2.default.createHash("sha256").update(token).digest("hex");
+}
+var createCredentialSchema = external_exports.object({
+  companyId: external_exports.number().int().positive(),
+  name: external_exports.string().min(1, "Nome \xE9 obrigat\xF3rio"),
+  platform: external_exports.string().min(1, "Plataforma \xE9 obrigat\xF3ria")
+});
+var updateCredentialStatusSchema = external_exports.object({
+  credentialId: external_exports.number().int().positive(),
+  status: external_exports.enum(["active", "inactive"])
+});
+var apiCredentialsRouter = router({
+  /**
+   * Criar nova credencial de API
+   * Retorna o token UMA VEZ (nunca mais será recuperável)
+   */
+  create: protectedProcedure.input(createCredentialSchema).mutation(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado \xE0 empresa" });
+    }
+    const token = generateToken();
+    const tokenHash = hashToken(token);
+    const result = await executeQuery3(
+      `INSERT INTO "apiCredentials" (
+          "companyId", "userId", "name", "tokenHash", "platform", "status"
+        ) VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING id, "companyId", "userId", "name", "platform", "status", "createdAt"`,
+      [input.companyId, userId, input.name, tokenHash, input.platform, "active"]
+    );
+    const credential = result.rows[0];
+    return {
+      credential,
+      token
+      // Retorna o token apenas uma vez
+    };
+  }),
+  /**
+   * Listar todas as credenciais de uma empresa
+   * (sem mostrar os tokens, apenas informações básicas)
+   */
+  list: protectedProcedure.input(external_exports.object({ companyId: external_exports.number().int().positive() })).query(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+    const result = await executeQuery3(
+      `SELECT id, "companyId", "userId", "name", "platform", "status", "lastUsedAt", "createdAt", "updatedAt"
+         FROM "apiCredentials"
+         WHERE "companyId" = $1
+         ORDER BY "createdAt" DESC`,
+      [input.companyId]
+    );
+    return result.rows;
+  }),
+  /**
+   * Atualizar status de uma credencial (ativa/inativa)
+   */
+  updateStatus: protectedProcedure.input(updateCredentialStatusSchema).mutation(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const credResult = await executeQuery3(
+      `SELECT * FROM "apiCredentials" WHERE "id" = $1`,
+      [input.credentialId]
+    );
+    if (credResult.rows.length === 0) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Credencial n\xE3o encontrada" });
+    }
+    const cred = credResult.rows[0];
+    const company = await getCompanyById(cred.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+    }
+    const result = await executeQuery3(
+      `UPDATE "apiCredentials"
+         SET "status" = $1, "updatedAt" = NOW()
+         WHERE "id" = $2
+         RETURNING id, "companyId", "userId", "name", "platform", "status", "lastUsedAt", "createdAt", "updatedAt"`,
+      [input.status, input.credentialId]
+    );
+    return result.rows[0];
+  }),
+  /**
+   * Deletar uma credencial
+   */
+  delete: protectedProcedure.input(external_exports.object({ credentialId: external_exports.number().int().positive() })).mutation(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const credResult = await executeQuery3(
+      `SELECT * FROM "apiCredentials" WHERE "id" = $1`,
+      [input.credentialId]
+    );
+    if (credResult.rows.length === 0) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Credencial n\xE3o encontrada" });
+    }
+    const cred = credResult.rows[0];
+    const company = await getCompanyById(cred.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+    }
+    await executeQuery3(
+      `DELETE FROM "apiCredentials" WHERE "id" = $1`,
+      [input.credentialId]
+    );
+    return { success: true };
+  }),
+  /**
+   * Obter detalhes de uma credencial (sem o token)
+   */
+  get: protectedProcedure.input(external_exports.object({ credentialId: external_exports.number().int().positive() })).query(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const credResult = await executeQuery3(
+      `SELECT id, "companyId", "userId", "name", "platform", "status", "lastUsedAt", "createdAt", "updatedAt"
+         FROM "apiCredentials" WHERE "id" = $1`,
+      [input.credentialId]
+    );
+    if (credResult.rows.length === 0) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Credencial n\xE3o encontrada" });
+    }
+    const cred = credResult.rows[0];
+    const company = await getCompanyById(cred.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+    }
+    return cred;
   })
 });
 
@@ -55384,7 +55671,9 @@ var appRouter = router({
   // ── Rastreamento de UTMs e Vendas ─────────────────────────────────────────
   utm: utmRouter,
   // ── Configuração de Webhooks ──────────────────────────────────────────────
-  webhook: webhookRouter
+  webhook: webhookRouter,
+  // ── Credenciais de API ────────────────────────────────────────────────────
+  apiCredentials: apiCredentialsRouter
 });
 
 // server/_core/context.ts

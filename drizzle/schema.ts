@@ -284,3 +284,35 @@ export const webhookConfigsRelations = relations(webhookConfigs, ({ one }) => ({
     references: [companies.id],
   }),
 }));
+
+/**
+ * Credenciais de API — para integração com plataformas externas
+ * Cada credencial tem um token único que é mostrado apenas uma vez
+ */
+export const apiCredentials = pgTable("apiCredentials", {
+  id: serial("id").primaryKey(),
+  companyId: integer("companyId").notNull(),
+  userId: integer("userId").notNull(),
+  /** Nome/identificador da credencial (ex: "VIKING JEJUM", "RODRIGO") */
+  name: varchar("name", { length: 255 }).notNull(),
+  /** Token criptografado armazenado */
+  tokenHash: varchar("tokenHash", { length: 255 }).notNull(),
+  /** Plataforma/serviço para o qual a credencial é (ex: "shopify", "custom", etc) */
+  platform: varchar("platform", { length: 64 }).notNull(),
+  /** Status da credencial */
+  status: varchar("status", { length: 64 }).default("active"),
+  /** Última vez que foi usado */
+  lastUsedAt: timestamp("lastUsedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type ApiCredential = typeof apiCredentials.$inferSelect;
+export type InsertApiCredential = typeof apiCredentials.$inferInsert;
+
+export const apiCredentialsRelations = relations(apiCredentials, ({ one }) => ({
+  company: one(companies, {
+    fields: [apiCredentials.companyId],
+    references: [companies.id],
+  }),
+}));

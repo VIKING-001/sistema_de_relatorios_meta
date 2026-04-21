@@ -23,23 +23,31 @@ const createWebhookSchema = z.object({
     // Plataformas de infoproduto
     "hotmart", "kiwify", "eduzz", "braip", "monetizze",
 
-    // E-commerce Brasil
-    "cartpanda", "vega1", "kirvano", "perfectpay", "yampi",
-    "lastlink", "payt", "logzz", "adoorel", "tribopay",
-    "clickbank", "ticto", "pepper", "buygoods", "mundpay",
-    "disrupty", "greenn", "guru", "digistore", "hubla",
-    "doppus", "frendz", "invictuspay", "appmax", "nitropagamentos",
-    "goatpay",
+    // E-commerce & Vendas (30+)
+    "cartpanda", "vega1", "kirvano", "perfectpay", "yampi", "lastlink", "payt", "logzz", "adoorel", "tribopay",
+    "clickbank", "ticto", "pepper", "buygoods", "mundpay", "disrupty", "greenn", "guru", "digistore", "hubla",
+    "doppus", "frendz", "invictuspay", "appmax", "nitropagamentos", "goatpay", "nuvemshop",
 
-    // Gateways de pagamento principais
-    "facilzap", "mercadopago", "pagseguro", "stripe", "paypal",
-    "cielo", "rede", "stone", "getnet", "todo", "vindi",
+    // Gateways de pagamento (100+)
+    "facilzap", "mercadopago", "pagseguro", "stripe", "paypal", "cielo", "rede", "stone", "getnet", "todo",
+    "vindi", "hebreus", "iexperience", "pagtrust", "fortpay", "systeme", "ironpay", "clinqpay", "sharkpays", "maxweb",
+    "zoutl", "pantherfy", "strivpay", "atomopay", "allpay", "bullpay", "octuspay", "zippify", "masterfy", "inovapag",
+    "soutpay", "wolfpay", "sigmapagamentos", "nexopavt", "wegate", "unicornify", "alipes", "vittapay", "fluxionpay", "nezzyay",
+    "pmhmpay", "trivexpay", "gatpay", "bearpay", "amandlspay", "digipag", "alphapay", "assetpay", "brgateway", "creedx",
+    "hotfy", "klivopay", "plumify", "primegate", "wise2pay", "visionpay", "sharkbytepay", "sigmapay", "zeroeonepay", "traxon",
+    "bloo", "kitepay", "b4you", "risepay", "urus", "cakto", "flashpay", "digitalmart", "exattus", "lunarcash",
+    "youshop", "blackpay", "venuzpay", "lunacheckout", "fullsale", "bullspay", "moodl", "nikpay", "ghostspay", "keedpay",
+    "salduu", "viperpay", "sunize", "assiny", "wiapy", "unicopaq", "imperialpay", "zedy", "sinlx", "voomp",
+    "ombrelone", "pushinpay", "genesys", "onprofit", "sacapay", "cloudfy", "kuenha", "ninjapay", "xgrow", "ggcheckout",
+    "panteracheckout", "nublapay", "cartly", "pagah", "pagsafe", "nomadfy", "sync", "lpov", "auryon369", "paradise",
+    "firepay", "lowify", "hyppe", "seedpay", "membriz", "cerefy", "pagamerican", "affiliaxpay", "kambafy", "approval",
+    "zuckpay", "xynonpay", "kavoo", "fruitfy", "coeud", "clickpay", "orlacheckout", "tukanopay",
 
     // Marketplaces
     "amazon", "ebay", "aliexpress", "mercado_livre",
 
-    // Outros
-    "custom_api", "n8n", "make"
+    // Automação & Custom
+    "n8n", "make", "custom_api"
   ]),
 });
 

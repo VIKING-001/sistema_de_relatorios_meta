@@ -10,6 +10,7 @@ import { TRPCError } from "@trpc/server";
 import { loginUser, registerUser, signSessionJwt } from "./_core/localAuth";
 import { utmRouter } from "./utm.router";
 import { webhookRouter } from "./webhook.router";
+import { apiCredentialsRouter } from "./api-credentials.router";
 
 // Validação de entrada para empresa
 const createCompanySchema = z.object({
@@ -775,6 +776,9 @@ export const appRouter = router({
 
   // ── Configuração de Webhooks ──────────────────────────────────────────────
   webhook: webhookRouter,
+
+  // ── Credenciais de API ────────────────────────────────────────────────────
+  apiCredentials: apiCredentialsRouter,
 });
 
 export type AppRouter = typeof appRouter;
