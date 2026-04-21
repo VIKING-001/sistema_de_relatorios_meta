@@ -21,6 +21,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { WEBHOOK_PLATFORMS, PLATFORMS_BY_CATEGORY, CATEGORY_LABELS } from "@/lib/platforms";
 
 const INTEGRATIONS = [
   {
@@ -74,82 +76,18 @@ const INTEGRATIONS = [
   },
 ];
 
-const WEBHOOK_PLATFORMS = [
-  // 🛍️ Plataformas principais
-  { id: "shopify", name: "Shopify", icon: "🛍️" },
-  { id: "woocommerce", name: "WooCommerce", icon: "🔧" },
-  { id: "zapier", name: "Zapier", icon: "⚡" },
-
-  // 📚 Plataformas de infoproduto
-  { id: "hotmart", name: "Hotmart", icon: "🔥" },
-  { id: "kiwify", name: "Kiwify", icon: "🥝" },
-  { id: "eduzz", name: "Eduzz", icon: "📚" },
-  { id: "braip", name: "Braip", icon: "🧠" },
-  { id: "monetizze", name: "Monetizze", icon: "💰" },
-
-  // 🏪 E-commerce & Vendas
-  { id: "cartpanda", name: "CartPanda", icon: "🐼" },
-  { id: "vega1", name: "Vega 1", icon: "✨" },
-  { id: "kirvano", name: "Kirvano", icon: "🎯" },
-  { id: "perfectpay", name: "PerfectPay", icon: "✅" },
-  { id: "yampi", name: "Yampi", icon: "🎨" },
-  { id: "lastlink", name: "Lastlink", icon: "🔗" },
-  { id: "payt", name: "Payt", icon: "💳" },
-  { id: "logzz", name: "Logzz", icon: "📊" },
-  { id: "adoorel", name: "Adoorel", icon: "🎁" },
-  { id: "tribopay", name: "TriboPay", icon: "🔔" },
-  { id: "clickbank", name: "Clickbank", icon: "💸" },
-  { id: "ticto", name: "Ticto", icon: "⏱️" },
-  { id: "pepper", name: "Pepper", icon: "🌶️" },
-  { id: "buygoods", name: "BuyGoods", icon: "🛒" },
-  { id: "mundpay", name: "MundPay", icon: "🌎" },
-  { id: "disrupty", name: "Disrupty", icon: "⚡" },
-  { id: "greenn", name: "Greenn", icon: "💚" },
-  { id: "guru", name: "Guru", icon: "🧘" },
-  { id: "digistore", name: "Digistore24", icon: "🏪" },
-  { id: "hubla", name: "Hubla", icon: "🌐" },
-  { id: "doppus", name: "Doppus", icon: "🚀" },
-  { id: "frendz", name: "Frendz", icon: "👥" },
-  { id: "invictuspay", name: "InvictusPay", icon: "🎖️" },
-  { id: "appmax", name: "Appmax", icon: "📱" },
-  { id: "nitropagamentos", name: "Nitro Pagamentos", icon: "💨" },
-  { id: "goatpay", name: "GoatPay", icon: "🐐" },
-
-  // 💳 Gateways de Pagamento
-  { id: "facilzap", name: "FácilZap", icon: "⚡" },
-  { id: "mercadopago", name: "Mercado Pago", icon: "💛" },
-  { id: "pagseguro", name: "PagSeguro", icon: "🔐" },
-  { id: "stripe", name: "Stripe", icon: "🌐" },
-  { id: "paypal", name: "PayPal", icon: "🅿️" },
-  { id: "cielo", name: "Cielo", icon: "💳" },
-  { id: "rede", name: "Rede", icon: "🔗" },
-  { id: "stone", name: "Stone", icon: "🪨" },
-  { id: "getnet", name: "GetNet", icon: "📡" },
-  { id: "todo", name: "Todo", icon: "✅" },
-  { id: "vindi", name: "Vindi", icon: "💎" },
-
-  // 🛒 Marketplaces
-  { id: "amazon", name: "Amazon", icon: "🅰️" },
-  { id: "ebay", name: "eBay", icon: "🔴" },
-  { id: "aliexpress", name: "AliExpress", icon: "🌏" },
-  { id: "mercado_livre", name: "Mercado Livre", icon: "🟡" },
-
-  // ⚙️ Automação & Custom
-  { id: "n8n", name: "n8n", icon: "🔄" },
-  { id: "make", name: "Make (Integromat)", icon: "🎭" },
-  { id: "custom_api", name: "API Customizada", icon: "🔌" },
-  { id: "custom", name: "Genérico/Webhook Bruto", icon: "⚙️" },
-] as const;
 
 export default function Integracoes() {
   const { data: companies } = trpc.company.list.useQuery();
   const [, setLocation] = useLocation();
   const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<string>("shopify");
+  const [selectedWebhookTab, setSelectedWebhookTab] = useState<string>("principal");
+  const [selectedCredentialTab, setSelectedCredentialTab] = useState<string>("principal");
   const [showAddWebhook, setShowAddWebhook] = useState(false);
   const [showAddCredential, setShowAddCredential] = useState(false);
   const [credentialName, setCredentialName] = useState("");
-  const [credentialPlatform, setCredentialPlatform] = useState("custom");
+  const [credentialPlatform, setCredentialPlatform] = useState("shopify");
   const [showTokenModal, setShowTokenModal] = useState(false);
   const [newToken, setNewToken] = useState<{ name: string; token: string } | null>(null);
 
@@ -426,18 +364,32 @@ export default function Integracoes() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <label className="text-xs font-bold text-white/60">Plataforma</label>
-                <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
-                  <SelectTrigger className="w-full bg-white/5 border-white/10 text-white rounded-lg">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-950 border-white/10">
-                    {WEBHOOK_PLATFORMS.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.icon} {p.name}
-                      </SelectItem>
+                <Tabs value={selectedWebhookTab} onValueChange={setSelectedWebhookTab} className="w-full">
+                  <TabsList className="grid grid-cols-3 md:grid-cols-6 gap-1 bg-white/5 p-1 h-auto">
+                    {(Object.keys(PLATFORMS_BY_CATEGORY) as Array<keyof typeof PLATFORMS_BY_CATEGORY>).map((category) => (
+                      <TabsTrigger key={category} value={category} className="text-xs">
+                        {CATEGORY_LABELS[category].split(" ")[0]}
+                      </TabsTrigger>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </TabsList>
+
+                  {(Object.entries(PLATFORMS_BY_CATEGORY) as Array<[string, any]>).map(([category, platforms]) => (
+                    <TabsContent key={category} value={category} className="mt-3">
+                      <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
+                        <SelectTrigger className="w-full bg-white/5 border-white/10 text-white rounded-lg">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-950 border-white/10 max-h-72">
+                          {platforms.map((p: any) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.icon} {p.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TabsContent>
+                  ))}
+                </Tabs>
               </div>
 
               <div className="flex gap-2">
@@ -595,18 +547,32 @@ export default function Integracoes() {
 
               <div className="space-y-2">
                 <label className="text-xs font-bold text-white/60">Plataforma</label>
-                <Select value={credentialPlatform} onValueChange={setCredentialPlatform}>
-                  <SelectTrigger className="w-full bg-white/5 border-white/10 text-white rounded-lg">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-950 border-white/10">
-                    {WEBHOOK_PLATFORMS.slice(0, 20).map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.icon} {p.name}
-                      </SelectItem>
+                <Tabs value={selectedCredentialTab} onValueChange={setSelectedCredentialTab} className="w-full">
+                  <TabsList className="grid grid-cols-3 md:grid-cols-6 gap-1 bg-white/5 p-1 h-auto">
+                    {(Object.keys(PLATFORMS_BY_CATEGORY) as Array<keyof typeof PLATFORMS_BY_CATEGORY>).map((category) => (
+                      <TabsTrigger key={category} value={category} className="text-xs">
+                        {CATEGORY_LABELS[category].split(" ")[0]}
+                      </TabsTrigger>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </TabsList>
+
+                  {(Object.entries(PLATFORMS_BY_CATEGORY) as Array<[string, any]>).map(([category, platforms]) => (
+                    <TabsContent key={category} value={category} className="mt-3">
+                      <Select value={credentialPlatform} onValueChange={setCredentialPlatform}>
+                        <SelectTrigger className="w-full bg-white/5 border-white/10 text-white rounded-lg">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-950 border-white/10 max-h-72">
+                          {platforms.map((p: any) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.icon} {p.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TabsContent>
+                  ))}
+                </Tabs>
               </div>
 
               <div className="flex gap-2">
