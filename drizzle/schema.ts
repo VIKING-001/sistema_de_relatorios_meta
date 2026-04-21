@@ -128,3 +128,159 @@ export const reportMetricsRelations = relations(reportMetrics, ({ one }) => ({
     references: [reports.id],
   }),
 }));
+
+/**
+ * Rastreamento de links UTM — cada link gerado fica registrado
+ */
+export const utmTracking = pgTable("utmTracking", {
+  id: serial("id").primaryKey(),
+  companyId: integer("companyId").notNull(),
+  userId: integer("userId").notNull(),
+  /** URL original (sem UTMs) */
+  baseUrl: text("baseUrl").notNull(),
+  /** Parâmetros UTM completos */
+  utmSource: varchar("utmSource", { length: 255 }),
+  utmMedium: varchar("utmMedium", { length: 255 }),
+  utmCampaign: varchar("utmCampaign", { length: 255 }).notNull(),
+  utmContent: varchar("utmContent", { length: 255 }),
+  utmTerm: varchar("utmTerm", { length: 255 }),
+  /** URL completa com UTMs para usar em campanhas */
+  trackingUrl: text("trackingUrl").notNull(),
+  /** Hash curto para encurtador de URL (opcional) */
+  shortCode: varchar("shortCode", { length: 20 }).unique(),
+  /** Quantas vezes o link foi clicado (rastreado via redirect) */
+  clickCount: integer("clickCount").notNull().default(0),
+  /** Quantas conversões vieram deste link */
+  conversionCount: integer("conversionCount").notNull().default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type UtmTracking = typeof utmTracking.$inferSelect;
+export type InsertUtmTracking = typeof utmTracking.$inferInsert;
+
+/**
+ * Sessões rastreadas — quando alguém clica num link UTM, registramos a sessão
+ */
+export const utmSessions = pgTable("utmSessions", {
+  id: serial("id").primaryKey(),
+  trackingId: integer("trackingId").notNull(),
+  /** ID único da sessão (pode ser cookie/browser fingerprint) */
+  sessionId: varchar("sessionId", { length: 255 }).notNull(),
+  /** IP do usuário */
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  /** User agent do navegador */
+  userAgent: text("userAgent"),
+  /** Referrer */
+  referrer: text("referrer"),
+  clickedAt: timestamp("clickedAt").defaultNow().notNull(),
+  convertedAt: timestamp("convertedAt"),
+  conversionValue: decimal("conversionValue", { precision: 12, scale: 2 }),
+  /** Ex: "purchase", "signup", "email_lead" */
+  conversionType: varchar("conversionType", { length: 64 }),
+  /** ID externo da conversão (ex: order ID, customer ID) */
+  externalConversionId: varchar("externalConversionId", { length: 255 }),
+});
+
+export type UtmSession = typeof utmSessions.$inferSelect;
+export type InsertUtmSession = typeof utmSessions.$inferInsert;
+
+/**
+ * Vendas rastreadas — registro de cada conversão/venda
+ * Conecta compra real com a UTM que originou
+ */
+export const trackedSales = pgTable("trackedSales", {
+  id: serial("id").primaryKey(),
+  companyId: integer("companyId").notNull(),
+  userId: integer("userId").notNull(),
+  /** Sessão que originou a compra */
+  sessionId: integer("sessionId"),
+  /** UTM que originou */
+  trackingId: integer("trackingId"),
+  /** Parâmetros UTM no momento da venda (snapshot) */
+  utmSource: varchar("utmSource", { length: 255 }),
+  utmMedium: varchar("utmMedium", { length: 255 }),
+  utmCampaign: varchar("utmCampaign", { length: 255 }),
+  utmContent: varchar("utmContent", { length: 255 }),
+  utmTerm: varchar("utmTerm", { length: 255 }),
+  /** Dados da venda */
+  orderId: varchar("orderId", { length: 255 }).notNull(),
+  orderValue: decimal("orderValue", { precision: 12, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 3 }).default("BRL"),
+  /** Marca de tempo da venda */
+  saleDate: timestamp("saleDate").notNull(),
+  /** Dados do cliente (anonimizados) */
+  customerEmail: varchar("customerEmail", { length: 320 }),
+  customerPhone: varchar("customerPhone", { length: 20 }),
+  /** Qual plataforma capturou (webhook Shopify, webhook custom, Meta API, etc) */
+  source: varchar("source", { length: 64 }).notNull(),
+  /** Identificador da plataforma (ex: Shopify order ID, WooCommerce order ID) */
+  externalId: varchar("externalId", { length: 255 }),
+  /** Status da venda (pending, confirmed, refunded) */
+  status: varchar("status", { length: 64 }).default("confirmed"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type TrackedSale = typeof trackedSales.$inferSelect;
+export type InsertTrackedSale = typeof trackedSales.$inferInsert;
+
+/**
+ * Webhooks configurados — credenciais para integrar com plataformas de vendas
+ */
+export const webhookConfigs = pgTable("webhookConfigs", {
+  id: serial("id").primaryKey(),
+  companyId: integer("companyId").notNull(),
+  userId: integer("userId").notNull(),
+  /** Tipo de plataforma: shopify, woocommerce, custom, zapier */
+  platform: varchar("platform", { length: 64 }).notNull(),
+  /** URL do webhook (gerado pelo sistema) que a plataforma vai chamar */
+  webhookUrl: text("webhookUrl").notNull(),
+  /** Secret para validar webhook (HMAC) */
+  webhookSecret: varchar("webhookSecret", { length: 255 }).notNull(),
+  /** Dados de configuração específicos da plataforma (JSON) */
+  config: text("config"),
+  /** Status da integração */
+  status: varchar("status", { length: 64 }).default("active"),
+  /** Último ping/teste bem-sucedido */
+  lastHealthCheck: timestamp("lastHealthCheck"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type WebhookConfig = typeof webhookConfigs.$inferSelect;
+export type InsertWebhookConfig = typeof webhookConfigs.$inferInsert;
+
+// ─── Relations para rastreamento ───────────────────────────────────────────
+export const utmTrackingRelations = relations(utmTracking, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [utmTracking.companyId],
+    references: [companies.id],
+  }),
+  sessions: many(utmSessions),
+}));
+
+export const utmSessionsRelations = relations(utmSessions, ({ one }) => ({
+  tracking: one(utmTracking, {
+    fields: [utmSessions.trackingId],
+    references: [utmTracking.id],
+  }),
+}));
+
+export const trackedSalesRelations = relations(trackedSales, ({ one }) => ({
+  company: one(companies, {
+    fields: [trackedSales.companyId],
+    references: [companies.id],
+  }),
+  tracking: one(utmTracking, {
+    fields: [trackedSales.trackingId],
+    references: [utmTracking.id],
+  }),
+}));
+
+export const webhookConfigsRelations = relations(webhookConfigs, ({ one }) => ({
+  company: one(companies, {
+    fields: [webhookConfigs.companyId],
+    references: [companies.id],
+  }),
+}));

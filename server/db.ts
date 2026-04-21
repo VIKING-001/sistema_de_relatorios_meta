@@ -1,10 +1,10 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "../drizzle/schema";
-import { users, companies, reports, reportMetrics } from "../drizzle/schema";
+import { users, companies, reports, reportMetrics, utmTracking, utmSessions, trackedSales, webhookConfigs } from "../drizzle/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { ENV } from "./_core/env";
-import type { User, InsertUser, Company, Report, ReportMetrics, InsertReportMetrics } from "../drizzle/schema";
+import type { User, InsertUser, Company, Report, ReportMetrics, InsertReportMetrics, UtmTracking, InsertUtmTracking, UtmSession, InsertUtmSession, TrackedSale, InsertTrackedSale, WebhookConfig, InsertWebhookConfig } from "../drizzle/schema";
 
 let dbInstance: any;
 let rawPool: InstanceType<typeof Pool> | null = null;
@@ -88,6 +88,82 @@ async function ensureTables(pool: InstanceType<typeof Pool>) {
     `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "purchaseValue" numeric(12, 2) DEFAULT '0.00' NOT NULL`,
     `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "costPerPurchase" numeric(10, 2) DEFAULT '0.00' NOT NULL`,
     `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "costPerMessage" numeric(10, 2) DEFAULT '0.00' NOT NULL`,
+    // UTM Tracking tables
+    `CREATE TABLE IF NOT EXISTS "utmTracking" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "companyId" integer NOT NULL,
+      "userId" integer NOT NULL,
+      "baseUrl" text NOT NULL,
+      "utmSource" varchar(255),
+      "utmMedium" varchar(255),
+      "utmCampaign" varchar(255) NOT NULL,
+      "utmContent" varchar(255),
+      "utmTerm" varchar(255),
+      "trackingUrl" text NOT NULL,
+      "shortCode" varchar(20),
+      "clickCount" integer DEFAULT 0 NOT NULL,
+      "conversionCount" integer DEFAULT 0 NOT NULL,
+      "createdAt" timestamp DEFAULT now() NOT NULL,
+      "updatedAt" timestamp DEFAULT now() NOT NULL,
+      CONSTRAINT "utmTracking_shortCode_unique" UNIQUE("shortCode")
+    )`,
+    `CREATE TABLE IF NOT EXISTS "utmSessions" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "trackingId" integer NOT NULL,
+      "sessionId" varchar(255) NOT NULL,
+      "ipAddress" varchar(45),
+      "userAgent" text,
+      "referrer" text,
+      "clickedAt" timestamp DEFAULT now() NOT NULL,
+      "convertedAt" timestamp,
+      "conversionValue" numeric(12, 2),
+      "conversionType" varchar(64),
+      "externalConversionId" varchar(255)
+    )`,
+    `CREATE TABLE IF NOT EXISTS "trackedSales" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "companyId" integer NOT NULL,
+      "userId" integer NOT NULL,
+      "sessionId" integer,
+      "trackingId" integer,
+      "utmSource" varchar(255),
+      "utmMedium" varchar(255),
+      "utmCampaign" varchar(255),
+      "utmContent" varchar(255),
+      "utmTerm" varchar(255),
+      "orderId" varchar(255) NOT NULL,
+      "orderValue" numeric(12, 2) NOT NULL,
+      "currency" varchar(3) DEFAULT 'BRL',
+      "saleDate" timestamp NOT NULL,
+      "customerEmail" varchar(320),
+      "customerPhone" varchar(20),
+      "source" varchar(64) NOT NULL,
+      "externalId" varchar(255),
+      "status" varchar(64) DEFAULT 'confirmed',
+      "createdAt" timestamp DEFAULT now() NOT NULL,
+      "updatedAt" timestamp DEFAULT now() NOT NULL
+    )`,
+    `CREATE TABLE IF NOT EXISTS "webhookConfigs" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "companyId" integer NOT NULL,
+      "userId" integer NOT NULL,
+      "platform" varchar(64) NOT NULL,
+      "webhookUrl" text NOT NULL,
+      "webhookSecret" varchar(255) NOT NULL,
+      "config" text,
+      "status" varchar(64) DEFAULT 'active',
+      "lastHealthCheck" timestamp,
+      "createdAt" timestamp DEFAULT now() NOT NULL,
+      "updatedAt" timestamp DEFAULT now() NOT NULL
+    )`,
+    // UTM indices for performance
+    `CREATE INDEX IF NOT EXISTS "idx_utmTracking_companyId" ON "utmTracking"("companyId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_utmSessions_trackingId" ON "utmSessions"("trackingId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_utmSessions_sessionId" ON "utmSessions"("sessionId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_trackedSales_companyId" ON "trackedSales"("companyId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_trackedSales_trackingId" ON "trackedSales"("trackingId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_trackedSales_saleDate" ON "trackedSales"("saleDate")`,
+    `CREATE INDEX IF NOT EXISTS "idx_webhookConfigs_companyId" ON "webhookConfigs"("companyId")`,
   ];
   try {
     for (const sql of statements) {

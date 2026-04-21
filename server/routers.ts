@@ -8,6 +8,7 @@ import { calculateCPM, calculateCTR } from "../shared/metrics";
 import { nanoid } from "nanoid";
 import { TRPCError } from "@trpc/server";
 import { loginUser, registerUser, signSessionJwt } from "./_core/localAuth";
+import { utmRouter } from "./utm.router";
 
 // Validação de entrada para empresa
 const createCompanySchema = z.object({
@@ -767,6 +768,9 @@ export const appRouter = router({
         return { accounts, totals, failed, days: input.days };
       }),
   }),
+
+  // ── Rastreamento de UTMs e Vendas ─────────────────────────────────────────
+  utm: utmRouter,
 });
 
 export type AppRouter = typeof appRouter;
