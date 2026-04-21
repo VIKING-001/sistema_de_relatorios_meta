@@ -124,9 +124,9 @@ export default function PublicReport() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#060c18] flex items-center justify-center">
+      <div className="min-h-screen bg-[#030509] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-yellow-400" />
           <p className="text-white/30 text-sm">Carregando relatório...</p>
         </div>
       </div>
@@ -135,7 +135,7 @@ export default function PublicReport() {
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-[#060c18] flex items-center justify-center">
+      <div className="min-h-screen bg-[#030509] flex items-center justify-center">
         <div className="text-center px-6">
           <p className="text-5xl mb-6">📭</p>
           <h1 className="text-2xl font-bold text-white mb-3">Relatório não encontrado</h1>
@@ -162,14 +162,14 @@ export default function PublicReport() {
   const roas           = totalSpent > 0 && purchaseValue > 0 ? (purchaseValue / totalSpent).toFixed(2) : null;
 
   return (
-    <div className="min-h-screen relative" style={{ background: "linear-gradient(135deg, #060c18 0%, #080f20 50%, #060c18 100%)" }}>
+    <div className="min-h-screen relative" style={{ background: "linear-gradient(135deg, #030509 0%, #0B0F19 50%, #030509 100%)" }}>
 
       {/* Glows de fundo */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-10%] left-[10%] w-[500px] h-[500px] rounded-full opacity-[0.04]"
-          style={{ background: "radial-gradient(circle, #3B82F6, transparent)" }} />
+          style={{ background: "radial-gradient(circle, #FFB81A, transparent)" }} />
         <div className="absolute bottom-[10%] right-[5%] w-[400px] h-[400px] rounded-full opacity-[0.04]"
-          style={{ background: "radial-gradient(circle, #8B5CF6, transparent)" }} />
+          style={{ background: "radial-gradient(circle, #C9A24D, transparent)" }} />
       </div>
 
       {/* ── Header sticky ── */}
@@ -202,7 +202,7 @@ export default function PublicReport() {
         {/* ── Título do período ── */}
         <div className="text-center mb-10 sm:mb-14">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-5">
-            <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+            <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
             <span className="text-xs text-white/50 font-medium">
               {displayDate(report.startDate)} a {displayDate(report.endDate)}
             </span>

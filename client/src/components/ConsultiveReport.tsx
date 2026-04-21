@@ -80,8 +80,8 @@ export default function ConsultiveReport({ metrics }: ConsultiveReportProps) {
       </div>
 
       {/* Recomendação Principal */}
-      <div className="bg-gradient-to-r from-cyan-500/15 to-blue-600/15 border border-cyan-500/30 rounded-2xl p-5">
-        <p className="text-[10px] font-bold text-cyan-400/70 uppercase tracking-widest mb-1.5">
+      <div className="bg-gradient-to-r from-yellow-500/15 to-yellow-600/15 border border-yellow-500/30 rounded-2xl p-5">
+        <p className="text-[10px] font-bold text-yellow-400/70 uppercase tracking-widest mb-1.5">
           💡 Recomendação Geral
         </p>
         <p className="text-white text-sm leading-relaxed">{recomendacaoPrincipal}</p>
