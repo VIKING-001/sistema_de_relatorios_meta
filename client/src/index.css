@@ -35,34 +35,34 @@
 }
 
 :root {
-  --background: #020617; /* Slate 950 */
-  --foreground: #f8fafc;
-  
-  --card: rgba(15, 23, 42, 0.4); /* Slate 900 with opacity */
-  --card-foreground: #f8fafc;
-  
-  --popover: #0f172a;
-  --popover-foreground: #f8fafc;
-  
-  --primary: #0ea5e9; /* Sky 500 */
-  --primary-foreground: #ffffff;
-  
-  --secondary: #1e293b;
-  --secondary-foreground: #cbd5e1;
-  
-  --muted: #334155;
-  --muted-foreground: #94a3b8;
-  
-  --accent: #38bdf8;
-  --accent-foreground: #ffffff;
-  
+  --background: #030509; /* Fundo premium escuro */
+  --foreground: #F7F7F7;
+
+  --card: rgba(11, 15, 25, 0.6); /* Bordas/Cards */
+  --card-foreground: #F7F7F7;
+
+  --popover: #0B0F19;
+  --popover-foreground: #F7F7F7;
+
+  --primary: #FFB81A; /* Dourado primário */
+  --primary-foreground: #030509;
+
+  --secondary: #0B0F19;
+  --secondary-foreground: #C9A24D;
+
+  --muted: #1A1F2E;
+  --muted-foreground: #8B92A8;
+
+  --accent: #C9A24D; /* Dourado suave */
+  --accent-foreground: #030509;
+
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.05);
-  --ring: #0ea5e9;
-  
+
+  --border: rgba(255, 184, 26, 0.15);
+  --input: rgba(255, 184, 26, 0.08);
+  --ring: #FFB81A;
+
   --radius: 1rem;
 }
 
@@ -82,11 +82,11 @@
 }
 
 .glow-blue {
-  box-shadow: 0 0 20px -5px rgba(14, 165, 233, 0.5);
+  box-shadow: 0 0 20px -5px rgba(255, 184, 26, 0.4);
 }
 
 .glow-cyan {
-  box-shadow: 0 0 30px -10px rgba(6, 182, 212, 0.4);
+  box-shadow: 0 0 30px -10px rgba(255, 184, 26, 0.3);
 }
 
 @layer base {
@@ -150,13 +150,13 @@
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(14, 165, 233, 0.3);
+  background: rgba(255, 184, 26, 0.3);
 }
 
 body {
   overflow-x: hidden;
   background-attachment: fixed;
-  background-image: radial-gradient(circle at 50% 0%, rgba(14, 165, 233, 0.05) 0%, transparent 50%);
+  background-image: radial-gradient(circle at 50% 0%, rgba(255, 184, 26, 0.08) 0%, transparent 50%);
 }
 
 @layer components {

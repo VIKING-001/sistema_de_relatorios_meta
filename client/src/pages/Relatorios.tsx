@@ -11,6 +11,7 @@ export default function Relatorios() {
   const { data: companies, isLoading, refetch } = trpc.company.list.useQuery();
   const [showForm, setShowForm] = useState(false);
   const [autoOpenMetaCompanyId, setAutoOpenMetaCompanyId] = useState<number | null>(null);
+  const [expandedCompanyId, setExpandedCompanyId] = useState<number | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -77,6 +78,8 @@ export default function Relatorios() {
               company={company}
               onUpdate={() => refetch()}
               autoOpenMeta={autoOpenMetaCompanyId === company.id}
+              isExpanded={expandedCompanyId === company.id}
+              onToggleExpanded={(isExpanded) => setExpandedCompanyId(isExpanded ? company.id : null)}
             />
           ))}
         </div>

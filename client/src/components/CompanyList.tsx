@@ -18,14 +18,16 @@ interface CompanyListProps {
   company: Company;
   onUpdate: () => void;
   autoOpenMeta?: boolean;
+  isExpanded?: boolean;
+  onToggleExpanded?: (isExpanded: boolean) => void;
 }
 
-export default function CompanyList({ company, onUpdate, autoOpenMeta = false }: CompanyListProps) {
+export default function CompanyList({ company, onUpdate, autoOpenMeta = false, isExpanded = false, onToggleExpanded }: CompanyListProps) {
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [showListDialog, setShowListDialog] = useState(false);
   const [editingReport, setEditingReport] = useState<Report | null>(null);
   const [isEditingCompany, setIsEditingCompany] = useState(false);
-  const [showMetaPanel, setShowMetaPanel] = useState(autoOpenMeta);
+  const [showMetaPanel, setShowMetaPanel] = useState(autoOpenMeta || isExpanded);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [isSelectingAccount, setIsSelectingAccount] = useState(false);
 
@@ -118,7 +120,11 @@ export default function CompanyList({ company, onUpdate, autoOpenMeta = false }:
             <div className="flex items-center gap-2">
               {/* Badge Meta */}
               <button
-                onClick={() => setShowMetaPanel(!showMetaPanel)}
+                onClick={() => {
+                  const newState = !showMetaPanel;
+                  setShowMetaPanel(newState);
+                  onToggleExpanded?.(newState);
+                }}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
                   isConnected
                     ? "bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/30"

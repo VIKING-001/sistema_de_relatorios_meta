@@ -40634,6 +40634,12 @@ var reportMetrics = pgTable("reportMetrics", {
   costPerProfileVisit: decimal("costPerProfileVisit", { precision: 10, scale: 2 }).notNull().default("0.00"),
   cpm: decimal("cpm", { precision: 10, scale: 2 }).notNull().default("0.00"),
   ctr: decimal("ctr", { precision: 5, scale: 2 }).notNull().default("0.00"),
+  /** Conversões / Compras */
+  purchases: integer("purchases").notNull().default(0),
+  purchaseValue: decimal("purchaseValue", { precision: 12, scale: 2 }).notNull().default("0.00"),
+  costPerPurchase: decimal("costPerPurchase", { precision: 10, scale: 2 }).notNull().default("0.00"),
+  /** Custo por mensagem iniciada */
+  costPerMessage: decimal("costPerMessage", { precision: 10, scale: 2 }).notNull().default("0.00"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull()
 });
@@ -40677,8 +40683,10 @@ var ENV = {
   /** Meta / Facebook Developer App */
   metaAppId: (process.env.META_APP_ID || "").trim(),
   metaAppSecret: (process.env.META_APP_SECRET || "").trim(),
-  /** Base URL do sistema (ex: https://sistemaderelatoriosmeta.vercel.app) */
-  appBaseUrl: process.env.APP_BASE_URL || "https://sistemaderelatoriosmeta.vercel.app"
+  /** URL base para OAuth callback (onde o Meta devolve o código) */
+  appBaseUrl: (process.env.APP_BASE_URL || "https://sistemaderelatoriosmeta.vercel.app").trim(),
+  /** URL do frontend para redirecionar após OAuth (pode ser diferente do callback) */
+  frontendUrl: (process.env.FRONTEND_URL || process.env.APP_BASE_URL || "https://sistemaderelatoriosmeta.vercel.app").trim()
 };
 console.log("[ENV] Environment loaded. Production:", ENV.isProduction);
 if (!ENV.databaseUrl) {
@@ -40752,9 +40760,18 @@ async function ensureTables(pool2) {
       "costPerProfileVisit" numeric(10, 2) DEFAULT '0.00' NOT NULL,
       "cpm" numeric(10, 2) DEFAULT '0.00' NOT NULL,
       "ctr" numeric(5, 2) DEFAULT '0.00' NOT NULL,
+      "purchases" integer DEFAULT 0 NOT NULL,
+      "purchaseValue" numeric(12, 2) DEFAULT '0.00' NOT NULL,
+      "costPerPurchase" numeric(10, 2) DEFAULT '0.00' NOT NULL,
+      "costPerMessage" numeric(10, 2) DEFAULT '0.00' NOT NULL,
       "createdAt" timestamp DEFAULT now() NOT NULL,
       "updatedAt" timestamp DEFAULT now() NOT NULL
-    )`
+    )`,
+    // Adiciona novas colunas de conversão em tabelas já existentes (idempotente)
+    `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "purchases" integer DEFAULT 0 NOT NULL`,
+    `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "purchaseValue" numeric(12, 2) DEFAULT '0.00' NOT NULL`,
+    `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "costPerPurchase" numeric(10, 2) DEFAULT '0.00' NOT NULL`,
+    `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "costPerMessage" numeric(10, 2) DEFAULT '0.00' NOT NULL`
   ];
   try {
     for (const sql2 of statements) {
@@ -40871,7 +40888,13 @@ async function createReport(companyId, userId, title, slug, startDate, endDate, 
 }
 async function getReportsByCompanyId(companyId) {
   const db = await getDb();
-  return db.select().from(reports).where(eq(reports.companyId, companyId)).orderBy(desc(reports.createdAt));
+  const rows = await db.select({ report: reports, metrics: reportMetrics }).from(reports).leftJoin(reportMetrics, eq(reportMetrics.reportId, reports.id)).where(eq(reports.companyId, companyId)).orderBy(desc(reports.createdAt));
+  return rows.map((row) => ({ ...row.report, metrics: row.metrics ?? null }));
+}
+async function getReportsWithMetricsByUserId(userId) {
+  const db = await getDb();
+  const rows = await db.select({ report: reports, metrics: reportMetrics }).from(reports).leftJoin(reportMetrics, eq(reportMetrics.reportId, reports.id)).where(eq(reports.userId, userId)).orderBy(desc(reports.createdAt));
+  return rows.map((row) => ({ ...row.report, metrics: row.metrics ?? null }));
 }
 async function getReportById(id) {
   const db = await getDb();
@@ -41312,19 +41335,20 @@ function registerOAuthRoutes(app2) {
     const state = getQueryParam(req, "state");
     const error46 = getQueryParam(req, "error");
     const errorReason = getQueryParam(req, "error_reason");
+    const frontendBase = ENV.frontendUrl;
     if (error46) {
       const msg = errorReason === "user_denied" ? "Autoriza\xE7\xE3o cancelada pelo usu\xE1rio." : error46;
-      res.redirect(302, "/?meta_error=" + encodeURIComponent(msg));
+      res.redirect(302, `${frontendBase}/?meta_error=` + encodeURIComponent(msg));
       return;
     }
     if (!code || !state) {
-      res.redirect(302, "/?meta_error=" + encodeURIComponent("Par\xE2metros inv\xE1lidos no retorno do Meta."));
+      res.redirect(302, `${frontendBase}/?meta_error=` + encodeURIComponent("Par\xE2metros inv\xE1lidos no retorno do Meta."));
       return;
     }
     try {
       const stateData = await verifyOAuthState(state);
       if (!stateData) {
-        res.redirect(302, "/?meta_error=" + encodeURIComponent("State inv\xE1lido ou expirado. Tente novamente."));
+        res.redirect(302, `${frontendBase}/?meta_error=` + encodeURIComponent("State inv\xE1lido ou expirado. Tente novamente."));
         return;
       }
       const { companyId } = stateData;
@@ -41336,10 +41360,10 @@ function registerOAuthRoutes(app2) {
       await updateCompanyMetaOAuth(companyId, access_token, expiresAt, autoAccountId);
       console.log(`[Meta OAuth] Empresa ${companyId} conectada. Contas encontradas: ${adAccounts.length}. Auto-selecionada: ${autoAccountId || "nenhuma"}`);
       const accountsParam = encodeURIComponent(JSON.stringify(adAccounts));
-      res.redirect(302, `/?meta_connected=1&companyId=${companyId}&accounts=${accountsParam}`);
+      res.redirect(302, `${frontendBase}/?meta_connected=1&companyId=${companyId}&accounts=${accountsParam}`);
     } catch (err) {
       console.error("[Meta OAuth] Callback error:", err);
-      res.redirect(302, "/?meta_error=" + encodeURIComponent(err?.message || "Erro desconhecido no OAuth do Meta."));
+      res.redirect(302, `${frontendBase}/?meta_error=` + encodeURIComponent(err?.message || "Erro desconhecido no OAuth do Meta."));
     }
   });
 }
@@ -54060,7 +54084,12 @@ var metricsSchema = external_exports.object({
   profileVisitsThroughCampaigns: external_exports.number().int().min(0).default(0),
   costPerProfileVisit: external_exports.number().min(0).default(0),
   cpm: external_exports.number().min(0).default(0),
-  ctr: external_exports.number().min(0).max(100).default(0)
+  ctr: external_exports.number().min(0).max(100).default(0),
+  // Conversões / Compras
+  purchases: external_exports.number().int().min(0).default(0),
+  purchaseValue: external_exports.number().min(0).default(0),
+  costPerPurchase: external_exports.number().min(0).default(0),
+  costPerMessage: external_exports.number().min(0).default(0)
 }).transform((data) => ({
   ...data,
   totalSpent: data.totalSpent.toString(),
@@ -54068,14 +54097,17 @@ var metricsSchema = external_exports.object({
   videoRetentionRate: data.videoRetentionRate.toString(),
   costPerProfileVisit: data.costPerProfileVisit.toString(),
   cpm: data.cpm.toString(),
-  ctr: data.ctr.toString()
+  ctr: data.ctr.toString(),
+  purchaseValue: data.purchaseValue.toString(),
+  costPerPurchase: data.costPerPurchase.toString(),
+  costPerMessage: data.costPerMessage.toString()
 }));
 async function fetchMetaInsights(adAccountId, accessToken, startDate, endDate) {
   const accountId = adAccountId.startsWith("act_") ? adAccountId : `act_${adAccountId}`;
   const timeRange = JSON.stringify({ since: startDate, until: endDate });
   const baseUrl = `https://graph.facebook.com/v19.0/${accountId}/insights`;
   const params = new URLSearchParams({
-    fields: "reach,impressions,spend,clicks,cpc,cpm,ctr,actions",
+    fields: "reach,impressions,spend,clicks,cpc,cpm,ctr,actions,action_values",
     time_range: timeRange,
     level: "account",
     access_token: accessToken
@@ -54102,6 +54134,10 @@ async function fetchMetaInsights(adAccountId, accessToken, startDate, endDate) {
       videoRetentionRate: 0,
       profileVisitsThroughCampaigns: 0,
       costPerProfileVisit: 0,
+      purchases: 0,
+      purchaseValue: 0,
+      costPerPurchase: 0,
+      costPerMessage: 0,
       _warning: "Nenhum dado encontrado para o per\xEDodo selecionado. Os campos foram zerados \u2014 verifique o per\xEDodo ou preencha manualmente."
     };
   }
@@ -54111,7 +54147,14 @@ async function fetchMetaInsights(adAccountId, accessToken, startDate, endDate) {
     return a ? Math.round(parseFloat(a.value)) : 0;
   };
   const actions = ins.actions || [];
+  const actionValues = ins.action_values || [];
+  const getActionValue = (av, type) => {
+    const a = (av || []).find((x) => x.action_type === type);
+    return a ? parseFloat(a.value) : 0;
+  };
   const messagesInitiated = getAction(actions, "onsite_conversion.messaging_conversation_started_7d") || getAction(actions, "onsite_conversion.messaging_first_reply") || getAction(actions, "onsite_conversion.total_messaging_connection") || 0;
+  const purchases = getAction(actions, "offsite_conversion.fb_pixel_purchase") || getAction(actions, "purchase") || getAction(actions, "omni_purchase") || 0;
+  const purchaseValue = getActionValue(actionValues, "offsite_conversion.fb_pixel_purchase") || getActionValue(actionValues, "purchase") || getActionValue(actionValues, "omni_purchase") || 0;
   let instagramReach = 0;
   let instagramProfileVisits = 0;
   let newInstagramFollowers = 0;
@@ -54155,7 +54198,11 @@ async function fetchMetaInsights(adAccountId, accessToken, startDate, endDate) {
     newInstagramFollowers,
     messagesInitiated,
     videoRetentionRate: 0,
-    costPerProfileVisit: instagramProfileVisits > 0 ? parseFloat((totalSpent / instagramProfileVisits).toFixed(2)) : 0
+    costPerProfileVisit: instagramProfileVisits > 0 ? parseFloat((totalSpent / instagramProfileVisits).toFixed(2)) : 0,
+    purchases,
+    purchaseValue: parseFloat(purchaseValue.toFixed(2)),
+    costPerPurchase: purchases > 0 ? parseFloat((totalSpent / purchases).toFixed(2)) : 0,
+    costPerMessage: messagesInitiated > 0 ? parseFloat((totalSpent / messagesInitiated).toFixed(2)) : 0
   };
 }
 var appRouter = router({
@@ -54273,6 +54320,9 @@ var appRouter = router({
         });
       }
       return report;
+    }),
+    listAll: protectedProcedure.query(async ({ ctx }) => {
+      return getReportsWithMetricsByUserId(ctx.user.id);
     }),
     list: protectedProcedure.input(external_exports.object({ companyId: external_exports.number().int().positive() })).query(async ({ ctx, input }) => {
       const company = await getCompanyById(input.companyId);
@@ -54509,6 +54559,78 @@ var appRouter = router({
         adAccountId: company.metaAdAccountId,
         campaigns: data.data ?? []
       };
+    }),
+    /** Lista anúncios de uma campanha (para gerar UTMs por anúncio) */
+    listAds: protectedProcedure.input(external_exports.object({
+      companyId: external_exports.number().int().positive(),
+      campaignId: external_exports.string().min(1)
+    })).query(async ({ ctx, input }) => {
+      const company = await getCompanyById(input.companyId);
+      if (!company || company.userId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+      }
+      if (!company.metaAccessToken) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Empresa n\xE3o conectada ao Meta." });
+      }
+      const adsetsUrl = new URL(`https://graph.facebook.com/v19.0/${input.campaignId}/adsets`);
+      adsetsUrl.searchParams.set("fields", "id,name,status");
+      adsetsUrl.searchParams.set("limit", "50");
+      adsetsUrl.searchParams.set("access_token", company.metaAccessToken);
+      const adsetsRes = await fetch(adsetsUrl.toString());
+      const adsetsData = await adsetsRes.json();
+      if (adsetsData.error) throw new TRPCError({ code: "BAD_REQUEST", message: `Meta API: ${adsetsData.error.message}` });
+      const adsets = adsetsData.data ?? [];
+      const allAds = [];
+      await Promise.all(
+        adsets.slice(0, 10).map(async (adset) => {
+          const adsUrl = new URL(`https://graph.facebook.com/v19.0/${adset.id}/ads`);
+          adsUrl.searchParams.set("fields", "id,name,status,effective_status");
+          adsUrl.searchParams.set("limit", "30");
+          adsUrl.searchParams.set("access_token", company.metaAccessToken);
+          const adsRes = await fetch(adsUrl.toString());
+          const adsData = await adsRes.json();
+          if (!adsData.error && adsData.data) {
+            for (const ad of adsData.data) {
+              allAds.push({ id: ad.id, name: ad.name, adsetName: adset.name, adsetId: adset.id, status: ad.effective_status || ad.status });
+            }
+          }
+        })
+      );
+      return { ads: allAds, adsets };
+    }),
+    /** Retorna insights agregados de todas as contas conectadas */
+    getAllAccountsInsights: protectedProcedure.input(external_exports.object({
+      days: external_exports.number().int().min(1).max(90).default(30),
+      companyId: external_exports.number().int().positive().optional()
+    })).query(async ({ ctx, input }) => {
+      const companies2 = await getCompaniesByUserId(ctx.user.id);
+      const filtered = companies2.filter(
+        (c) => c.metaAccessToken && c.metaAdAccountId && (!input.companyId || c.id === input.companyId)
+      );
+      const endDate = /* @__PURE__ */ new Date();
+      const startDate = /* @__PURE__ */ new Date();
+      startDate.setDate(startDate.getDate() - input.days);
+      const fmt = (d) => d.toISOString().split("T")[0];
+      const results = await Promise.allSettled(
+        filtered.map(async (company) => {
+          const metrics = await fetchMetaInsights(
+            company.metaAdAccountId,
+            company.metaAccessToken,
+            fmt(startDate),
+            fmt(endDate)
+          );
+          return { companyId: company.id, companyName: company.name, adAccountId: company.metaAdAccountId, metrics };
+        })
+      );
+      const accounts = results.filter((r) => r.status === "fulfilled").map((r) => r.value);
+      const failed = results.filter((r) => r.status === "rejected").map((r, i) => ({ companyName: filtered[i]?.name ?? "?", error: r.reason?.message ?? "Erro" }));
+      const totals = accounts.reduce((acc, a) => ({
+        totalSpent: acc.totalSpent + (a.metrics.totalSpent ?? 0),
+        totalImpressions: acc.totalImpressions + (a.metrics.totalImpressions ?? 0),
+        totalReach: acc.totalReach + (a.metrics.totalReach ?? 0),
+        totalClicks: acc.totalClicks + (a.metrics.totalClicks ?? 0)
+      }), { totalSpent: 0, totalImpressions: 0, totalReach: 0, totalClicks: 0 });
+      return { accounts, totals, failed, days: input.days };
     })
   })
 });
