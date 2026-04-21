@@ -57,46 +57,82 @@ const INTEGRATIONS = [
     category: "Exportação",
     comingSoon: true,
   },
-  {
-    id: "webhook",
-    name: "Webhooks",
-    description: "Receba dados de vendas de Shopify, WooCommerce e outras plataformas",
-    logo: "WH",
-    logoColor: "bg-purple-600",
-    docsUrl: "https://github.com/VIKING-001/sistema_de_relatorios_meta/blob/main/WEBHOOK_SETUP.md",
-    category: "Automação",
-  },
 ];
+
+const WEBHOOK_PLATFORMS = [
+  { id: "shopify", name: "Shopify", icon: "🛍️" },
+  { id: "woocommerce", name: "WooCommerce", icon: "🔧" },
+  { id: "custom", name: "Custom/Genérico", icon: "⚙️" },
+  { id: "zapier", name: "Zapier", icon: "⚡" },
+] as const;
 
 export default function Integracoes() {
   const { data: companies } = trpc.company.list.useQuery();
   const [, setLocation] = useLocation();
-  const [showWebhookForm, setShowWebhookForm] = useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
-  const [webhookURL, setWebhookURL] = useState("");
+  const [selectedPlatform, setSelectedPlatform] = useState<string>("shopify");
+  const [showAddWebhook, setShowAddWebhook] = useState(false);
+
+  // Webhooks
+  const { data: webhooks, refetch: refetchWebhooks, isLoading: webhooksLoading } =
+    trpc.webhook.list.useQuery({ companyId: selectedCompanyId ?? 0 }, { enabled: !!selectedCompanyId });
+
+  const createWebhookMut = trpc.webhook.create.useMutation({
+    onSuccess: () => {
+      refetchWebhooks();
+      setShowAddWebhook(false);
+      toast.success("Webhook criado com sucesso!");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Erro ao criar webhook");
+    },
+  });
+
+  const deleteWebhookMut = trpc.webhook.delete.useMutation({
+    onSuccess: () => {
+      refetchWebhooks();
+      toast.success("Webhook deletado!");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Erro ao deletar webhook");
+    },
+  });
+
+  const updateStatusMut = trpc.webhook.updateStatus.useMutation({
+    onSuccess: () => {
+      refetchWebhooks();
+    },
+    onError: (err) => {
+      toast.error(err.message || "Erro ao atualizar status");
+    },
+  });
 
   const connectedMeta = companies?.filter((c: any) => c.metaAccessToken).length ?? 0;
   const totalCompanies = companies?.length ?? 0;
 
   const categories = [...new Set(INTEGRATIONS.map(i => i.category))];
 
-  const webhookEndpoints = [
-    { type: "sale", name: "Generic Webhook", url: `/webhook/sale`, desc: "Qualquer plataforma" },
-    { type: "shopify", name: "Shopify", url: `/webhook/shopify?companyId={id}`, desc: "Shopify stores" },
-    { type: "woocommerce", name: "WooCommerce", url: `/webhook/woocommerce?companyId={id}`, desc: "WordPress stores" },
-  ];
-
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success("Copiado!");
   };
 
-  const getWebhookURL = (endpoint: string, companyId?: number) => {
-    const baseURL = "https://sistemaderelatoriosmetaof.vercel.app";
-    if (companyId) {
-      return baseURL + endpoint.replace("{id}", companyId.toString());
+  const handleCreateWebhook = () => {
+    if (!selectedCompanyId) {
+      toast.error("Selecione uma empresa");
+      return;
     }
-    return baseURL + endpoint;
+    createWebhookMut.mutate({
+      companyId: selectedCompanyId,
+      platform: selectedPlatform as any,
+    });
+  };
+
+  const handleToggleWebhook = (webhook: any) => {
+    updateStatusMut.mutate({
+      webhookId: webhook.id,
+      status: webhook.status === "active" ? "inactive" : "active",
+    });
   };
 
   return (
@@ -145,12 +181,11 @@ export default function Integracoes() {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {INTEGRATIONS.filter(i => i.category === category).map(integration => {
               const isActive = integration.id === "meta" && connectedMeta > 0;
-              const isWebhook = integration.id === "webhook";
 
               return (
                 <Card
                   key={integration.id}
-                  className={`glass-card border-white/10 transition-all ${!isWebhook && integration.comingSoon ? "opacity-60" : "hover:border-white/20"}`}
+                  className={`glass-card border-white/10 transition-all ${integration.comingSoon ? "opacity-60" : "hover:border-white/20"}`}
                 >
                   <CardContent className="p-4 space-y-3">
                     <div className="flex items-start justify-between">
@@ -161,26 +196,21 @@ export default function Integracoes() {
                         <div>
                           <p className="font-semibold text-sm flex items-center gap-1.5">
                             {integration.name}
-                            {!isWebhook && integration.comingSoon && (
+                            {integration.comingSoon && (
                               <Badge variant="outline" className="text-[9px] h-4 border-white/20 text-muted-foreground">
                                 Em breve
-                              </Badge>
-                            )}
-                            {isWebhook && (
-                              <Badge variant="outline" className="text-[9px] h-4 border-emerald-400/30 bg-emerald-400/10 text-emerald-400">
-                                Ativo
                               </Badge>
                             )}
                           </p>
                         </div>
                       </div>
-                      {(isActive || isWebhook) && <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />}
+                      {isActive && <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />}
                     </div>
 
                     <p className="text-xs text-muted-foreground leading-relaxed">{integration.description}</p>
 
                     <div className="flex items-center gap-2">
-                      {!integration.comingSoon && !isWebhook && (
+                      {!integration.comingSoon && (
                         <Button
                           size="sm"
                           variant={isActive ? "outline" : "default"}
@@ -188,16 +218,6 @@ export default function Integracoes() {
                           onClick={() => setLocation("/contas")}
                         >
                           {isActive ? "Gerenciar" : "Conectar"}
-                        </Button>
-                      )}
-                      {isWebhook && (
-                        <Button
-                          size="sm"
-                          variant="default"
-                          className="rounded-lg text-xs h-7 flex-1 gap-1"
-                          onClick={() => setShowWebhookForm(!showWebhookForm)}
-                        >
-                          <Plus className="h-3 w-3" /> Configurar
                         </Button>
                       )}
                       {integration.docsUrl !== "#" && (
@@ -219,82 +239,175 @@ export default function Integracoes() {
         </div>
       ))}
 
-      {/* Webhook Configuration Panel */}
-      {showWebhookForm && (
-        <Card className="border-purple-500/30 bg-purple-500/5">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              ⚙️ Configurar Webhooks
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-white/60">Selecione a Empresa</label>
-              <select
-                value={selectedCompanyId || ""}
-                onChange={(e) => setSelectedCompanyId(e.target.value ? parseInt(e.target.value) : null)}
-                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm outline-none focus:border-purple-500/50"
-              >
-                <option value="">Escolha uma empresa...</option>
-                {companies?.map((c: any) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+      {/* Webhooks Section */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">🪝 Webhooks</h2>
+          <Button
+            size="sm"
+            className="rounded-lg text-xs h-7 gap-1"
+            onClick={() => setShowAddWebhook(!showAddWebhook)}
+          >
+            <Plus className="h-3 w-3" /> Adicionar Webhook
+          </Button>
+        </div>
 
-            {selectedCompanyId && (
-              <div className="space-y-3">
-                <p className="text-xs text-white/60">
-                  Copie a URL do webhook e configure em sua plataforma:
-                </p>
-                {webhookEndpoints.map((endpoint) => (
-                  <div key={endpoint.type} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-semibold text-white">{endpoint.name}</p>
-                        <p className="text-xs text-white/40">{endpoint.desc}</p>
+        {/* Company Selector */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-white/60">Selecione a Empresa</label>
+          <select
+            value={selectedCompanyId || ""}
+            onChange={(e) => setSelectedCompanyId(e.target.value ? parseInt(e.target.value) : null)}
+            className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm outline-none focus:border-purple-500/50"
+          >
+            <option value="">Escolha uma empresa...</option>
+            {companies?.map((c: any) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Add Webhook Form */}
+        {showAddWebhook && selectedCompanyId && (
+          <Card className="border-purple-500/30 bg-purple-500/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">⚙️ Novo Webhook</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-white/60">Plataforma</label>
+                <select
+                  value={selectedPlatform}
+                  onChange={(e) => setSelectedPlatform(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm outline-none focus:border-purple-500/50"
+                >
+                  {WEBHOOK_PLATFORMS.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.icon} {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  className="rounded-lg flex-1"
+                  onClick={handleCreateWebhook}
+                  disabled={createWebhookMut.isPending}
+                >
+                  {createWebhookMut.isPending ? "Criando..." : "Criar Webhook"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-lg flex-1"
+                  onClick={() => setShowAddWebhook(false)}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Webhooks List */}
+        {selectedCompanyId && (
+          <div className="space-y-2">
+            {webhooksLoading ? (
+              <div className="text-xs text-muted-foreground text-center py-4">Carregando webhooks...</div>
+            ) : webhooks && webhooks.length > 0 ? (
+              webhooks.map((webhook: any) => (
+                <Card
+                  key={webhook.id}
+                  className={`glass-card border-white/10 transition-all ${
+                    webhook.status === "active" ? "border-emerald-400/30 bg-emerald-400/5" : "opacity-60"
+                  }`}
+                >
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">
+                            {WEBHOOK_PLATFORMS.find((p) => p.id === webhook.platform)?.icon}
+                          </span>
+                          <p className="font-semibold text-sm">
+                            {WEBHOOK_PLATFORMS.find((p) => p.id === webhook.platform)?.name}
+                          </p>
+                          <Badge
+                            variant="outline"
+                            className={`text-[9px] h-4 ${
+                              webhook.status === "active"
+                                ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-400"
+                                : "border-amber-400/30 bg-amber-400/10 text-amber-400"
+                            }`}
+                          >
+                            {webhook.status === "active" ? "Ativo" : "Desativado"}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1 break-all">{webhook.webhookUrl}</p>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={getWebhookURL(endpoint.url, selectedCompanyId)}
-                        readOnly
-                        className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-xs font-mono outline-none"
-                      />
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Button
+                        size="sm"
+                        variant={webhook.status === "active" ? "outline" : "default"}
+                        className="rounded-lg text-xs h-7 gap-1"
+                        onClick={() => handleToggleWebhook(webhook)}
+                        disabled={updateStatusMut.isPending}
+                      >
+                        {webhook.status === "active" ? "Desativar" : "Ativar"}
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
-                        className="rounded-lg h-9 gap-1"
-                        onClick={() =>
-                          copyToClipboard(getWebhookURL(endpoint.url, selectedCompanyId))
-                        }
+                        className="rounded-lg text-xs h-7 gap-1"
+                        onClick={() => copyToClipboard(webhook.webhookUrl)}
                       >
-                        <Copy className="h-3 w-3" /> Copiar
+                        <Copy className="h-3 w-3" /> Copiar URL
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-lg text-xs h-7 gap-1 text-red-400 border-red-400/30 hover:border-red-400/50"
+                        onClick={() => deleteWebhookMut.mutate({ webhookId: webhook.id })}
+                        disabled={deleteWebhookMut.isPending}
+                      >
+                        <Trash2 className="h-3 w-3" /> Deletar
                       </Button>
                     </div>
-                  </div>
-                ))}
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="text-xs text-muted-foreground text-center py-4">
+                Nenhum webhook configurado. Clique em "Adicionar Webhook" para começar.
               </div>
             )}
+          </div>
+        )}
 
-            <div className="bg-white/5 border border-white/10 rounded-lg p-3">
+        {/* Documentation */}
+        {selectedCompanyId && (
+          <Card className="border-white/10 bg-white/5">
+            <CardContent className="p-3">
               <p className="text-xs text-white/70">
-                <strong>📖 Próximas etapas:</strong>
+                <strong>📖 Como configurar:</strong>
               </p>
               <ul className="text-xs text-white/60 mt-2 space-y-1 ml-2">
-                <li>✓ Acesse a documentação (Docs)</li>
-                <li>✓ Escolha sua plataforma (Shopify, WooCommerce, Zapier)</li>
                 <li>✓ Copie a URL do webhook acima</li>
-                <li>✓ Configure na seção de Webhooks da sua plataforma</li>
+                <li>✓ Vá para configurações da sua plataforma (Shopify, WooCommerce, etc)</li>
+                <li>✓ Cole a URL na seção de Webhooks/Notificações</li>
+                <li>✓ Configure o evento: "Pedido Criado" ou "Venda Concluída"</li>
                 <li>✓ Teste com uma venda de teste</li>
               </ul>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

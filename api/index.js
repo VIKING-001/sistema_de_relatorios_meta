@@ -104,7 +104,7 @@ var require_main = __commonJS({
     var fs = require("fs");
     var path = require("path");
     var os = require("os");
-    var crypto3 = require("crypto");
+    var crypto4 = require("crypto");
     var packageJson = require_package();
     var version3 = packageJson.version;
     var TIPS = [
@@ -358,7 +358,7 @@ var require_main = __commonJS({
       const authTag = ciphertext.subarray(-16);
       ciphertext = ciphertext.subarray(12, -16);
       try {
-        const aesgcm = crypto3.createDecipheriv("aes-256-gcm", key, nonce);
+        const aesgcm = crypto4.createDecipheriv("aes-256-gcm", key, nonce);
         aesgcm.setAuthTag(authTag);
         return `${aesgcm.update(ciphertext)}${aesgcm.final()}`;
       } catch (error46) {
@@ -19030,14 +19030,14 @@ var require_etag = __commonJS({
   "node_modules/.pnpm/etag@1.8.1/node_modules/etag/index.js"(exports2, module2) {
     "use strict";
     module2.exports = etag;
-    var crypto3 = require("crypto");
+    var crypto4 = require("crypto");
     var Stats = require("fs").Stats;
     var toString = Object.prototype.toString;
     function entitytag(entity) {
       if (entity.length === 0) {
         return '"0-2jmj7l5rSw0yVb/vlWAYkK/YBwk"';
       }
-      var hash2 = crypto3.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
+      var hash2 = crypto4.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
       var len = typeof entity === "string" ? Buffer.byteLength(entity, "utf8") : entity.length;
       return '"' + len.toString(16) + "-" + hash2 + '"';
     }
@@ -21929,11 +21929,11 @@ var require_request = __commonJS({
 // node_modules/.pnpm/cookie-signature@1.0.6/node_modules/cookie-signature/index.js
 var require_cookie_signature = __commonJS({
   "node_modules/.pnpm/cookie-signature@1.0.6/node_modules/cookie-signature/index.js"(exports2) {
-    var crypto3 = require("crypto");
+    var crypto4 = require("crypto");
     exports2.sign = function(val, secret) {
       if ("string" != typeof val) throw new TypeError("Cookie value must be provided as a string.");
       if ("string" != typeof secret) throw new TypeError("Secret string must be provided.");
-      return val + "." + crypto3.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
+      return val + "." + crypto4.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
     };
     exports2.unsign = function(val, secret) {
       if ("string" != typeof val) throw new TypeError("Signed cookie string must be provided.");
@@ -21942,7 +21942,7 @@ var require_cookie_signature = __commonJS({
       return sha1(mac) == sha1(val) ? str : false;
     };
     function sha1(str) {
-      return crypto3.createHash("sha1").update(str).digest("hex");
+      return crypto4.createHash("sha1").update(str).digest("hex");
     }
   }
 });
@@ -24444,7 +24444,7 @@ var require_cert_signatures = __commonJS({
 var require_sasl = __commonJS({
   "node_modules/.pnpm/pg@8.20.0/node_modules/pg/lib/crypto/sasl.js"(exports2, module2) {
     "use strict";
-    var crypto3 = require_utils4();
+    var crypto4 = require_utils4();
     var { signatureAlgorithmHashFromCertificate } = require_cert_signatures();
     function startSession(mechanisms, stream) {
       const candidates = ["SCRAM-SHA-256"];
@@ -24456,7 +24456,7 @@ var require_sasl = __commonJS({
       if (mechanism === "SCRAM-SHA-256-PLUS" && typeof stream.getPeerCertificate !== "function") {
         throw new Error("SASL: Mechanism SCRAM-SHA-256-PLUS requires a certificate");
       }
-      const clientNonce = crypto3.randomBytes(18).toString("base64");
+      const clientNonce = crypto4.randomBytes(18).toString("base64");
       const gs2Header = mechanism === "SCRAM-SHA-256-PLUS" ? "p=tls-server-end-point" : stream ? "y" : "n";
       return {
         mechanism,
@@ -24491,20 +24491,20 @@ var require_sasl = __commonJS({
         const peerCert = stream.getPeerCertificate().raw;
         let hashName = signatureAlgorithmHashFromCertificate(peerCert);
         if (hashName === "MD5" || hashName === "SHA-1") hashName = "SHA-256";
-        const certHash = await crypto3.hashByName(hashName, peerCert);
+        const certHash = await crypto4.hashByName(hashName, peerCert);
         const bindingData = Buffer.concat([Buffer.from("p=tls-server-end-point,,"), Buffer.from(certHash)]);
         channelBinding = bindingData.toString("base64");
       }
       const clientFinalMessageWithoutProof = "c=" + channelBinding + ",r=" + sv.nonce;
       const authMessage = clientFirstMessageBare + "," + serverFirstMessage + "," + clientFinalMessageWithoutProof;
       const saltBytes = Buffer.from(sv.salt, "base64");
-      const saltedPassword = await crypto3.deriveKey(password, saltBytes, sv.iteration);
-      const clientKey = await crypto3.hmacSha256(saltedPassword, "Client Key");
-      const storedKey = await crypto3.sha256(clientKey);
-      const clientSignature = await crypto3.hmacSha256(storedKey, authMessage);
+      const saltedPassword = await crypto4.deriveKey(password, saltBytes, sv.iteration);
+      const clientKey = await crypto4.hmacSha256(saltedPassword, "Client Key");
+      const storedKey = await crypto4.sha256(clientKey);
+      const clientSignature = await crypto4.hmacSha256(storedKey, authMessage);
       const clientProof = xorBuffers(Buffer.from(clientKey), Buffer.from(clientSignature)).toString("base64");
-      const serverKey = await crypto3.hmacSha256(saltedPassword, "Server Key");
-      const serverSignatureBytes = await crypto3.hmacSha256(serverKey, authMessage);
+      const serverKey = await crypto4.hmacSha256(saltedPassword, "Server Key");
+      const serverSignatureBytes = await crypto4.hmacSha256(serverKey, authMessage);
       session.message = "SASLResponse";
       session.serverSignature = Buffer.from(serverSignatureBytes).toString("base64");
       session.response = clientFinalMessageWithoutProof + ",p=" + clientProof;
@@ -26672,7 +26672,7 @@ var require_client = __commonJS({
     var Query2 = require_query2();
     var defaults2 = require_defaults();
     var Connection2 = require_connection();
-    var crypto3 = require_utils4();
+    var crypto4 = require_utils4();
     var activeQueryDeprecationNotice = nodeUtils.deprecate(
       () => {
       },
@@ -26907,7 +26907,7 @@ var require_client = __commonJS({
       _handleAuthMD5Password(msg) {
         this._getPassword(async () => {
           try {
-            const hashedPassword = await crypto3.postgresMd5PasswordHash(this.user, this.password, msg.salt);
+            const hashedPassword = await crypto4.postgresMd5PasswordHash(this.user, this.password, msg.salt);
             this.connection.password(hashedPassword);
           } catch (e) {
             this.emit("error", e);
@@ -54575,6 +54575,177 @@ var utmRouter = router({
   })
 });
 
+// server/webhook.router.ts
+var import_crypto = __toESM(require("crypto"), 1);
+async function executeQuery2(sql2, params = []) {
+  const pool2 = await getRawPool();
+  if (!pool2) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database connection failed" });
+  return pool2.query(sql2, params);
+}
+var createWebhookSchema = external_exports.object({
+  companyId: external_exports.number().int().positive(),
+  platform: external_exports.enum(["shopify", "woocommerce", "custom", "zapier"])
+});
+var updateWebhookStatusSchema = external_exports.object({
+  webhookId: external_exports.number().int().positive(),
+  status: external_exports.enum(["active", "inactive"])
+});
+var webhookRouter = router({
+  /**
+   * Criar uma nova configuração de webhook
+   * POST /api/trpc/webhook.create
+   */
+  create: protectedProcedure.input(createWebhookSchema).mutation(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado \xE0 empresa" });
+    }
+    const webhookSecret = import_crypto.default.randomBytes(32).toString("hex");
+    const baseUrl = "https://sistemaderelatoriosmetaof.vercel.app";
+    const webhookUrl = `${baseUrl}/webhook/${input.platform}?companyId=${input.companyId}`;
+    const result = await executeQuery2(
+      `INSERT INTO "webhookConfigs" (
+          "companyId", "userId", "platform", "webhookUrl", "webhookSecret", "status"
+        ) VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING *`,
+      [
+        input.companyId,
+        userId,
+        input.platform,
+        webhookUrl,
+        webhookSecret,
+        "active"
+      ]
+    );
+    return result.rows[0];
+  }),
+  /**
+   * Listar todos os webhooks de uma empresa
+   */
+  list: protectedProcedure.input(external_exports.object({ companyId: external_exports.number().int().positive() })).query(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+    const result = await executeQuery2(
+      `SELECT * FROM "webhookConfigs"
+         WHERE "companyId" = $1
+         ORDER BY "createdAt" DESC`,
+      [input.companyId]
+    );
+    return result.rows;
+  }),
+  /**
+   * Atualizar status de um webhook (ativo/inativo)
+   */
+  updateStatus: protectedProcedure.input(updateWebhookStatusSchema).mutation(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const webhookResult = await executeQuery2(
+      `SELECT * FROM "webhookConfigs" WHERE "id" = $1`,
+      [input.webhookId]
+    );
+    if (webhookResult.rows.length === 0) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Webhook n\xE3o encontrado" });
+    }
+    const webhook = webhookResult.rows[0];
+    const company = await getCompanyById(webhook.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+    }
+    const result = await executeQuery2(
+      `UPDATE "webhookConfigs"
+         SET "status" = $1, "updatedAt" = NOW()
+         WHERE "id" = $2
+         RETURNING *`,
+      [input.status, input.webhookId]
+    );
+    return result.rows[0];
+  }),
+  /**
+   * Deletar um webhook
+   */
+  delete: protectedProcedure.input(external_exports.object({ webhookId: external_exports.number().int().positive() })).mutation(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const webhookResult = await executeQuery2(
+      `SELECT * FROM "webhookConfigs" WHERE "id" = $1`,
+      [input.webhookId]
+    );
+    if (webhookResult.rows.length === 0) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Webhook n\xE3o encontrado" });
+    }
+    const webhook = webhookResult.rows[0];
+    const company = await getCompanyById(webhook.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+    }
+    await executeQuery2(
+      `DELETE FROM "webhookConfigs" WHERE "id" = $1`,
+      [input.webhookId]
+    );
+    return { success: true };
+  }),
+  /**
+   * Obter detalhes de um webhook específico
+   */
+  get: protectedProcedure.input(external_exports.object({ webhookId: external_exports.number().int().positive() })).query(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const webhookResult = await executeQuery2(
+      `SELECT * FROM "webhookConfigs" WHERE "id" = $1`,
+      [input.webhookId]
+    );
+    if (webhookResult.rows.length === 0) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Webhook n\xE3o encontrado" });
+    }
+    const webhook = webhookResult.rows[0];
+    const company = await getCompanyById(webhook.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+    }
+    return webhook;
+  }),
+  /**
+   * Obter estatísticas de um webhook (quantos webhooks foram disparados, etc)
+   */
+  getStats: protectedProcedure.input(external_exports.object({ webhookId: external_exports.number().int().positive() })).query(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const webhookResult = await executeQuery2(
+      `SELECT * FROM "webhookConfigs" WHERE "id" = $1`,
+      [input.webhookId]
+    );
+    if (webhookResult.rows.length === 0) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Webhook n\xE3o encontrado" });
+    }
+    const webhook = webhookResult.rows[0];
+    const company = await getCompanyById(webhook.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+    }
+    const statsResult = await executeQuery2(
+      `SELECT
+          COUNT(*) as total_webhook_calls,
+          SUM(CASE WHEN "trackingId" IS NOT NULL THEN 1 ELSE 0 END) as tracked_sales,
+          SUM("orderValue") as total_revenue
+         FROM "trackedSales"
+         WHERE "companyId" = $1 AND "source" = $2`,
+      [webhook.companyId, webhook.platform]
+    );
+    const stats = statsResult.rows[0];
+    return {
+      totalWebhookCalls: parseInt(stats.total_webhook_calls || "0"),
+      trackedSales: parseInt(stats.tracked_sales || "0"),
+      totalRevenue: parseFloat(stats.total_revenue || "0")
+    };
+  })
+});
+
 // server/routers.ts
 var createCompanySchema = external_exports.object({
   name: external_exports.string().min(1, "Nome da empresa \xE9 obrigat\xF3rio"),
@@ -55151,7 +55322,9 @@ var appRouter = router({
     })
   }),
   // ── Rastreamento de UTMs e Vendas ─────────────────────────────────────────
-  utm: utmRouter
+  utm: utmRouter,
+  // ── Configuração de Webhooks ──────────────────────────────────────────────
+  webhook: webhookRouter
 });
 
 // server/_core/context.ts
