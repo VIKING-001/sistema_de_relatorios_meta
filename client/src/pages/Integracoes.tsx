@@ -2,6 +2,13 @@ import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Globe, CheckCircle2, AlertCircle, Zap, ExternalLink, RefreshCw, Plus, Copy, Trash2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useState } from "react";
@@ -315,18 +322,18 @@ export default function Integracoes() {
         {/* Company Selector */}
         <div className="space-y-2">
           <label className="text-xs font-bold text-white/60">Selecione a Empresa</label>
-          <select
-            value={selectedCompanyId || ""}
-            onChange={(e) => setSelectedCompanyId(e.target.value ? parseInt(e.target.value) : null)}
-            className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm outline-none focus:border-purple-500/50"
-          >
-            <option value="">Escolha uma empresa...</option>
-            {companies?.map((c: any) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          <Select value={(selectedCompanyId ?? "").toString()} onValueChange={(v) => setSelectedCompanyId(v ? parseInt(v) : null)}>
+            <SelectTrigger className="w-full bg-white/5 border-white/10 text-white rounded-lg">
+              <SelectValue placeholder="Escolha uma empresa..." />
+            </SelectTrigger>
+            <SelectContent className="bg-slate-950 border-white/10">
+              {companies?.map((c: any) => (
+                <SelectItem key={c.id} value={c.id.toString()}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Add Webhook Form */}
@@ -338,17 +345,18 @@ export default function Integracoes() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <label className="text-xs font-bold text-white/60">Plataforma</label>
-                <select
-                  value={selectedPlatform}
-                  onChange={(e) => setSelectedPlatform(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm outline-none focus:border-purple-500/50"
-                >
-                  {WEBHOOK_PLATFORMS.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.icon} {p.name}
-                    </option>
-                  ))}
-                </select>
+                <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
+                  <SelectTrigger className="w-full bg-white/5 border-white/10 text-white rounded-lg">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-950 border-white/10">
+                    {WEBHOOK_PLATFORMS.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.icon} {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="flex gap-2">
