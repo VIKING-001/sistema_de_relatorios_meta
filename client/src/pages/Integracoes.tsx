@@ -13,6 +13,14 @@ import { Globe, CheckCircle2, AlertCircle, Zap, ExternalLink, RefreshCw, Plus, C
 import { useLocation } from "wouter";
 import { useState } from "react";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 const INTEGRATIONS = [
   {
@@ -139,6 +147,11 @@ export default function Integracoes() {
   const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<string>("shopify");
   const [showAddWebhook, setShowAddWebhook] = useState(false);
+  const [showAddCredential, setShowAddCredential] = useState(false);
+  const [credentialName, setCredentialName] = useState("");
+  const [credentialPlatform, setCredentialPlatform] = useState("custom");
+  const [showTokenModal, setShowTokenModal] = useState(false);
+  const [newToken, setNewToken] = useState<{ name: string; token: string } | null>(null);
 
   // Webhooks
   const { data: webhooks, refetch: refetchWebhooks, isLoading: webhooksLoading } =
@@ -174,6 +187,44 @@ export default function Integracoes() {
     },
   });
 
+  // API Credentials
+  const { data: credentials, refetch: refetchCredentials, isLoading: credentialsLoading } =
+    trpc.apiCredentials.list.useQuery({ companyId: selectedCompanyId ?? 0 }, { enabled: !!selectedCompanyId });
+
+  const createCredentialMut = trpc.apiCredentials.create.useMutation({
+    onSuccess: (data) => {
+      refetchCredentials();
+      setShowAddCredential(false);
+      setNewToken({ name: data.credential.name, token: data.token });
+      setShowTokenModal(true);
+      setCredentialName("");
+      setCredentialPlatform("custom");
+      toast.success("Credencial criada com sucesso!");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Erro ao criar credencial");
+    },
+  });
+
+  const deleteCredentialMut = trpc.apiCredentials.delete.useMutation({
+    onSuccess: () => {
+      refetchCredentials();
+      toast.success("Credencial deletada!");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Erro ao deletar credencial");
+    },
+  });
+
+  const updateCredentialStatusMut = trpc.apiCredentials.updateStatus.useMutation({
+    onSuccess: () => {
+      refetchCredentials();
+    },
+    onError: (err) => {
+      toast.error(err.message || "Erro ao atualizar status");
+    },
+  });
+
   const connectedMeta = companies?.filter((c: any) => c.metaAccessToken).length ?? 0;
   const totalCompanies = companies?.length ?? 0;
 
@@ -199,6 +250,36 @@ export default function Integracoes() {
     updateStatusMut.mutate({
       webhookId: webhook.id,
       status: webhook.status === "active" ? "inactive" : "active",
+    });
+  };
+
+  const handleCreateCredential = () => {
+    if (!selectedCompanyId) {
+      toast.error("Selecione uma empresa");
+      return;
+    }
+    if (!credentialName.trim()) {
+      toast.error("Nome é obrigatório");
+      return;
+    }
+    createCredentialMut.mutate({
+      companyId: selectedCompanyId,
+      name: credentialName,
+      platform: credentialPlatform,
+    });
+  };
+
+  const handleCopyToken = () => {
+    if (newToken) {
+      navigator.clipboard.writeText(newToken.token);
+      toast.success("Token copiado!");
+    }
+  };
+
+  const handleToggleCredentialStatus = (credential: any) => {
+    updateCredentialStatusMut.mutate({
+      credentialId: credential.id,
+      status: credential.status === "active" ? "inactive" : "active",
     });
   };
 
@@ -476,6 +557,195 @@ export default function Integracoes() {
           </Card>
         )}
       </div>
+
+      {/* API Credentials Section */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">🔑 Credenciais de API</h2>
+          <Button
+            size="sm"
+            className="rounded-lg text-xs h-7 gap-1"
+            onClick={() => setShowAddCredential(!showAddCredential)}
+            disabled={!selectedCompanyId}
+          >
+            <Plus className="h-3 w-3" /> Adicionar Credencial
+          </Button>
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          Adicione credenciais de API para integrar com outras ferramentas:
+        </p>
+
+        {/* Add Credential Form */}
+        {showAddCredential && selectedCompanyId && (
+          <Card className="border-purple-500/30 bg-purple-500/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">🔐 Criar Credencial de API</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-white/60">Nome</label>
+                <Input
+                  placeholder="Ex: VIKING JEJUM, RODRIGO"
+                  value={credentialName}
+                  onChange={(e) => setCredentialName(e.target.value)}
+                  className="bg-white/5 border-white/10 text-white placeholder:text-white/40 rounded-lg"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-white/60">Plataforma</label>
+                <Select value={credentialPlatform} onValueChange={setCredentialPlatform}>
+                  <SelectTrigger className="w-full bg-white/5 border-white/10 text-white rounded-lg">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-950 border-white/10">
+                    {WEBHOOK_PLATFORMS.slice(0, 20).map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.icon} {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  className="rounded-lg flex-1"
+                  onClick={handleCreateCredential}
+                  disabled={createCredentialMut.isPending}
+                >
+                  {createCredentialMut.isPending ? "Criando..." : "Criar Credencial"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-lg flex-1"
+                  onClick={() => setShowAddCredential(false)}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Credentials List */}
+        {selectedCompanyId && (
+          <div className="space-y-2">
+            {credentialsLoading ? (
+              <div className="text-xs text-muted-foreground text-center py-4">Carregando credenciais...</div>
+            ) : credentials && credentials.length > 0 ? (
+              credentials.map((credential: any) => (
+                <Card
+                  key={credential.id}
+                  className={`glass-card border-white/10 transition-all ${
+                    credential.status === "active" ? "border-emerald-400/30 bg-emerald-400/5" : "opacity-60"
+                  }`}
+                >
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-sm">{credential.name}</p>
+                          <Badge
+                            variant="outline"
+                            className={`text-[9px] h-4 ${
+                              credential.status === "active"
+                                ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-400"
+                                : "border-amber-400/30 bg-amber-400/10 text-amber-400"
+                            }`}
+                          >
+                            {credential.status === "active" ? "Ativo" : "Desativado"}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">{credential.platform}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Button
+                        size="sm"
+                        variant={credential.status === "active" ? "outline" : "default"}
+                        className="rounded-lg text-xs h-7 gap-1"
+                        onClick={() => handleToggleCredentialStatus(credential)}
+                        disabled={updateCredentialStatusMut.isPending}
+                      >
+                        {credential.status === "active" ? "Desativar" : "Ativar"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-lg text-xs h-7 gap-1 text-red-400 border-red-400/30 hover:border-red-400/50"
+                        onClick={() => deleteCredentialMut.mutate({ credentialId: credential.id })}
+                        disabled={deleteCredentialMut.isPending}
+                      >
+                        <Trash2 className="h-3 w-3" /> Deletar
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="text-xs text-muted-foreground text-center py-4">
+                Nenhuma credencial configurada. Clique em "Adicionar Credencial" para começar.
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Token Modal */}
+      <Dialog open={showTokenModal} onOpenChange={setShowTokenModal}>
+        <DialogContent className="bg-slate-950 border-white/10">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-emerald-400">
+              ✓ Credencial criada com sucesso
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+              <p className="text-xs font-bold text-amber-400">⚠️ ATENÇÃO!</p>
+              <p className="text-xs text-white/70 mt-1">
+                O token abaixo só ficará visível neste momento.
+                <br />
+                Salve-o em um lugar seguro:
+              </p>
+            </div>
+
+            {newToken && (
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    value={newToken.token}
+                    readOnly
+                    className="bg-white/5 border-white/10 text-white/80 text-xs font-mono rounded-lg"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-lg gap-1"
+                    onClick={handleCopyToken}
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              onClick={() => setShowTokenModal(false)}
+              className="rounded-lg"
+            >
+              Finalizar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
