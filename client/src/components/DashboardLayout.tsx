@@ -31,7 +31,6 @@ import {
   PanelLeft,
   Settings,
   ShoppingCart,
-  Target,
   User,
   Zap,
   Globe,
@@ -47,7 +46,6 @@ const mainNav = [
   { icon: Megaphone,    label: "Contas de Anúncio", path: "/contas" },
   { icon: Zap,          label: "Campanhas",          path: "/campanhas" },
   { icon: ShoppingCart, label: "Compras",            path: "/compras" },
-  { icon: Target,       label: "Rastreamento UTM",   path: "/rastreamento" },
 ];
 
 const toolsNav = [
