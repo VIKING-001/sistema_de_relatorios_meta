@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Plus, Copy, Link2, TrendingUp, DollarSign, Zap,
   BarChart3, Target, Eye, MousePointerClick, Loader2,
@@ -90,18 +91,18 @@ export default function Rastreamento() {
       <Card className="border-white/8" style={{ background: "linear-gradient(135deg, rgba(11,15,25,0.8) 0%, rgba(11,15,25,0.5) 100%)" }}>
         <CardContent className="p-4">
           <label className="text-xs font-bold text-white/60 mb-2 block">Selecione a empresa</label>
-          <select
-            value={companyId || ""}
-            onChange={(e) => setCompanyId(e.target.value ? parseInt(e.target.value) : null)}
-            className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white outline-none focus:border-yellow-500/50"
-          >
-            <option value="">Escolha uma empresa...</option>
-            {companies?.map((c: any) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          <Select value={companyId?.toString() || ""} onValueChange={(value) => setCompanyId(value ? parseInt(value) : null)}>
+            <SelectTrigger className="w-full bg-white/5 border-white/10 text-white">
+              <SelectValue placeholder="Escolha uma empresa..." />
+            </SelectTrigger>
+            <SelectContent className="bg-background border-white/10">
+              {companies?.map((c: any) => (
+                <SelectItem key={c.id} value={c.id.toString()} className="text-white">
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </CardContent>
       </Card>
 
