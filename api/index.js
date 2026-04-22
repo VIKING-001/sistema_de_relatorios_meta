@@ -40566,10 +40566,20 @@ function drizzle(...params) {
 // drizzle/schema.ts
 var schema_exports = {};
 __export(schema_exports, {
+  adMetrics: () => adMetrics,
+  adMetricsRelations: () => adMetricsRelations,
+  adSales: () => adSales,
+  adSalesRelations: () => adSalesRelations,
   apiCredentials: () => apiCredentials,
   apiCredentialsRelations: () => apiCredentialsRelations,
   companies: () => companies,
   companiesRelations: () => companiesRelations,
+  metaAds: () => metaAds,
+  metaAdsRelations: () => metaAdsRelations,
+  metaAdsets: () => metaAdsets,
+  metaAdsetsRelations: () => metaAdsetsRelations,
+  metaCampaigns: () => metaCampaigns,
+  metaCampaignsRelations: () => metaCampaignsRelations,
   reportMetrics: () => reportMetrics,
   reportMetricsRelations: () => reportMetricsRelations,
   reports: () => reports,
@@ -40824,6 +40834,158 @@ var apiCredentialsRelations = relations(apiCredentials, ({ one }) => ({
   company: one(companies, {
     fields: [apiCredentials.companyId],
     references: [companies.id]
+  })
+}));
+var metaCampaigns = pgTable("metaCampaigns", {
+  id: serial("id").primaryKey(),
+  companyId: integer("companyId").notNull(),
+  userId: integer("userId").notNull(),
+  /** ID único da campanha no Meta (ex: 23847293847293) */
+  metaCampaignId: varchar("metaCampaignId", { length: 64 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  status: varchar("status", { length: 64 }),
+  objective: varchar("objective", { length: 64 }),
+  /** Orçamento diário em centavos */
+  dailyBudget: integer("dailyBudget"),
+  /** Orçamento total em centavos */
+  lifetimeBudget: integer("lifetimeBudget"),
+  /** Data de início */
+  startDate: timestamp("startDate"),
+  /** Data de fim */
+  endDate: timestamp("endDate"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull()
+});
+var metaAdsets = pgTable("metaAdsets", {
+  id: serial("id").primaryKey(),
+  companyId: integer("companyId").notNull(),
+  userId: integer("userId").notNull(),
+  campaignId: integer("campaignId").notNull(),
+  /** ID único do adset no Meta */
+  metaAdsetId: varchar("metaAdsetId", { length: 64 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  status: varchar("status", { length: 64 }),
+  /** Orçamento em centavos */
+  budget: integer("budget"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull()
+});
+var metaAds = pgTable("metaAds", {
+  id: serial("id").primaryKey(),
+  companyId: integer("companyId").notNull(),
+  userId: integer("userId").notNull(),
+  adsetId: integer("adsetId").notNull(),
+  campaignId: integer("campaignId").notNull(),
+  /** ID único do anúncio no Meta */
+  metaAdId: varchar("metaAdId", { length: 64 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  status: varchar("status", { length: 64 }),
+  /** Creative ID ou descrição do criativo */
+  creativeName: text("creativeName"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull()
+});
+var adSales = pgTable("adSales", {
+  id: serial("id").primaryKey(),
+  companyId: integer("companyId").notNull(),
+  userId: integer("userId").notNull(),
+  adId: integer("adId").notNull(),
+  adsetId: integer("adsetId").notNull(),
+  campaignId: integer("campaignId").notNull(),
+  /** Sale ID — referência para trackedSales ou outra tabela de vendas */
+  saleId: integer("saleId"),
+  /** Se veio via UTM */
+  utmTrackingId: integer("utmTrackingId"),
+  /** Valor da venda */
+  saleValue: decimal("saleValue", { precision: 12, scale: 2 }).notNull(),
+  /** Moeda */
+  currency: varchar("currency", { length: 3 }).default("BRL"),
+  /** Como foi rastreado: "webhook", "pixel", "utm", "manual" */
+  source: varchar("source", { length: 64 }).notNull(),
+  /** Data da venda */
+  saleDate: timestamp("saleDate").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull()
+});
+var adMetrics = pgTable("adMetrics", {
+  id: serial("id").primaryKey(),
+  adId: integer("adId").notNull(),
+  adsetId: integer("adsetId").notNull(),
+  campaignId: integer("campaignId").notNull(),
+  companyId: integer("companyId").notNull(),
+  /** Data da métrica */
+  date: date("date").notNull(),
+  /** Gastos em centavos */
+  spend: integer("spend").notNull().default(0),
+  impressions: integer("impressions").notNull().default(0),
+  clicks: integer("clicks").notNull().default(0),
+  /** Conversões rastreadas pelo pixel */
+  conversions: integer("conversions").notNull().default(0),
+  /** Valor de conversão rastreado pelo pixel */
+  conversionValue: decimal("conversionValue", { precision: 12, scale: 2 }).default("0.00"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull()
+});
+var metaCampaignsRelations = relations(metaCampaigns, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [metaCampaigns.companyId],
+    references: [companies.id]
+  }),
+  adsets: many(metaAdsets),
+  ads: many(metaAds)
+}));
+var metaAdsetsRelations = relations(metaAdsets, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [metaAdsets.companyId],
+    references: [companies.id]
+  }),
+  campaign: one(metaCampaigns, {
+    fields: [metaAdsets.campaignId],
+    references: [metaCampaigns.id]
+  }),
+  ads: many(metaAds)
+}));
+var metaAdsRelations = relations(metaAds, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [metaAds.companyId],
+    references: [companies.id]
+  }),
+  campaign: one(metaCampaigns, {
+    fields: [metaAds.campaignId],
+    references: [metaCampaigns.id]
+  }),
+  adset: one(metaAdsets, {
+    fields: [metaAds.adsetId],
+    references: [metaAdsets.id]
+  }),
+  sales: many(adSales),
+  metrics: many(adMetrics)
+}));
+var adSalesRelations = relations(adSales, ({ one }) => ({
+  ad: one(metaAds, {
+    fields: [adSales.adId],
+    references: [metaAds.id]
+  }),
+  adset: one(metaAdsets, {
+    fields: [adSales.adsetId],
+    references: [metaAdsets.id]
+  }),
+  campaign: one(metaCampaigns, {
+    fields: [adSales.campaignId],
+    references: [metaCampaigns.id]
+  })
+}));
+var adMetricsRelations = relations(adMetrics, ({ one }) => ({
+  ad: one(metaAds, {
+    fields: [adMetrics.adId],
+    references: [metaAds.id]
+  }),
+  adset: one(metaAdsets, {
+    fields: [adMetrics.adsetId],
+    references: [metaAdsets.id]
+  }),
+  campaign: one(metaCampaigns, {
+    fields: [adMetrics.campaignId],
+    references: [metaCampaigns.id]
   })
 }));
 
@@ -55093,6 +55255,316 @@ var apiCredentialsRouter = router({
   })
 });
 
+// server/campaigns.router.ts
+async function executeQuery4(sql2, params = []) {
+  const pool2 = await getRawPool();
+  if (!pool2) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Falha na conex\xE3o com banco" });
+  return pool2.query(sql2, params);
+}
+var getCampaignsSchema = external_exports.object({
+  companyId: external_exports.number().int().positive(),
+  status: external_exports.enum(["active", "paused", "archived"]).optional(),
+  startDate: external_exports.string().optional(),
+  endDate: external_exports.string().optional()
+});
+var getCampaignDetailSchema = external_exports.object({
+  campaignId: external_exports.number().int().positive()
+});
+var getAdsetDetailSchema = external_exports.object({
+  adsetId: external_exports.number().int().positive()
+});
+var campaignsRouter = router({
+  /**
+   * Listar campanhas com métricas agregadas
+   * Mostra: Campanha | Gastos | Vendas | ROI | CPV
+   */
+  list: protectedProcedure.input(getCampaignsSchema).query(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+    const result = await executeQuery4(
+      `
+        SELECT
+          c.id,
+          c."metaCampaignId",
+          c.name,
+          c.status,
+          c.objective,
+          c."dailyBudget",
+          c."lifetimeBudget",
+          c."startDate",
+          c."endDate",
+
+          -- Gastos (soma de metrics por campanha)
+          COALESCE(SUM(CAST(am.spend AS BIGINT)), 0) as "totalSpend",
+          COALESCE(SUM(am.impressions), 0) as "totalImpressions",
+          COALESCE(SUM(am.clicks), 0) as "totalClicks",
+
+          -- Vendas (soma de sales por campanha)
+          COALESCE(SUM(CAST(ads."saleValue" AS NUMERIC(12,2))), 0) as "totalSales",
+          COALESCE(COUNT(DISTINCT ads.id), 0) as "totalSalesCount",
+
+          -- C\xE1lculos
+          COALESCE(SUM(am.impressions), 0) as impressions,
+          CASE
+            WHEN COALESCE(SUM(am.impressions), 0) > 0
+            THEN ROUND(CAST(COALESCE(SUM(am.clicks), 0) AS NUMERIC) / COALESCE(SUM(am.impressions), 0) * 100, 2)
+            ELSE 0
+          END as "ctr",
+          CASE
+            WHEN COALESCE(SUM(am.impressions), 0) > 0
+            THEN ROUND(CAST(COALESCE(SUM(CAST(am.spend AS BIGINT)), 0) AS NUMERIC(12,2)) / COALESCE(SUM(am.impressions), 0) * 1000, 2)
+            ELSE 0
+          END as "cpm"
+
+        FROM "metaCampaigns" c
+        LEFT JOIN "metaAds" a ON a."campaignId" = c.id
+        LEFT JOIN "adMetrics" am ON am.id = a.id
+        LEFT JOIN "adSales" ads ON ads."campaignId" = c.id
+
+        WHERE c."companyId" = $1
+        ${input.status ? "AND c.status = $2" : ""}
+
+        GROUP BY c.id, c."metaCampaignId", c.name, c.status, c.objective, c."dailyBudget", c."lifetimeBudget", c."startDate", c."endDate"
+        ORDER BY c."startDate" DESC
+        `,
+      input.status ? [input.companyId, input.status] : [input.companyId]
+    );
+    return result.rows.map((row) => ({
+      id: row.id,
+      metaCampaignId: row.metaCampaignId,
+      name: row.name,
+      status: row.status,
+      objective: row.objective,
+      // Métricas
+      totalSpend: parseFloat(row.totalSpend || "0"),
+      totalImpressions: parseInt(row.totalImpressions || "0"),
+      totalClicks: parseInt(row.totalClicks || "0"),
+      totalSales: parseFloat(row.totalSales || "0"),
+      totalSalesCount: parseInt(row.totalSalesCount || "0"),
+      // Calculados
+      roi: row.totalSpend > 0 ? (row.totalSales - row.totalSpend) / row.totalSpend * 100 : 0,
+      cpa: row.totalSalesCount > 0 ? row.totalSpend / row.totalSalesCount : 0,
+      ctr: parseFloat(row.ctr || "0"),
+      cpm: parseFloat(row.cpm || "0")
+    }));
+  }),
+  /**
+   * Detalhes de uma campanha com seus adsets e anúncios
+   */
+  getDetail: protectedProcedure.input(getCampaignDetailSchema).query(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const campaignResult = await executeQuery4(
+      `SELECT * FROM "metaCampaigns" WHERE id = $1`,
+      [input.campaignId]
+    );
+    if (campaignResult.rows.length === 0) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Campanha n\xE3o encontrada" });
+    }
+    const campaign = campaignResult.rows[0];
+    const company = await getCompanyById(campaign.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+    const adsetsResult = await executeQuery4(
+      `
+        SELECT
+          ads.id,
+          ads."metaAdsetId",
+          ads.name,
+          ads.status,
+          ads.budget,
+
+          -- Gastos e m\xE9tricas
+          COALESCE(SUM(CAST(am.spend AS BIGINT)), 0) as "totalSpend",
+          COALESCE(SUM(am.impressions), 0) as "totalImpressions",
+          COALESCE(SUM(am.clicks), 0) as "totalClicks",
+
+          -- Vendas
+          COALESCE(SUM(CAST(adsales."saleValue" AS NUMERIC(12,2))), 0) as "totalSales",
+          COALESCE(COUNT(DISTINCT adsales.id), 0) as "totalSalesCount"
+
+        FROM "metaAdsets" ads
+        LEFT JOIN "metaAds" a ON a."adsetId" = ads.id
+        LEFT JOIN "adMetrics" am ON am."adsetId" = ads.id
+        LEFT JOIN "adSales" adsales ON adsales."adsetId" = ads.id
+
+        WHERE ads."campaignId" = $1
+
+        GROUP BY ads.id, ads."metaAdsetId", ads.name, ads.status, ads.budget
+        ORDER BY ads."createdAt" DESC
+        `,
+      [input.campaignId]
+    );
+    const adsets = await Promise.all(
+      adsetsResult.rows.map(async (adset) => {
+        const adsResult = await executeQuery4(
+          `
+            SELECT
+              a.id,
+              a."metaAdId",
+              a.name,
+              a.status,
+              a."creativeName",
+
+              -- Gastos e m\xE9tricas
+              COALESCE(SUM(CAST(am.spend AS BIGINT)), 0) as "totalSpend",
+              COALESCE(SUM(am.impressions), 0) as "totalImpressions",
+              COALESCE(SUM(am.clicks), 0) as "totalClicks",
+
+              -- Vendas
+              COALESCE(SUM(CAST(adsales."saleValue" AS NUMERIC(12,2))), 0) as "totalSales",
+              COALESCE(COUNT(DISTINCT adsales.id), 0) as "totalSalesCount"
+
+            FROM "metaAds" a
+            LEFT JOIN "adMetrics" am ON am."adId" = a.id
+            LEFT JOIN "adSales" adsales ON adsales."adId" = a.id
+
+            WHERE a."adsetId" = $1
+
+            GROUP BY a.id, a."metaAdId", a.name, a.status, a."creativeName"
+            ORDER BY a."createdAt" DESC
+            `,
+          [adset.id]
+        );
+        return {
+          id: adset.id,
+          metaAdsetId: adset.metaAdsetId,
+          name: adset.name,
+          status: adset.status,
+          budget: adset.budget,
+          totalSpend: parseFloat(adset.totalSpend || "0"),
+          totalImpressions: parseInt(adset.totalImpressions || "0"),
+          totalClicks: parseInt(adset.totalClicks || "0"),
+          totalSales: parseFloat(adset.totalSales || "0"),
+          totalSalesCount: parseInt(adset.totalSalesCount || "0"),
+          roi: adset.totalSpend > 0 ? (adset.totalSales - adset.totalSpend) / adset.totalSpend * 100 : 0,
+          cpa: adset.totalSalesCount > 0 ? adset.totalSpend / adset.totalSalesCount : 0,
+          ads: adsResult.rows.map((ad) => ({
+            id: ad.id,
+            metaAdId: ad.metaAdId,
+            name: ad.name,
+            status: ad.status,
+            creativeName: ad.creativeName,
+            totalSpend: parseFloat(ad.totalSpend || "0"),
+            totalImpressions: parseInt(ad.totalImpressions || "0"),
+            totalClicks: parseInt(ad.totalClicks || "0"),
+            totalSales: parseFloat(ad.totalSales || "0"),
+            totalSalesCount: parseInt(ad.totalSalesCount || "0"),
+            roi: ad.totalSpend > 0 ? (ad.totalSales - ad.totalSpend) / ad.totalSpend * 100 : 0,
+            cpa: ad.totalSalesCount > 0 ? ad.totalSpend / ad.totalSalesCount : 0
+          }))
+        };
+      })
+    );
+    return {
+      campaign,
+      adsets
+    };
+  }),
+  /**
+   * Registrar uma venda para um anúncio
+   * Chamado pelo webhook quando uma venda é rastreada
+   */
+  recordSale: protectedProcedure.input(
+    external_exports.object({
+      adId: external_exports.number().int().positive(),
+      adsetId: external_exports.number().int().positive(),
+      campaignId: external_exports.number().int().positive(),
+      saleValue: external_exports.number().positive(),
+      source: external_exports.enum(["webhook", "pixel", "utm", "manual"]),
+      utmTrackingId: external_exports.number().optional(),
+      saleDate: external_exports.date()
+    })
+  ).mutation(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const adResult = await executeQuery4(
+      `SELECT * FROM "metaAds" WHERE id = $1`,
+      [input.adId]
+    );
+    if (adResult.rows.length === 0) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "An\xFAncio n\xE3o encontrado" });
+    }
+    const ad = adResult.rows[0];
+    if (ad.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+    const result = await executeQuery4(
+      `
+        INSERT INTO "adSales" (
+          "companyId", "userId", "adId", "adsetId", "campaignId",
+          "saleValue", "source", "utmTrackingId", "saleDate"
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING *
+        `,
+      [
+        ad.companyId,
+        userId,
+        input.adId,
+        input.adsetId,
+        input.campaignId,
+        input.saleValue,
+        input.source,
+        input.utmTrackingId || null,
+        input.saleDate
+      ]
+    );
+    return result.rows[0];
+  }),
+  /**
+   * Buscar vendas de uma campanha com filtros
+   */
+  getSales: protectedProcedure.input(
+    external_exports.object({
+      campaignId: external_exports.number().int().positive(),
+      adsetId: external_exports.number().int().optional(),
+      adId: external_exports.number().int().optional()
+    })
+  ).query(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const campaignResult = await executeQuery4(
+      `SELECT * FROM "metaCampaigns" WHERE id = $1`,
+      [input.campaignId]
+    );
+    if (campaignResult.rows.length === 0) {
+      throw new TRPCError({ code: "NOT_FOUND" });
+    }
+    const campaign = campaignResult.rows[0];
+    const company = await getCompanyById(campaign.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+    let sql2 = `
+        SELECT
+          adsales.*,
+          a.name as "adName",
+          ads.name as "adsetName"
+        FROM "adSales" adsales
+        LEFT JOIN "metaAds" a ON a.id = adsales."adId"
+        LEFT JOIN "metaAdsets" ads ON ads.id = adsales."adsetId"
+        WHERE adsales."campaignId" = $1
+      `;
+    const params = [input.campaignId];
+    if (input.adsetId) {
+      sql2 += ` AND adsales."adsetId" = $${params.length + 1}`;
+      params.push(input.adsetId);
+    }
+    if (input.adId) {
+      sql2 += ` AND adsales."adId" = $${params.length + 1}`;
+      params.push(input.adId);
+    }
+    sql2 += ` ORDER BY adsales."saleDate" DESC`;
+    const result = await executeQuery4(sql2, params);
+    return result.rows;
+  })
+});
+
 // server/routers.ts
 var createCompanySchema = external_exports.object({
   name: external_exports.string().min(1, "Nome da empresa \xE9 obrigat\xF3rio"),
@@ -55673,7 +56145,9 @@ var appRouter = router({
   // ── Configuração de Webhooks ──────────────────────────────────────────────
   webhook: webhookRouter,
   // ── Credenciais de API ────────────────────────────────────────────────────
-  apiCredentials: apiCredentialsRouter
+  apiCredentials: apiCredentialsRouter,
+  // ── Campanhas Meta com Rastreamento de Vendas ─────────────────────────────
+  campaigns: campaignsRouter
 });
 
 // server/_core/context.ts

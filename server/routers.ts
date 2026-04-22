@@ -11,6 +11,7 @@ import { loginUser, registerUser, signSessionJwt } from "./_core/localAuth";
 import { utmRouter } from "./utm.router";
 import { webhookRouter } from "./webhook.router";
 import { apiCredentialsRouter } from "./api-credentials.router";
+import { campaignsRouter } from "./campaigns.router";
 
 // Validação de entrada para empresa
 const createCompanySchema = z.object({
@@ -779,6 +780,9 @@ export const appRouter = router({
 
   // ── Credenciais de API ────────────────────────────────────────────────────
   apiCredentials: apiCredentialsRouter,
+
+  // ── Campanhas Meta com Rastreamento de Vendas ─────────────────────────────
+  campaigns: campaignsRouter,
 });
 
 export type AppRouter = typeof appRouter;

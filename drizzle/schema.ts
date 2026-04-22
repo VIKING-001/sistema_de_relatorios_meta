@@ -316,3 +316,199 @@ export const apiCredentialsRelations = relations(apiCredentials, ({ one }) => ({
     references: [companies.id],
   }),
 }));
+
+/**
+ * Campanhas do Meta Ads — estrutura hierárquica
+ */
+export const metaCampaigns = pgTable("metaCampaigns", {
+  id: serial("id").primaryKey(),
+  companyId: integer("companyId").notNull(),
+  userId: integer("userId").notNull(),
+  /** ID único da campanha no Meta (ex: 23847293847293) */
+  metaCampaignId: varchar("metaCampaignId", { length: 64 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  status: varchar("status", { length: 64 }),
+  objective: varchar("objective", { length: 64 }),
+  /** Orçamento diário em centavos */
+  dailyBudget: integer("dailyBudget"),
+  /** Orçamento total em centavos */
+  lifetimeBudget: integer("lifetimeBudget"),
+  /** Data de início */
+  startDate: timestamp("startDate"),
+  /** Data de fim */
+  endDate: timestamp("endDate"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type MetaCampaign = typeof metaCampaigns.$inferSelect;
+export type InsertMetaCampaign = typeof metaCampaigns.$inferInsert;
+
+/**
+ * Adsets (Conjuntos de Anúncios)
+ */
+export const metaAdsets = pgTable("metaAdsets", {
+  id: serial("id").primaryKey(),
+  companyId: integer("companyId").notNull(),
+  userId: integer("userId").notNull(),
+  campaignId: integer("campaignId").notNull(),
+  /** ID único do adset no Meta */
+  metaAdsetId: varchar("metaAdsetId", { length: 64 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  status: varchar("status", { length: 64 }),
+  /** Orçamento em centavos */
+  budget: integer("budget"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type MetaAdset = typeof metaAdsets.$inferSelect;
+export type InsertMetaAdset = typeof metaAdsets.$inferInsert;
+
+/**
+ * Anúncios do Meta
+ */
+export const metaAds = pgTable("metaAds", {
+  id: serial("id").primaryKey(),
+  companyId: integer("companyId").notNull(),
+  userId: integer("userId").notNull(),
+  adsetId: integer("adsetId").notNull(),
+  campaignId: integer("campaignId").notNull(),
+  /** ID único do anúncio no Meta */
+  metaAdId: varchar("metaAdId", { length: 64 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  status: varchar("status", { length: 64 }),
+  /** Creative ID ou descrição do criativo */
+  creativeName: text("creativeName"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type MetaAd = typeof metaAds.$inferSelect;
+export type InsertMetaAd = typeof metaAds.$inferInsert;
+
+/**
+ * Rastreamento de Vendas por Anúncio
+ * Liga uma venda (de webhook/pixel) com o anúncio que a originou
+ */
+export const adSales = pgTable("adSales", {
+  id: serial("id").primaryKey(),
+  companyId: integer("companyId").notNull(),
+  userId: integer("userId").notNull(),
+  adId: integer("adId").notNull(),
+  adsetId: integer("adsetId").notNull(),
+  campaignId: integer("campaignId").notNull(),
+  /** Sale ID — referência para trackedSales ou outra tabela de vendas */
+  saleId: integer("saleId"),
+  /** Se veio via UTM */
+  utmTrackingId: integer("utmTrackingId"),
+  /** Valor da venda */
+  saleValue: decimal("saleValue", { precision: 12, scale: 2 }).notNull(),
+  /** Moeda */
+  currency: varchar("currency", { length: 3 }).default("BRL"),
+  /** Como foi rastreado: "webhook", "pixel", "utm", "manual" */
+  source: varchar("source", { length: 64 }).notNull(),
+  /** Data da venda */
+  saleDate: timestamp("saleDate").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AdSale = typeof adSales.$inferSelect;
+export type InsertAdSale = typeof adSales.$inferInsert;
+
+/**
+ * Métricas de Anúncio (gasto, impressões, cliques, etc)
+ * Atualizado diariamente ou sob demanda via Meta API
+ */
+export const adMetrics = pgTable("adMetrics", {
+  id: serial("id").primaryKey(),
+  adId: integer("adId").notNull(),
+  adsetId: integer("adsetId").notNull(),
+  campaignId: integer("campaignId").notNull(),
+  companyId: integer("companyId").notNull(),
+  /** Data da métrica */
+  date: date("date").notNull(),
+  /** Gastos em centavos */
+  spend: integer("spend").notNull().default(0),
+  impressions: integer("impressions").notNull().default(0),
+  clicks: integer("clicks").notNull().default(0),
+  /** Conversões rastreadas pelo pixel */
+  conversions: integer("conversions").notNull().default(0),
+  /** Valor de conversão rastreado pelo pixel */
+  conversionValue: decimal("conversionValue", { precision: 12, scale: 2 }).default("0.00"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type AdMetric = typeof adMetrics.$inferSelect;
+export type InsertAdMetric = typeof adMetrics.$inferInsert;
+
+// ─── Relations ──────────────────────────────────────────────────────────────
+
+export const metaCampaignsRelations = relations(metaCampaigns, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [metaCampaigns.companyId],
+    references: [companies.id],
+  }),
+  adsets: many(metaAdsets),
+  ads: many(metaAds),
+}));
+
+export const metaAdsetsRelations = relations(metaAdsets, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [metaAdsets.companyId],
+    references: [companies.id],
+  }),
+  campaign: one(metaCampaigns, {
+    fields: [metaAdsets.campaignId],
+    references: [metaCampaigns.id],
+  }),
+  ads: many(metaAds),
+}));
+
+export const metaAdsRelations = relations(metaAds, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [metaAds.companyId],
+    references: [companies.id],
+  }),
+  campaign: one(metaCampaigns, {
+    fields: [metaAds.campaignId],
+    references: [metaCampaigns.id],
+  }),
+  adset: one(metaAdsets, {
+    fields: [metaAds.adsetId],
+    references: [metaAdsets.id],
+  }),
+  sales: many(adSales),
+  metrics: many(adMetrics),
+}));
+
+export const adSalesRelations = relations(adSales, ({ one }) => ({
+  ad: one(metaAds, {
+    fields: [adSales.adId],
+    references: [metaAds.id],
+  }),
+  adset: one(metaAdsets, {
+    fields: [adSales.adsetId],
+    references: [metaAdsets.id],
+  }),
+  campaign: one(metaCampaigns, {
+    fields: [adSales.campaignId],
+    references: [metaCampaigns.id],
+  }),
+}));
+
+export const adMetricsRelations = relations(adMetrics, ({ one }) => ({
+  ad: one(metaAds, {
+    fields: [adMetrics.adId],
+    references: [metaAds.id],
+  }),
+  adset: one(metaAdsets, {
+    fields: [adMetrics.adsetId],
+    references: [metaAdsets.id],
+  }),
+  campaign: one(metaCampaigns, {
+    fields: [adMetrics.campaignId],
+    references: [metaCampaigns.id],
+  }),
+}));
