@@ -12,6 +12,7 @@ import { utmRouter } from "./utm.router";
 import { webhookRouter } from "./webhook.router";
 import { apiCredentialsRouter } from "./api-credentials.router";
 import { campaignsRouter } from "./campaigns.router";
+import { metaSyncRouter } from "./meta-sync.router";
 
 // Validação de entrada para empresa
 const createCompanySchema = z.object({
@@ -783,6 +784,9 @@ export const appRouter = router({
 
   // ── Campanhas Meta com Rastreamento de Vendas ─────────────────────────────
   campaigns: campaignsRouter,
+
+  // ── Sincronização com Meta API ────────────────────────────────────────────
+  metaSync: metaSyncRouter,
 });
 
 export type AppRouter = typeof appRouter;

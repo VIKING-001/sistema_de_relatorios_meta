@@ -55565,6 +55565,301 @@ var campaignsRouter = router({
   })
 });
 
+// server/meta-sync.router.ts
+async function executeQuery5(sql2, params = []) {
+  const pool2 = await getRawPool();
+  if (!pool2) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Falha na conex\xE3o" });
+  return pool2.query(sql2, params);
+}
+async function fetchMetaCampaigns(accountId, accessToken) {
+  try {
+    const url2 = new URL(`https://graph.facebook.com/v19.0/${accountId}/campaigns`);
+    url2.searchParams.set(
+      "fields",
+      "id,name,status,objective,daily_budget,lifetime_budget,start_time,stop_time"
+    );
+    url2.searchParams.set("limit", "100");
+    url2.searchParams.set("access_token", accessToken);
+    const res = await fetch(url2.toString());
+    const data = await res.json();
+    if (data.error) {
+      throw new Error(`Meta API: ${data.error.message}`);
+    }
+    return data.data || [];
+  } catch (err) {
+    console.error("Error fetching campaigns:", err);
+    throw err;
+  }
+}
+async function fetchMetaAdsets(campaignId, accessToken) {
+  try {
+    const url2 = new URL(`https://graph.facebook.com/v19.0/${campaignId}/adsets`);
+    url2.searchParams.set("fields", "id,name,status,budget");
+    url2.searchParams.set("limit", "100");
+    url2.searchParams.set("access_token", accessToken);
+    const res = await fetch(url2.toString());
+    const data = await res.json();
+    if (data.error) {
+      throw new Error(`Meta API: ${data.error.message}`);
+    }
+    return data.data || [];
+  } catch (err) {
+    console.error("Error fetching adsets:", err);
+    throw err;
+  }
+}
+async function fetchMetaAds(adsetId, accessToken) {
+  try {
+    const url2 = new URL(`https://graph.facebook.com/v19.0/${adsetId}/ads`);
+    url2.searchParams.set("fields", "id,name,status,creative");
+    url2.searchParams.set("limit", "100");
+    url2.searchParams.set("access_token", accessToken);
+    const res = await fetch(url2.toString());
+    const data = await res.json();
+    if (data.error) {
+      throw new Error(`Meta API: ${data.error.message}`);
+    }
+    return data.data || [];
+  } catch (err) {
+    console.error("Error fetching ads:", err);
+    throw err;
+  }
+}
+var metaSyncRouter = router({
+  /**
+   * Sincronizar campanhas, adsets e anúncios do Meta
+   * Puxa dados da Meta API e insere/atualiza no banco
+   */
+  syncCampaigns: protectedProcedure.input(external_exports.object({ companyId: external_exports.number().int().positive() })).mutation(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+    if (!company.metaAccessToken || !company.metaAdAccountId) {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "Empresa n\xE3o conectada ao Meta Ads ou conta de an\xFAncio n\xE3o selecionada"
+      });
+    }
+    const accountId = company.metaAdAccountId.startsWith("act_") ? company.metaAdAccountId : `act_${company.metaAdAccountId}`;
+    let synced = {
+      campaigns: 0,
+      adsets: 0,
+      ads: 0,
+      errors: []
+    };
+    try {
+      console.log(`[Meta Sync] Fetching campaigns for ${accountId}...`);
+      const campaigns = await fetchMetaCampaigns(accountId, company.metaAccessToken);
+      for (const campaign of campaigns) {
+        try {
+          const campaignResult = await executeQuery5(
+            `
+              INSERT INTO "metaCampaigns" (
+                "companyId", "userId", "metaCampaignId", "name", "status", "objective",
+                "dailyBudget", "lifetimeBudget", "startDate", "endDate"
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+              ON CONFLICT ("metaCampaignId") DO UPDATE SET
+                "name" = EXCLUDED."name",
+                "status" = EXCLUDED."status",
+                "objective" = EXCLUDED."objective",
+                "dailyBudget" = EXCLUDED."dailyBudget",
+                "lifetimeBudget" = EXCLUDED."lifetimeBudget",
+                "startDate" = EXCLUDED."startDate",
+                "endDate" = EXCLUDED."endDate",
+                "updatedAt" = NOW()
+              RETURNING id
+              `,
+            [
+              input.companyId,
+              userId,
+              campaign.id,
+              campaign.name,
+              campaign.status,
+              campaign.objective,
+              campaign.daily_budget ? Math.floor(parseFloat(campaign.daily_budget) * 100) : null,
+              campaign.lifetime_budget ? Math.floor(parseFloat(campaign.lifetime_budget) * 100) : null,
+              campaign.start_time ? new Date(campaign.start_time) : null,
+              campaign.stop_time ? new Date(campaign.stop_time) : null
+            ]
+          );
+          const campaignDbId = campaignResult.rows[0].id;
+          synced.campaigns++;
+          console.log(`[Meta Sync] Fetching adsets for campaign ${campaign.id}...`);
+          const adsets = await fetchMetaAdsets(campaign.id, company.metaAccessToken);
+          for (const adset of adsets) {
+            try {
+              const adsetResult = await executeQuery5(
+                `
+                  INSERT INTO "metaAdsets" (
+                    "companyId", "userId", "campaignId", "metaAdsetId", "name", "status", "budget"
+                  ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+                  ON CONFLICT ("metaAdsetId") DO UPDATE SET
+                    "name" = EXCLUDED."name",
+                    "status" = EXCLUDED."status",
+                    "budget" = EXCLUDED."budget",
+                    "updatedAt" = NOW()
+                  RETURNING id
+                  `,
+                [
+                  input.companyId,
+                  userId,
+                  campaignDbId,
+                  adset.id,
+                  adset.name,
+                  adset.status,
+                  adset.budget ? Math.floor(parseFloat(adset.budget) * 100) : null
+                ]
+              );
+              const adsetDbId = adsetResult.rows[0].id;
+              synced.adsets++;
+              console.log(`[Meta Sync] Fetching ads for adset ${adset.id}...`);
+              const ads = await fetchMetaAds(adset.id, company.metaAccessToken);
+              for (const ad of ads) {
+                try {
+                  await executeQuery5(
+                    `
+                      INSERT INTO "metaAds" (
+                        "companyId", "userId", "adsetId", "campaignId", "metaAdId", "name", "status", "creativeName"
+                      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                      ON CONFLICT ("metaAdId") DO UPDATE SET
+                        "name" = EXCLUDED."name",
+                        "status" = EXCLUDED."status",
+                        "creativeName" = EXCLUDED."creativeName",
+                        "updatedAt" = NOW()
+                      `,
+                    [
+                      input.companyId,
+                      userId,
+                      adsetDbId,
+                      campaignDbId,
+                      ad.id,
+                      ad.name,
+                      ad.status,
+                      ad.creative?.name || ad.creative?.id || null
+                    ]
+                  );
+                  synced.ads++;
+                } catch (err) {
+                  synced.errors.push(`Ad ${ad.id}: ${err.message}`);
+                }
+              }
+            } catch (err) {
+              synced.errors.push(`Adset ${adset.id}: ${err.message}`);
+            }
+          }
+        } catch (err) {
+          synced.errors.push(`Campaign ${campaign.id}: ${err.message}`);
+        }
+      }
+      console.log(`[Meta Sync] Complete: ${synced.campaigns} campaigns, ${synced.adsets} adsets, ${synced.ads} ads`);
+      return {
+        success: true,
+        message: `Sincronizado: ${synced.campaigns} campanhas, ${synced.adsets} adsets, ${synced.ads} an\xFAncios`,
+        synced
+      };
+    } catch (err) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: `Erro ao sincronizar: ${err.message}`
+      });
+    }
+  }),
+  /**
+   * Sincronizar métricas de anúncios para um período
+   * Puxa dados de gastos, impressões, cliques, conversões
+   */
+  syncMetrics: protectedProcedure.input(
+    external_exports.object({
+      companyId: external_exports.number().int().positive(),
+      startDate: external_exports.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      endDate: external_exports.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+    })
+  ).mutation(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+    if (!company.metaAccessToken || !company.metaAdAccountId) {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "Empresa n\xE3o conectada ao Meta Ads"
+      });
+    }
+    const accountId = company.metaAdAccountId.startsWith("act_") ? company.metaAdAccountId : `act_${company.metaAdAccountId}`;
+    try {
+      const adsResult = await executeQuery5(
+        `SELECT id, "metaAdId", "adsetId", "campaignId" FROM "metaAds" WHERE "companyId" = $1 LIMIT 1000`,
+        [input.companyId]
+      );
+      const ads = adsResult.rows;
+      let metricsInserted = 0;
+      for (const ad of ads) {
+        try {
+          const url2 = new URL(`https://graph.facebook.com/v19.0/${ad.metaAdId}/insights`);
+          url2.searchParams.set("fields", "spend,impressions,clicks,actions");
+          url2.searchParams.set("action_breakdown", "action_type");
+          url2.searchParams.set("time_range", JSON.stringify({ since: input.startDate, until: input.endDate }));
+          url2.searchParams.set("access_token", company.metaAccessToken);
+          const res = await fetch(url2.toString());
+          const data = await res.json();
+          if (data.data && data.data[0]) {
+            const metrics = data.data[0];
+            let conversions = 0;
+            if (metrics.actions) {
+              const purchase = metrics.actions.find((a) => a.action_type === "purchase");
+              if (purchase) {
+                conversions = parseInt(purchase.value || "0");
+              }
+            }
+            await executeQuery5(
+              `
+                INSERT INTO "adMetrics" (
+                  "adId", "adsetId", "campaignId", "companyId",
+                  date, spend, impressions, clicks, conversions
+                ) VALUES ($1, $2, $3, $4, NOW()::date, $5, $6, $7, $8)
+                ON CONFLICT ("adId", date) DO UPDATE SET
+                  spend = EXCLUDED.spend,
+                  impressions = EXCLUDED.impressions,
+                  clicks = EXCLUDED.clicks,
+                  conversions = EXCLUDED.conversions,
+                  "updatedAt" = NOW()
+                `,
+              [
+                ad.id,
+                ad.adsetId,
+                ad.campaignId,
+                input.companyId,
+                Math.floor(parseFloat(metrics.spend || "0") * 100),
+                parseInt(metrics.impressions || "0"),
+                parseInt(metrics.clicks || "0"),
+                conversions
+              ]
+            );
+            metricsInserted++;
+          }
+        } catch (err) {
+          console.error(`Error syncing metrics for ad ${ad.metaAdId}:`, err.message);
+        }
+      }
+      return {
+        success: true,
+        message: `Sincronizadas m\xE9tricas de ${metricsInserted} an\xFAncios para ${input.startDate} a ${input.endDate}`,
+        metricsInserted
+      };
+    } catch (err) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: `Erro ao sincronizar m\xE9tricas: ${err.message}`
+      });
+    }
+  })
+});
+
 // server/routers.ts
 var createCompanySchema = external_exports.object({
   name: external_exports.string().min(1, "Nome da empresa \xE9 obrigat\xF3rio"),
@@ -56147,7 +56442,9 @@ var appRouter = router({
   // ── Credenciais de API ────────────────────────────────────────────────────
   apiCredentials: apiCredentialsRouter,
   // ── Campanhas Meta com Rastreamento de Vendas ─────────────────────────────
-  campaigns: campaignsRouter
+  campaigns: campaignsRouter,
+  // ── Sincronização com Meta API ────────────────────────────────────────────
+  metaSync: metaSyncRouter
 });
 
 // server/_core/context.ts
