@@ -13,6 +13,7 @@ import { webhookRouter } from "./webhook.router";
 import { apiCredentialsRouter } from "./api-credentials.router";
 import { campaignsRouter } from "./campaigns.router";
 import { metaSyncRouter } from "./meta-sync.router";
+import { aiAnalysisRouter } from "./ai-analysis.router";
 
 // Validação de entrada para empresa
 const createCompanySchema = z.object({
@@ -245,6 +246,7 @@ function parseMetaInsightRow(row: any, idKey: string, nameKey: string) {
 
 export const appRouter = router({
   system: systemRouter,
+  aiAnalysis: aiAnalysisRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
 

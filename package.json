@@ -10,9 +10,12 @@
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "setup:db": "node scripts/setup-db.js",
+    "init": "node scripts/init-project.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.96.0",
     "@aws-sdk/client-s3": "^3.693.0",
     "@aws-sdk/s3-request-presigner": "^3.693.0",
     "@hookform/resolvers": "^5.2.2",
@@ -63,6 +66,7 @@
     "lucide-react": "^0.453.0",
     "nanoid": "^5.1.5",
     "next-themes": "^0.4.6",
+    "openai": "^6.37.0",
     "pg": "^8.13.1",
     "react": "^19.2.1",
     "react-day-picker": "^9.11.1",

@@ -381,6 +381,8 @@ export default function PublicReport() {
             {/* ── Análise de Performance (simplificada para o cliente) ── */}
             <Divider />
             <ConsultiveReport
+              empresa={company?.name}
+              periodo={report.title}
               metrics={{
                 ctr:                    parseFloat(metrics.ctr),
                 cpm:                    parseFloat(metrics.cpm),
