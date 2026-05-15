@@ -157,11 +157,16 @@ export default function PublicReport() {
   const m              = metrics as any;
   const purchases      = parseInt(m?.purchases ?? "0", 10)    || 0;
   const purchaseValue  = parseFloat(m?.purchaseValue ?? "0")  || 0;
-  const costPerPurchase= parseFloat(m?.costPerPurchase ?? "0")|| 0;
   const costPerMessage = parseFloat(m?.costPerMessage ?? "0") || 0;
   const hasPurchases   = purchases > 0 || purchaseValue > 0;
   const totalSpent     = parseFloat(metrics?.totalSpent ?? "0");
   const roas           = totalSpent > 0 && purchaseValue > 0 ? (purchaseValue / totalSpent).toFixed(2) : null;
+
+  // Calcular CPA: usa valor salvo se disponível, senão calcula pela média (investido ÷ compras)
+  const storedCPA      = parseFloat(m?.costPerPurchase ?? "0") || 0;
+  const costPerPurchase = storedCPA > 0
+    ? storedCPA
+    : (totalSpent > 0 && purchases > 0 ? totalSpent / purchases : 0);
 
   return (
     <div className="min-h-screen relative" style={{ background: "linear-gradient(135deg, #030509 0%, #0B0F19 50%, #030509 100%)" }}>
