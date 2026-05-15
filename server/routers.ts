@@ -13,7 +13,7 @@ import { webhookRouter } from "./webhook.router";
 import { apiCredentialsRouter } from "./api-credentials.router";
 import { campaignsRouter } from "./campaigns.router";
 import { metaSyncRouter } from "./meta-sync.router";
-import { aiAnalysisRouter } from "./ai-analysis.router";
+import { aiAnalysisRouter, generateAiAnalysis } from "./ai-analysis.router";
 
 // Validação de entrada para empresa
 const createCompanySchema = z.object({
@@ -396,6 +396,41 @@ export const appRouter = router({
             videoRetentionRate: input.metrics.videoRetentionRate.toString(),
             costPerProfileVisit: input.metrics.costPerProfileVisit.toString(),
           });
+
+          // Gerar análise IA server-side e salvar no relatório
+          try {
+            const purchases   = input.metrics.purchases  ?? 0;
+            const purchaseValue = input.metrics.purchaseValue ?? 0;
+            const totalSpent  = parseFloat(input.metrics.totalSpent);
+            const roas        = totalSpent > 0 && purchaseValue > 0 ? purchaseValue / totalSpent : 0;
+
+            const aiResult = await generateAiAnalysis({
+              totalSpent,
+              ctr,
+              cpm,
+              cpc:                    parseFloat(input.metrics.costPerClick),
+              totalImpressions:       input.metrics.totalImpressions,
+              totalReach:             input.metrics.totalReach,
+              totalClicks:            input.metrics.totalClicks,
+              purchases,
+              purchaseValue,
+              costPerPurchase:        input.metrics.costPerPurchase ?? 0,
+              roas,
+              messagesInitiated:      input.metrics.messagesInitiated ?? 0,
+              costPerMessage:         input.metrics.costPerMessage ?? 0,
+              instagramProfileVisits: input.metrics.instagramProfileVisits ?? 0,
+              costPerProfileVisit:    parseFloat(input.metrics.costPerProfileVisit),
+              newInstagramFollowers:  input.metrics.newInstagramFollowers ?? 0,
+              videoRetentionRate:     parseFloat(input.metrics.videoRetentionRate),
+              empresa:                company.name,
+              periodo:                input.title,
+            });
+
+            await db.updateReportAiAnalysis(report.id, JSON.stringify(aiResult));
+          } catch (err) {
+            // IA falhou — relatório é criado normalmente sem análise
+            console.error("[AI] generateAiAnalysis falhou:", err);
+          }
         }
 
         return report;

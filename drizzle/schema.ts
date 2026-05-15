@@ -56,6 +56,8 @@ export const reports = pgTable("reports", {
   startDate: date("startDate").notNull(),
   endDate: date("endDate").notNull(),
   isPublished: text("isPublished").default("draft").notNull(),
+  /** Análise IA gerada pelo z.ai no momento da criação do relatório (JSON string) */
+  aiAnalysis: text("aiAnalysis"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });

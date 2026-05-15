@@ -378,11 +378,12 @@ export default function PublicReport() {
               purchaseValue={purchaseValue}
             />
 
-            {/* ── Análise de Performance (simplificada para o cliente) ── */}
+            {/* ── Análise de Performance (gerada pelo z.ai no momento da criação) ── */}
             <Divider />
             <ConsultiveReport
               empresa={company?.name}
               periodo={report.title}
+              aiAnalysis={(report as any).aiAnalysis ?? null}
               metrics={{
                 ctr:                    parseFloat(metrics.ctr),
                 cpm:                    parseFloat(metrics.cpm),

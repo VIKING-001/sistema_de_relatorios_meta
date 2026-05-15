@@ -88,6 +88,7 @@ async function ensureTables(pool: InstanceType<typeof Pool>) {
     `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "purchaseValue" numeric(12, 2) DEFAULT '0.00' NOT NULL`,
     `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "costPerPurchase" numeric(10, 2) DEFAULT '0.00' NOT NULL`,
     `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "costPerMessage" numeric(10, 2) DEFAULT '0.00' NOT NULL`,
+    `ALTER TABLE "reports" ADD COLUMN IF NOT EXISTS "aiAnalysis" text`,
     // UTM Tracking tables
     `CREATE TABLE IF NOT EXISTS "utmTracking" (
       "id" serial PRIMARY KEY NOT NULL,
@@ -396,6 +397,11 @@ export async function updateReport(
 export async function deleteReport(id: number) {
   const db = await getDb();
   await db.delete(reports).where(eq(reports.id, id));
+}
+
+export async function updateReportAiAnalysis(id: number, aiAnalysis: string) {
+  const db = await getDb();
+  await db.update(reports).set({ aiAnalysis }).where(eq(reports.id, id));
 }
 
 // Metrics queries

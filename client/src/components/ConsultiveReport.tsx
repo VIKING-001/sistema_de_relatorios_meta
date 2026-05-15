@@ -1,12 +1,16 @@
 /**
- * ConsultiveReport — Análise de Performance com Claude Haiku 4.5
- * Gera análise inteligente e personalizada com os dados reais da campanha.
+ * ConsultiveReport — Exibe análise de performance gerada pelo z.ai no momento
+ * da criação do relatório. Nenhum botão é exibido ao cliente.
  */
 
-import { trpc } from "@/lib/trpc";
 import { analyzeMetrics } from "@shared/analytics";
-import { CheckCircle, AlertCircle, Sparkles, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { CheckCircle, AlertCircle, Sparkles } from "lucide-react";
+
+interface AiAnalysis {
+  pontosFortesTexto: string[];
+  pontosFracosTexto: string[];
+  recomendacaoPrincipal: string;
+}
 
 interface ConsultiveReportProps {
   metrics: {
@@ -29,58 +33,25 @@ interface ConsultiveReportProps {
   };
   empresa?: string;
   periodo?: string;
+  /** Análise gerada pelo z.ai no servidor (JSON string ou objeto já parseado) */
+  aiAnalysis?: string | AiAnalysis | null;
 }
 
-export default function ConsultiveReport({ metrics, empresa, periodo }: ConsultiveReportProps) {
-  const [aiData, setAiData] = useState<{
-    pontosFortesTexto: string[];
-    pontosFracosTexto: string[];
-    recomendacaoPrincipal: string;
-  } | null>(null);
-  const [aiError, setAiError] = useState(false);
+export default function ConsultiveReport({ metrics, aiAnalysis }: ConsultiveReportProps) {
+  // Tentar usar análise IA armazenada
+  let storedAi: AiAnalysis | null = null;
+  if (aiAnalysis) {
+    if (typeof aiAnalysis === "string") {
+      try { storedAi = JSON.parse(aiAnalysis); } catch { storedAi = null; }
+    } else {
+      storedAi = aiAnalysis;
+    }
+  }
 
-  const analyzeMutation = trpc.aiAnalysis.analyzeReport.useMutation({
-    onSuccess: (data) => setAiData(data),
-    onError: () => {
-      setAiError(true);
-    },
-  });
-
-  // Fallback local (regras)
+  // Fallback para análise local baseada em regras
   const { resumoGeral } = analyzeMetrics(metrics);
-  const fallback = resumoGeral;
-
-  // Dados a exibir: IA se disponível, senão fallback local
-  const roas = metrics.totalSpent > 0 && (metrics.purchaseValue ?? 0) > 0
-    ? (metrics.purchaseValue ?? 0) / metrics.totalSpent
-    : 0;
-
-  const display = aiData ?? fallback;
-
-  const handleGenerateAI = () => {
-    if (analyzeMutation.isPending) return;
-    analyzeMutation.mutate({
-      totalSpent:             metrics.totalSpent,
-      ctr:                    metrics.ctr,
-      cpm:                    metrics.cpm,
-      cpc:                    metrics.costPerClick,
-      totalImpressions:       metrics.totalImpressions,
-      totalReach:             metrics.totalReach,
-      totalClicks:            metrics.totalClicks,
-      purchases:              metrics.purchases ?? 0,
-      purchaseValue:          metrics.purchaseValue ?? 0,
-      costPerPurchase:        metrics.costPerPurchase ?? 0,
-      roas,
-      messagesInitiated:      metrics.messagesInitiated,
-      costPerMessage:         metrics.costPerMessage ?? 0,
-      instagramProfileVisits: metrics.instagramProfileVisits,
-      costPerProfileVisit:    metrics.costPerProfileVisit,
-      newInstagramFollowers:  metrics.newInstagramFollowers,
-      videoRetentionRate:     metrics.videoRetentionRate,
-      empresa,
-      periodo,
-    });
-  };
+  const display = storedAi ?? resumoGeral;
+  const isAi    = !!storedAi;
 
   return (
     <div className="mt-8 space-y-5">
@@ -89,43 +60,11 @@ export default function ConsultiveReport({ metrics, empresa, periodo }: Consulti
         <p className="text-gray-400 text-sm">Destaques e oportunidades identificadas no período</p>
       </div>
 
-      {/* Botão Gerar com IA */}
-      {!aiData && (
-        <div className="flex justify-center">
-          <button
-            onClick={handleGenerateAI}
-            disabled={analyzeMutation.isPending}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
-              analyzeMutation.isPending
-                ? "border-primary/30 bg-primary/10 text-primary/60 cursor-not-allowed"
-                : "border-primary/40 bg-primary/15 text-primary hover:bg-primary/25 hover:border-primary/60"
-            }`}
-          >
-            {analyzeMutation.isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Analisando com Haiku 4.5...
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4" />
-                Gerar análise com IA (Claude Haiku 4.5)
-              </>
-            )}
-          </button>
-        </div>
-      )}
-
-      {aiError && (
-        <div className="text-center text-xs text-amber-400/70 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2">
-          IA indisponível — exibindo análise automática
-        </div>
-      )}
-
-      {aiData && (
+      {/* Indicador de fonte da análise */}
+      {isAi && (
         <div className="flex items-center justify-center gap-2 text-xs text-primary/60">
           <Sparkles className="h-3 w-3" />
-          <span>Análise gerada por Claude Haiku 4.5</span>
+          <span>Análise gerada por inteligência artificial</span>
         </div>
       )}
 
