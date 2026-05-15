@@ -47,7 +47,7 @@ function Router() {
 
   return (
     <Switch>
-      <Route path="/report/:slug" component={PublicReport} />
+      <Route path="/report/:rest*" component={PublicReport} />
       <Route>
         {isAuthenticated ? <PrivateRoutes /> : <Login />}
       </Route>

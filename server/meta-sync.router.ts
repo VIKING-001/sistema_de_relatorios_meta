@@ -333,8 +333,7 @@ export const metaSyncRouter = router({
         for (const ad of ads) {
           try {
             const url = new URL(`https://graph.facebook.com/v19.0/${ad.metaAdId}/insights`);
-            url.searchParams.set("fields", "spend,impressions,clicks,actions");
-            url.searchParams.set("action_breakdown", "action_type");
+            url.searchParams.set("fields", "spend,impressions,clicks,actions,action_values");
             url.searchParams.set("time_range", JSON.stringify({ since: input.startDate, until: input.endDate }));
             url.searchParams.set("access_token", company.metaAccessToken);
 
@@ -344,13 +343,22 @@ export const metaSyncRouter = router({
             if (data.data && data.data[0]) {
               const metrics = data.data[0];
 
-              // Contar conversões dos actions
+              // Contar compras e valor de receita dos actions
               let conversions = 0;
+              let conversionValue = 0;
+
               if (metrics.actions) {
-                const purchase = metrics.actions.find((a: any) => a.action_type === "purchase");
-                if (purchase) {
-                  conversions = parseInt(purchase.value || "0");
-                }
+                const purchase = metrics.actions.find((a: any) =>
+                  a.action_type === "purchase" || a.action_type === "offsite_conversion.fb_pixel_purchase"
+                );
+                if (purchase) conversions = parseInt(purchase.value || "0");
+              }
+
+              if (metrics.action_values) {
+                const purchaseValue = metrics.action_values.find((a: any) =>
+                  a.action_type === "purchase" || a.action_type === "offsite_conversion.fb_pixel_purchase"
+                );
+                if (purchaseValue) conversionValue = parseFloat(purchaseValue.value || "0");
               }
 
               // Inserir ou atualizar métrica
@@ -358,13 +366,15 @@ export const metaSyncRouter = router({
                 `
                 INSERT INTO "adMetrics" (
                   "adId", "adsetId", "campaignId", "companyId",
-                  date, spend, impressions, clicks, conversions
-                ) VALUES ($1, $2, $3, $4, NOW()::date, $5, $6, $7, $8)
+                  date, spend, impressions, clicks, conversions, "conversionValue", "purchaseCount"
+                ) VALUES ($1, $2, $3, $4, NOW()::date, $5, $6, $7, $8, $9, $10)
                 ON CONFLICT ("adId", date) DO UPDATE SET
                   spend = EXCLUDED.spend,
                   impressions = EXCLUDED.impressions,
                   clicks = EXCLUDED.clicks,
                   conversions = EXCLUDED.conversions,
+                  "conversionValue" = EXCLUDED."conversionValue",
+                  "purchaseCount" = EXCLUDED."purchaseCount",
                   "updatedAt" = NOW()
                 `,
                 [
@@ -375,6 +385,8 @@ export const metaSyncRouter = router({
                   Math.floor(parseFloat(metrics.spend || "0") * 100),
                   parseInt(metrics.impressions || "0"),
                   parseInt(metrics.clicks || "0"),
+                  conversions,
+                  conversionValue,
                   conversions,
                 ]
               );

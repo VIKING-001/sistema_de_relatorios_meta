@@ -61,17 +61,16 @@ export const campaignsRouter = router({
           c."startDate",
           c."endDate",
 
-          -- Gastos (soma de metrics por campanha)
+          -- Gastos reais do Meta
           COALESCE(SUM(CAST(am.spend AS BIGINT)), 0) as "totalSpend",
           COALESCE(SUM(am.impressions), 0) as "totalImpressions",
           COALESCE(SUM(am.clicks), 0) as "totalClicks",
 
-          -- Vendas (soma de sales por campanha)
-          COALESCE(SUM(CAST(ads."saleValue" AS NUMERIC(12,2))), 0) as "totalSales",
-          COALESCE(COUNT(DISTINCT ads.id), 0) as "totalSalesCount",
+          -- Receita de conversões (purchase value do Meta Pixel)
+          COALESCE(SUM(am."conversionValue"), 0) as "totalSales",
+          COALESCE(SUM(am."purchaseCount"), 0) as "totalSalesCount",
 
-          -- Cálculos
-          COALESCE(SUM(am.impressions), 0) as impressions,
+          -- CTR e CPM
           CASE
             WHEN COALESCE(SUM(am.impressions), 0) > 0
             THEN ROUND(CAST(COALESCE(SUM(am.clicks), 0) AS NUMERIC) / COALESCE(SUM(am.impressions), 0) * 100, 2)
@@ -85,14 +84,13 @@ export const campaignsRouter = router({
 
         FROM "metaCampaigns" c
         LEFT JOIN "metaAds" a ON a."campaignId" = c.id
-        LEFT JOIN "adMetrics" am ON am.id = a.id
-        LEFT JOIN "adSales" ads ON ads."campaignId" = c.id
+        LEFT JOIN "adMetrics" am ON am."adId" = a.id
 
         WHERE c."companyId" = $1
         ${input.status ? 'AND c.status = $2' : ''}
 
         GROUP BY c.id, c."metaCampaignId", c.name, c.status, c.objective, c."dailyBudget", c."lifetimeBudget", c."startDate", c."endDate"
-        ORDER BY c."startDate" DESC
+        ORDER BY "totalSpend" DESC
         `,
         input.status ? [input.companyId, input.status] : [input.companyId]
       );
@@ -104,16 +102,21 @@ export const campaignsRouter = router({
         status: row.status,
         objective: row.objective,
 
-        // Métricas
-        totalSpend: parseFloat(row.totalSpend || "0"),
+        // Métricas — spend em centavos, sales em BRL
+        totalSpend: parseFloat(row.totalSpend || "0") / 100,  // centavos → BRL
         totalImpressions: parseInt(row.totalImpressions || "0"),
         totalClicks: parseInt(row.totalClicks || "0"),
-        totalSales: parseFloat(row.totalSales || "0"),
+        totalSales: parseFloat(row.totalSales || "0"),        // já em BRL (Meta retorna BRL)
         totalSalesCount: parseInt(row.totalSalesCount || "0"),
 
-        // Calculados
-        roi: row.totalSpend > 0 ? ((row.totalSales - row.totalSpend) / row.totalSpend * 100) : 0,
-        cpa: row.totalSalesCount > 0 ? row.totalSpend / row.totalSalesCount : 0,
+        // Calculados (spend e sales agora em BRL)
+        roi: row.totalSpend > 0
+          ? ((parseFloat(row.totalSales || "0") - parseFloat(row.totalSpend || "0") / 100)
+              / (parseFloat(row.totalSpend || "0") / 100) * 100)
+          : 0,
+        cpa: row.totalSalesCount > 0
+          ? (parseFloat(row.totalSpend || "0") / 100) / parseInt(row.totalSalesCount || "0")
+          : 0,
         ctr: parseFloat(row.ctr || "0"),
         cpm: parseFloat(row.cpm || "0"),
       }));
@@ -154,24 +157,23 @@ export const campaignsRouter = router({
           ads.status,
           ads.budget,
 
-          -- Gastos e métricas
+          -- Gastos e métricas (spend em centavos)
           COALESCE(SUM(CAST(am.spend AS BIGINT)), 0) as "totalSpend",
           COALESCE(SUM(am.impressions), 0) as "totalImpressions",
           COALESCE(SUM(am.clicks), 0) as "totalClicks",
 
-          -- Vendas
-          COALESCE(SUM(CAST(adsales."saleValue" AS NUMERIC(12,2))), 0) as "totalSales",
-          COALESCE(COUNT(DISTINCT adsales.id), 0) as "totalSalesCount"
+          -- Receita de conversões do Meta Pixel (em BRL)
+          COALESCE(SUM(am."conversionValue"), 0) as "totalSales",
+          COALESCE(SUM(am."purchaseCount"), 0) as "totalSalesCount"
 
         FROM "metaAdsets" ads
         LEFT JOIN "metaAds" a ON a."adsetId" = ads.id
-        LEFT JOIN "adMetrics" am ON am."adsetId" = ads.id
-        LEFT JOIN "adSales" adsales ON adsales."adsetId" = ads.id
+        LEFT JOIN "adMetrics" am ON am."adId" = a.id
 
         WHERE ads."campaignId" = $1
 
         GROUP BY ads.id, ads."metaAdsetId", ads.name, ads.status, ads.budget
-        ORDER BY ads."createdAt" DESC
+        ORDER BY "totalSpend" DESC
         `,
         [input.campaignId]
       );
@@ -188,23 +190,22 @@ export const campaignsRouter = router({
               a.status,
               a."creativeName",
 
-              -- Gastos e métricas
+              -- Gastos e métricas (spend em centavos)
               COALESCE(SUM(CAST(am.spend AS BIGINT)), 0) as "totalSpend",
               COALESCE(SUM(am.impressions), 0) as "totalImpressions",
               COALESCE(SUM(am.clicks), 0) as "totalClicks",
 
-              -- Vendas
-              COALESCE(SUM(CAST(adsales."saleValue" AS NUMERIC(12,2))), 0) as "totalSales",
-              COALESCE(COUNT(DISTINCT adsales.id), 0) as "totalSalesCount"
+              -- Receita de conversões do Meta Pixel (em BRL)
+              COALESCE(SUM(am."conversionValue"), 0) as "totalSales",
+              COALESCE(SUM(am."purchaseCount"), 0) as "totalSalesCount"
 
             FROM "metaAds" a
             LEFT JOIN "adMetrics" am ON am."adId" = a.id
-            LEFT JOIN "adSales" adsales ON adsales."adId" = a.id
 
             WHERE a."adsetId" = $1
 
             GROUP BY a.id, a."metaAdId", a.name, a.status, a."creativeName"
-            ORDER BY a."createdAt" DESC
+            ORDER BY "totalSpend" DESC
             `,
             [adset.id]
           );
@@ -216,14 +217,19 @@ export const campaignsRouter = router({
             status: adset.status,
             budget: adset.budget,
 
-            totalSpend: parseFloat(adset.totalSpend || "0"),
+            totalSpend: parseFloat(adset.totalSpend || "0") / 100,  // centavos → BRL
             totalImpressions: parseInt(adset.totalImpressions || "0"),
             totalClicks: parseInt(adset.totalClicks || "0"),
-            totalSales: parseFloat(adset.totalSales || "0"),
+            totalSales: parseFloat(adset.totalSales || "0"),          // já em BRL
             totalSalesCount: parseInt(adset.totalSalesCount || "0"),
 
-            roi: adset.totalSpend > 0 ? ((adset.totalSales - adset.totalSpend) / adset.totalSpend * 100) : 0,
-            cpa: adset.totalSalesCount > 0 ? adset.totalSpend / adset.totalSalesCount : 0,
+            roi: adset.totalSpend > 0
+              ? ((parseFloat(adset.totalSales || "0") - parseFloat(adset.totalSpend || "0") / 100)
+                  / (parseFloat(adset.totalSpend || "0") / 100) * 100)
+              : 0,
+            cpa: adset.totalSalesCount > 0
+              ? (parseFloat(adset.totalSpend || "0") / 100) / parseInt(adset.totalSalesCount || "0")
+              : 0,
 
             ads: adsResult.rows.map((ad: any) => ({
               id: ad.id,
@@ -232,14 +238,19 @@ export const campaignsRouter = router({
               status: ad.status,
               creativeName: ad.creativeName,
 
-              totalSpend: parseFloat(ad.totalSpend || "0"),
+              totalSpend: parseFloat(ad.totalSpend || "0") / 100,    // centavos → BRL
               totalImpressions: parseInt(ad.totalImpressions || "0"),
               totalClicks: parseInt(ad.totalClicks || "0"),
-              totalSales: parseFloat(ad.totalSales || "0"),
+              totalSales: parseFloat(ad.totalSales || "0"),           // já em BRL
               totalSalesCount: parseInt(ad.totalSalesCount || "0"),
 
-              roi: ad.totalSpend > 0 ? ((ad.totalSales - ad.totalSpend) / ad.totalSpend * 100) : 0,
-              cpa: ad.totalSalesCount > 0 ? ad.totalSpend / ad.totalSalesCount : 0,
+              roi: ad.totalSpend > 0
+                ? ((parseFloat(ad.totalSales || "0") - parseFloat(ad.totalSpend || "0") / 100)
+                    / (parseFloat(ad.totalSpend || "0") / 100) * 100)
+                : 0,
+              cpa: ad.totalSalesCount > 0
+                ? (parseFloat(ad.totalSpend || "0") / 100) / parseInt(ad.totalSalesCount || "0")
+                : 0,
             })),
           };
         })

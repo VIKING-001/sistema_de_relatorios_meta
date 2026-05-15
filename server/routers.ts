@@ -218,6 +218,29 @@ async function fetchMetaInsights(
   };
 }
 
+// ─── Meta insights row parser ─────────────────────────────────────────────────
+function parseMetaInsightRow(row: any, idKey: string, nameKey: string) {
+  const PURCHASE_TYPES = ["purchase", "offsite_conversion.fb_pixel_purchase", "omni_purchase"];
+  const getVal = (arr: any[], types: string[]) => {
+    const a = (arr || []).find((x: any) => types.includes(x.action_type));
+    return a ? parseFloat(a.value || "0") : 0;
+  };
+  const spend = parseFloat(row.spend || "0");
+  const purchases = getVal(row.actions, PURCHASE_TYPES);
+  const revenue = getVal(row.action_values, PURCHASE_TYPES);
+  return {
+    id: row[idKey],
+    name: row[nameKey],
+    spend,
+    impressions: parseInt(row.impressions || "0"),
+    clicks: parseInt(row.clicks || "0"),
+    purchases,
+    revenue,
+    roi: spend > 0 ? ((revenue - spend) / spend * 100) : 0,
+    cpa: purchases > 0 ? spend / purchases : 0,
+  };
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 
 export const appRouter = router({
@@ -338,7 +361,13 @@ export const appRouter = router({
         }
 
         // Gerar slug único
-        const slug = `${input.title.toLowerCase().replace(/\s+/g, "-")}-${nanoid(8)}`;
+        const slug = `${input.title.toLowerCase()
+          .replace(/\//g, "-")          // datas: 23/04 → 23-04
+          .replace(/\s+/g, "-")         // espaços → hífens
+          .replace(/[^a-z0-9\-]/g, "") // remove chars especiais
+          .replace(/-+/g, "-")         // hífens duplos → um
+          .replace(/^-|-$/g, "")       // remove hífens início/fim
+        }-${nanoid(8)}`;
 
         // Criar relatório
         const report = await db.createReport(
@@ -675,6 +704,110 @@ export const appRouter = router({
             lifetime_budget?: string;
           }>,
         };
+      }),
+
+    /**
+     * Insights por campanha para o período selecionado (ao vivo da Meta API)
+     * Retorna spend, receita, compras, ROI, CPA por campaign_id
+     */
+    campaignInsights: protectedProcedure
+      .input(z.object({
+        companyId: z.number().int().positive(),
+        startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      }))
+      .query(async ({ ctx, input }) => {
+        const company = await db.getCompanyById(input.companyId);
+        if (!company || company.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
+        if (!company.metaAccessToken || !company.metaAdAccountId) return [];
+
+        const accountId = company.metaAdAccountId.startsWith("act_")
+          ? company.metaAdAccountId : `act_${company.metaAdAccountId}`;
+
+        const url = new URL(`https://graph.facebook.com/v19.0/${accountId}/insights`);
+        url.searchParams.set("fields", "campaign_id,campaign_name,spend,impressions,clicks,actions,action_values");
+        url.searchParams.set("level", "campaign");
+        url.searchParams.set("time_range", JSON.stringify({ since: input.startDate, until: input.endDate }));
+        url.searchParams.set("limit", "500");
+        url.searchParams.set("access_token", company.metaAccessToken);
+
+        const res = await fetch(url.toString());
+        const data = await res.json();
+        if (data.error) throw new TRPCError({ code: "BAD_REQUEST", message: data.error.message });
+
+        return (data.data ?? []).map((row: any) => parseMetaInsightRow(row, "campaign_id", "campaign_name"));
+      }),
+
+    /**
+     * Insights por adset de uma campanha (ao vivo da Meta API)
+     * Retorna adsets com status + métricas do período
+     */
+    adsetInsights: protectedProcedure
+      .input(z.object({
+        companyId: z.number().int().positive(),
+        campaignId: z.string().min(1),
+        startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      }))
+      .query(async ({ ctx, input }) => {
+        const company = await db.getCompanyById(input.companyId);
+        if (!company || company.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
+        if (!company.metaAccessToken) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Meta não conectado" });
+
+        const [adsetsRes, insightsRes] = await Promise.all([
+          fetch(`https://graph.facebook.com/v19.0/${input.campaignId}/adsets?fields=id,name,status,effective_status,daily_budget,lifetime_budget&limit=200&access_token=${company.metaAccessToken}`),
+          fetch(`https://graph.facebook.com/v19.0/${input.campaignId}/insights?fields=adset_id,adset_name,spend,impressions,clicks,actions,action_values&level=adset&time_range=${encodeURIComponent(JSON.stringify({ since: input.startDate, until: input.endDate }))}&limit=200&access_token=${company.metaAccessToken}`),
+        ]);
+
+        const [adsetsData, insightsData] = await Promise.all([adsetsRes.json(), insightsRes.json()]);
+
+        const insightsMap: Record<string, any> = {};
+        for (const row of (insightsData.data ?? [])) {
+          insightsMap[row.adset_id] = parseMetaInsightRow(row, "adset_id", "adset_name");
+        }
+
+        return (adsetsData.data ?? []).map((adset: any) => ({
+          id: adset.id,
+          name: adset.name,
+          status: adset.effective_status || adset.status,
+          ...(insightsMap[adset.id] ?? { spend: 0, impressions: 0, clicks: 0, purchases: 0, revenue: 0, roi: 0, cpa: 0 }),
+        }));
+      }),
+
+    /**
+     * Insights por anúncio de um adset (ao vivo da Meta API)
+     * Retorna ads com status + métricas do período
+     */
+    adInsights: protectedProcedure
+      .input(z.object({
+        companyId: z.number().int().positive(),
+        adsetId: z.string().min(1),
+        startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      }))
+      .query(async ({ ctx, input }) => {
+        const company = await db.getCompanyById(input.companyId);
+        if (!company || company.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
+        if (!company.metaAccessToken) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Meta não conectado" });
+
+        const [adsRes, insightsRes] = await Promise.all([
+          fetch(`https://graph.facebook.com/v19.0/${input.adsetId}/ads?fields=id,name,status,effective_status&limit=200&access_token=${company.metaAccessToken}`),
+          fetch(`https://graph.facebook.com/v19.0/${input.adsetId}/insights?fields=ad_id,ad_name,spend,impressions,clicks,actions,action_values&level=ad&time_range=${encodeURIComponent(JSON.stringify({ since: input.startDate, until: input.endDate }))}&limit=200&access_token=${company.metaAccessToken}`),
+        ]);
+
+        const [adsData, insightsData] = await Promise.all([adsRes.json(), insightsRes.json()]);
+
+        const insightsMap: Record<string, any> = {};
+        for (const row of (insightsData.data ?? [])) {
+          insightsMap[row.ad_id] = parseMetaInsightRow(row, "ad_id", "ad_name");
+        }
+
+        return (adsData.data ?? []).map((ad: any) => ({
+          id: ad.id,
+          name: ad.name,
+          status: ad.effective_status || ad.status,
+          ...(insightsMap[ad.id] ?? { spend: 0, impressions: 0, clicks: 0, purchases: 0, revenue: 0, roi: 0, cpa: 0 }),
+        }));
       }),
 
     /** Lista anúncios de uma campanha (para gerar UTMs por anúncio) */

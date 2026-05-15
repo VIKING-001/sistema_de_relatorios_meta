@@ -1,4 +1,4 @@
-import { useParams } from "wouter";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import {
   Loader2, Copy, Download,
@@ -115,7 +115,9 @@ function Divider() {
 // ══════════════════════════════════════════════════════════════════
 
 export default function PublicReport() {
-  const { slug } = useParams<{ slug: string }>();
+  const [location] = useLocation();
+  // Extract everything after /report/ — handles slugs with slashes (e.g. dates 23/04)
+  const slug = location.replace(/^\/report\//, "");
 
   const { data, isLoading, error } = trpc.report.getBySlug.useQuery(
     { slug: slug || "" },
