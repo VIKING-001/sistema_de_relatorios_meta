@@ -35,9 +35,11 @@ interface ConsultiveReportProps {
   periodo?: string;
   /** Análise gerada pelo z.ai no servidor (JSON string ou objeto já parseado) */
   aiAnalysis?: string | AiAnalysis | null;
+  /** Se true, exibe a seção de oportunidades de melhoria (apenas para admin). Default: false */
+  showImprovements?: boolean;
 }
 
-export default function ConsultiveReport({ metrics, aiAnalysis }: ConsultiveReportProps) {
+export default function ConsultiveReport({ metrics, aiAnalysis, showImprovements = false }: ConsultiveReportProps) {
   // Tentar usar análise IA armazenada
   let storedAi: AiAnalysis | null = null;
   if (aiAnalysis) {
@@ -68,8 +70,8 @@ export default function ConsultiveReport({ metrics, aiAnalysis }: ConsultiveRepo
         </div>
       )}
 
-      {/* Grid: Pontos Fortes + Oportunidades */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Grid: Pontos Fortes + Oportunidades (oportunidades apenas para admin) */}
+      <div className={`grid gap-4 ${showImprovements ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1"}`}>
 
         {/* Pontos Fortes */}
         <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-5">
@@ -91,25 +93,27 @@ export default function ConsultiveReport({ metrics, aiAnalysis }: ConsultiveRepo
           )}
         </div>
 
-        {/* Oportunidades */}
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <AlertCircle className="h-5 w-5 text-amber-400 shrink-0" />
-            <h4 className="text-base font-bold text-amber-300">Oportunidades de Melhoria</h4>
+        {/* Oportunidades — visível apenas para o admin */}
+        {showImprovements && (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <AlertCircle className="h-5 w-5 text-amber-400 shrink-0" />
+              <h4 className="text-base font-bold text-amber-300">Oportunidades de Melhoria</h4>
+            </div>
+            {display.pontosFracosTexto.length > 0 ? (
+              <ul className="space-y-2">
+                {display.pontosFracosTexto.map((ponto, idx) => (
+                  <li key={idx} className="flex items-start gap-2 text-amber-200 text-sm">
+                    <span className="text-amber-400 mt-0.5 shrink-0">!</span>
+                    <span>{ponto}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-400 text-sm">Nenhuma oportunidade identificada. Excelente performance!</p>
+            )}
           </div>
-          {display.pontosFracosTexto.length > 0 ? (
-            <ul className="space-y-2">
-              {display.pontosFracosTexto.map((ponto, idx) => (
-                <li key={idx} className="flex items-start gap-2 text-amber-200 text-sm">
-                  <span className="text-amber-400 mt-0.5 shrink-0">!</span>
-                  <span>{ponto}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-400 text-sm">Nenhuma oportunidade identificada. Excelente performance!</p>
-          )}
-        </div>
+        )}
       </div>
 
       {/* Recomendação Principal */}
