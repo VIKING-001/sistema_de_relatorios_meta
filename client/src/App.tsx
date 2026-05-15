@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -36,6 +36,7 @@ function PrivateRoutes() {
 
 function Router() {
   const { isAuthenticated, loading } = useAuth();
+  const [location] = useLocation();
 
   if (loading) {
     return (
@@ -45,9 +46,14 @@ function Router() {
     );
   }
 
+  // Handle public report links — bypass Wouter matching entirely so slugs
+  // with date slashes like /report/foo-23/04-bar work correctly
+  if (location.startsWith("/report/")) {
+    return <PublicReport />;
+  }
+
   return (
     <Switch>
-      <Route path="/report/:rest*" component={PublicReport} />
       <Route>
         {isAuthenticated ? <PrivateRoutes /> : <Login />}
       </Route>
