@@ -394,6 +394,10 @@ export default function PublicReport() {
                 messagesInitiated:      metrics.messagesInitiated,
                 instagramProfileVisits: metrics.instagramProfileVisits,
                 costPerProfileVisit:    parseFloat(metrics.costPerProfileVisit),
+                purchases,
+                purchaseValue,
+                costPerPurchase,
+                costPerMessage,
               }}
             />
           </>

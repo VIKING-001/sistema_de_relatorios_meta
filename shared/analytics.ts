@@ -204,25 +204,165 @@ function analyzeInvestimento(gasto: number, cpc: number, cpv: number, cliques: n
   return { gasto, custoPorClique: cpc, custoPorVisita: cpv, roi, status: "ruim" as const, insight: `Custos muito altos: R$ ${cpc.toFixed(2)}/clique e R$ ${cpv.toFixed(2)}/visita.`, recomendacao: "Revise segmentação e pause campanhas de baixo desempenho." };
 }
 
+function brl(v: number) {
+  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+function num(v: number) {
+  return v.toLocaleString("pt-BR");
+}
+
 function generateResumo(m: MetricasEntrada) {
   const pontosFortesTexto: string[] = [];
   const pontosFracosTexto: string[] = [];
-  if (m.ctr >= 1.5) pontosFortesTexto.push("Taxa de cliques acima da média");
-  if (m.cpm <= 12) pontosFortesTexto.push("Custo por impressão eficiente");
-  if (m.videoRetentionRate >= 15) pontosFortesTexto.push("Boa retenção de vídeo");
-  if (m.newInstagramFollowers > 500) pontosFortesTexto.push("Crescimento significativo de seguidores");
-  if (m.costPerClick <= 1.5) pontosFortesTexto.push("Custo por clique competitivo");
-  if ((m.purchases ?? 0) > 0) pontosFortesTexto.push("Conversões registradas no período");
-  if (m.ctr < 0.8) pontosFracosTexto.push("Taxa de cliques abaixo da média");
-  if (m.cpm > 18) pontosFracosTexto.push("Custo por impressão muito alto");
-  if (m.videoRetentionRate < 8) pontosFracosTexto.push("Retenção de vídeo baixa");
-  if (m.messagesInitiated < 100) pontosFracosTexto.push("Poucas mensagens iniciadas");
-  if (m.costPerProfileVisit > 0.5) pontosFracosTexto.push("Custo por visita ao perfil elevado");
-  const recomendacaoPrincipal =
-    pontosFortesTexto.length > pontosFracosTexto.length
-      ? "Sua campanha está performando bem. Continue com a estratégia atual e teste incrementos para melhorar ainda mais."
-      : "Há oportunidades significativas de melhoria. Revise a segmentação de público e teste novos criativos.";
-  return { pontosFortesCount: pontosFortesTexto.length, pontosFortesTexto, pontosFracosCount: pontosFracosTexto.length, pontosFracosTexto, recomendacaoPrincipal };
+
+  const purchases     = m.purchases ?? 0;
+  const purchaseValue = m.purchaseValue ?? 0;
+  const cpPurchase    = m.costPerPurchase ?? 0;
+  const cpMessage     = m.costPerMessage ?? 0;
+  const frequencia    = m.totalImpressions / Math.max(m.totalReach, 1);
+  const roas          = m.totalSpent > 0 && purchaseValue > 0 ? purchaseValue / m.totalSpent : 0;
+
+  // ── PONTOS FORTES ────────────────────────────────────────────────────────────
+
+  // ROAS / Compras
+  if (roas >= 5) {
+    pontosFortesTexto.push(`ROAS de ${roas.toFixed(2)}x excepcional — cada R$ 1 investido gerou R$ ${roas.toFixed(2)} em receita`);
+  } else if (roas >= 3) {
+    pontosFortesTexto.push(`ROAS de ${roas.toFixed(2)}x muito positivo — campanha gerando retorno saudável sobre o investimento`);
+  } else if (roas >= 2) {
+    pontosFortesTexto.push(`ROAS de ${roas.toFixed(2)}x acima do ponto de equilíbrio — campanha lucrativa`);
+  }
+
+  if (purchases > 0 && purchaseValue > 0) {
+    pontosFortesTexto.push(
+      `${purchases} venda${purchases > 1 ? "s" : ""} rastreada${purchases > 1 ? "s" : ""} com faturamento de ${brl(purchaseValue)}`
+    );
+  }
+
+  // CTR
+  if (m.ctr >= 2.5) {
+    pontosFortesTexto.push(`CTR de ${m.ctr.toFixed(2)}% excelente — ${((m.ctr / B.ctr - 1) * 100).toFixed(0)}% acima da média do mercado (${B.ctr}%)`);
+  } else if (m.ctr >= 1.5) {
+    pontosFortesTexto.push(`CTR de ${m.ctr.toFixed(2)}% dentro da média — anúncios gerando cliques consistentes`);
+  }
+
+  // CPM
+  if (m.cpm <= 8) {
+    pontosFortesTexto.push(`CPM de ${brl(m.cpm)} excelente — custo por 1.000 impressões muito abaixo da média (${brl(B.cpm)})`);
+  } else if (m.cpm <= 12) {
+    pontosFortesTexto.push(`CPM de ${brl(m.cpm)} eficiente — custo de impressão dentro da faixa competitiva`);
+  }
+
+  // CPC
+  if (m.costPerClick > 0 && m.costPerClick <= 1.0) {
+    pontosFortesTexto.push(`CPC de ${brl(m.costPerClick)} — custo por clique muito competitivo, abaixo da média de ${brl(B.cpc)}`);
+  } else if (m.costPerClick > 0 && m.costPerClick <= 1.5) {
+    pontosFortesTexto.push(`CPC de ${brl(m.costPerClick)} dentro do esperado para o mercado`);
+  }
+
+  // Alcance / Frequência
+  if (m.totalReach > 0 && frequencia <= 1.8) {
+    pontosFortesTexto.push(`${num(m.totalReach)} pessoas alcançadas com frequência saudável de ${frequencia.toFixed(1)}x — público fresco e receptivo`);
+  }
+
+  // Seguidores
+  if (m.newInstagramFollowers > 500) {
+    pontosFortesTexto.push(`${num(m.newInstagramFollowers)} novos seguidores conquistados — crescimento de audiência significativo`);
+  } else if (m.newInstagramFollowers > 100) {
+    pontosFortesTexto.push(`${num(m.newInstagramFollowers)} novos seguidores — base de audiência em expansão`);
+  }
+
+  // Mensagens
+  if (cpMessage > 0 && cpMessage <= 5) {
+    pontosFortesTexto.push(`Custo por mensagem de ${brl(cpMessage)} — geração de leads muito eficiente`);
+  }
+
+  // Vídeo
+  if (m.videoRetentionRate >= 25) {
+    pontosFortesTexto.push(`Retenção de vídeo de ${m.videoRetentionRate.toFixed(1)}% — criativo está mantendo a atenção do público`);
+  } else if (m.videoRetentionRate >= 15) {
+    pontosFortesTexto.push(`Retenção de vídeo de ${m.videoRetentionRate.toFixed(1)}% acima da média — conteúdo relevante para o público`);
+  }
+
+  // CPA
+  if (cpPurchase > 0 && purchases > 0 && roas >= 3) {
+    pontosFortesTexto.push(`Custo por venda de ${brl(cpPurchase)} com ROAS de ${roas.toFixed(2)}x — aquisição de clientes rentável`);
+  }
+
+  // ── OPORTUNIDADES ────────────────────────────────────────────────────────────
+
+  // ROAS baixo
+  if (m.totalSpent > 0 && purchaseValue > 0 && roas < 2) {
+    pontosFracosTexto.push(`ROAS de ${roas.toFixed(2)}x abaixo do ideal — meta é atingir 3x+ para campanha sustentável. Revise oferta e segmentação`);
+  }
+
+  // CTR baixo
+  if (m.ctr < 0.8) {
+    pontosFracosTexto.push(`CTR de ${m.ctr.toFixed(2)}% abaixo da média (${B.ctr}%) — o criativo não está gerando interesse suficiente no público`);
+  } else if (m.ctr < 1.5) {
+    pontosFracosTexto.push(`CTR de ${m.ctr.toFixed(2)}% pode melhorar — testes de copy e imagem podem aumentar cliques sem custo extra`);
+  }
+
+  // CPM alto
+  if (m.cpm > 25) {
+    pontosFracosTexto.push(`CPM de ${brl(m.cpm)} muito alto — pagando ${((m.cpm / B.cpm - 1) * 100).toFixed(0)}% a mais que a média por impressão. Revise segmentação`);
+  } else if (m.cpm > 18) {
+    pontosFracosTexto.push(`CPM de ${brl(m.cpm)} elevado — leilão competitivo. Considere expandir público ou testar novos posicionamentos`);
+  }
+
+  // Frequência alta
+  if (frequencia > 4) {
+    pontosFracosTexto.push(`Frequência de ${frequencia.toFixed(1)}x — público vendo o mesmo anúncio muitas vezes, risco de fadiga e queda de performance`);
+  } else if (frequencia > 3) {
+    pontosFracosTexto.push(`Frequência de ${frequencia.toFixed(1)}x — rotacione os criativos para manter o interesse do público`);
+  }
+
+  // CPC alto
+  if (m.costPerClick > 2.5) {
+    pontosFracosTexto.push(`CPC de ${brl(m.costPerClick)} acima da média — revise public-alvo e estratégia de lance para reduzir custo por clique`);
+  }
+
+  // Vídeo
+  if (m.videoRetentionRate > 0 && m.videoRetentionRate < 8) {
+    pontosFracosTexto.push(`Retenção de vídeo de ${m.videoRetentionRate.toFixed(1)}% baixa — os primeiros 3 segundos precisam de um hook mais impactante`);
+  }
+
+  // Mensagens caras
+  if (cpMessage > 15) {
+    pontosFracosTexto.push(`Custo por mensagem de ${brl(cpMessage)} alto — revise CTA e criativo para reduzir custo de captação de leads`);
+  }
+
+  // Custo por visita
+  if (m.costPerProfileVisit > 0.6 && m.instagramProfileVisits > 0) {
+    pontosFracosTexto.push(`Custo por visita ao perfil de ${brl(m.costPerProfileVisit)} — acima do ideal. Perfil otimizado converte mais visitantes em clientes`);
+  }
+
+  // ── RECOMENDAÇÃO PRINCIPAL ───────────────────────────────────────────────────
+  let recomendacaoPrincipal = "";
+
+  if (roas >= 5) {
+    recomendacaoPrincipal = `Com ROAS de ${roas.toFixed(2)}x e ${brl(purchaseValue)} faturados, os anúncios estão entregando resultado excepcional. Recomenda-se escalar o investimento gradualmente (20–30% por semana) mantendo os criativos atuais, enquanto testa novos públicos semelhantes (lookalike) para ampliar o alcance sem saturar a audiência atual.`;
+  } else if (roas >= 3) {
+    recomendacaoPrincipal = `Com ROAS de ${roas.toFixed(2)}x e ${purchases} venda${purchases > 1 ? "s" : ""} registrada${purchases > 1 ? "s" : ""}, a campanha está performando acima do ponto de equilíbrio. O próximo passo é otimizar o criativo de melhor desempenho e testar um aumento de orçamento de 20% para verificar se o ROAS se mantém ao escalar.`;
+  } else if (roas > 0 && roas < 2) {
+    recomendacaoPrincipal = `ROAS de ${roas.toFixed(2)}x indica que a campanha está próxima do ponto de equilíbrio. Priorize testar novas segmentações de público, revisar a página de destino e fortalecer a oferta (garantia, bônus ou prazo) para melhorar a taxa de conversão antes de aumentar o investimento.`;
+  } else if (m.ctr >= 1.5 && m.cpm <= 12) {
+    recomendacaoPrincipal = `CTR e CPM estão em boas condições — o anúncio está gerando tráfego qualificado a custo competitivo. Para maximizar os resultados, foque em otimizar a etapa de conversão: revise a página de destino, formulários e proposta de valor para converter mais visitantes em clientes.`;
+  } else if (m.cpm > 20) {
+    recomendacaoPrincipal = `O principal gargalo é o CPM elevado de ${brl(m.cpm)}, que reduz o alcance do investimento. Recomenda-se ampliar o público-alvo (faixa etária mais ampla ou interesses relacionados), testar novos posicionamentos (Reels, Stories) e verificar sobreposição entre campanhas ativas.`;
+  } else if (pontosFortesTexto.length >= pontosFracosTexto.length) {
+    recomendacaoPrincipal = `A campanha apresenta desempenho positivo com ${pontosFortesTexto.length} ponto${pontosFortesTexto.length > 1 ? "s" : ""} de destaque. Mantenha a estratégia atual e explore testes A/B de criativos para identificar variações que possam elevar ainda mais os resultados no próximo período.`;
+  } else {
+    recomendacaoPrincipal = `Há oportunidades claras de melhoria. Priorize revisar o criativo (imagem/vídeo e copy), ajustar a segmentação de público e testar novas variações antes de aumentar o investimento. Pequenas otimizações podem gerar ganhos expressivos nos próximos ciclos.`;
+  }
+
+  return {
+    pontosFortesCount: pontosFortesTexto.length,
+    pontosFortesTexto,
+    pontosFracosCount: pontosFracosTexto.length,
+    pontosFracosTexto,
+    recomendacaoPrincipal,
+  };
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

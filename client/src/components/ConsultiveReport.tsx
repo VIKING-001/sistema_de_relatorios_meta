@@ -21,6 +21,10 @@ interface ConsultiveReportProps {
     messagesInitiated: number;
     instagramProfileVisits: number;
     costPerProfileVisit: number;
+    purchases?: number;
+    purchaseValue?: number;
+    costPerPurchase?: number;
+    costPerMessage?: number;
   };
 }
 
