@@ -570,6 +570,45 @@ export const appRouter = router({
         const metrics = await db.getMetricsByReportId(report.id);
         const company = await db.getCompanyById(report.companyId);
 
+        // Gerar análise IA se ainda não existir (lazy — roda uma única vez, salva no banco)
+        if (!report.aiAnalysis && metrics) {
+          try {
+            const totalSpent    = parseFloat(metrics.totalSpent ?? "0");
+            const purchaseValue = parseFloat((metrics as any).purchaseValue ?? "0");
+            const purchases     = parseInt((metrics as any).purchases ?? "0", 10);
+            const roas          = totalSpent > 0 && purchaseValue > 0 ? purchaseValue / totalSpent : 0;
+
+            const aiResult = await generateAiAnalysis({
+              totalSpent,
+              ctr:                    parseFloat(metrics.ctr ?? "0"),
+              cpm:                    parseFloat(metrics.cpm ?? "0"),
+              cpc:                    parseFloat(metrics.costPerClick ?? "0"),
+              totalImpressions:       metrics.totalImpressions,
+              totalReach:             metrics.totalReach,
+              totalClicks:            metrics.totalClicks,
+              purchases,
+              purchaseValue,
+              costPerPurchase:        parseFloat((metrics as any).costPerPurchase ?? "0"),
+              roas,
+              messagesInitiated:      metrics.messagesInitiated,
+              costPerMessage:         parseFloat((metrics as any).costPerMessage ?? "0"),
+              instagramProfileVisits: metrics.instagramProfileVisits,
+              costPerProfileVisit:    parseFloat(metrics.costPerProfileVisit ?? "0"),
+              newInstagramFollowers:  metrics.newInstagramFollowers,
+              videoRetentionRate:     parseFloat(metrics.videoRetentionRate ?? "0"),
+              empresa:                company?.name,
+              periodo:                report.title,
+            });
+
+            const aiJson = JSON.stringify(aiResult);
+            await db.updateReportAiAnalysis(report.id, aiJson);
+            // Retorna com análise recém-gerada
+            return { report: { ...report, aiAnalysis: aiJson }, metrics, company };
+          } catch (err) {
+            console.error("[AI] getBySlug lazy generation falhou:", err);
+          }
+        }
+
         return { report, metrics, company };
       }),
   }),
