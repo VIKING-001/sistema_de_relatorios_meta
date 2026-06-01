@@ -6,7 +6,7 @@ import {
   DollarSign, TrendingUp, BarChart3, ShoppingBag,
   Star, Link, Video, Target,
 } from "lucide-react";
-import { formatCurrency, formatNumber, formatPercentage } from "@shared/metrics";
+import { formatCurrency, formatNumber, formatPercentage, deriveMetrics } from "@shared/metrics";
 import { displayDate } from "@shared/dateParser";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -154,19 +154,37 @@ export default function PublicReport() {
     toast.success("Link copiado!");
   };
 
-  const m              = metrics as any;
-  const purchases      = parseInt(m?.purchases ?? "0", 10)    || 0;
-  const purchaseValue  = parseFloat(m?.purchaseValue ?? "0")  || 0;
-  const costPerMessage = parseFloat(m?.costPerMessage ?? "0") || 0;
-  const hasPurchases   = purchases > 0 || purchaseValue > 0;
-  const totalSpent     = parseFloat(metrics?.totalSpent ?? "0");
-  const roas           = totalSpent > 0 && purchaseValue > 0 ? (purchaseValue / totalSpent).toFixed(2) : null;
+  const m = metrics as any;
 
-  // Calcular CPA: usa valor salvo se disponível, senão calcula pela média (investido ÷ compras)
-  const storedCPA      = parseFloat(m?.costPerPurchase ?? "0") || 0;
-  const costPerPurchase = storedCPA > 0
-    ? storedCPA
-    : (totalSpent > 0 && purchases > 0 ? totalSpent / purchases : 0);
+  // Constrói objeto numérico e preenche os custos derivados automaticamente
+  // (gasto ÷ denominador) quando estão zerados mas há dados de referência.
+  const dm = deriveMetrics({
+    totalSpent:             parseFloat(m?.totalSpent ?? "0") || 0,
+    totalImpressions:       Number(m?.totalImpressions ?? 0) || 0,
+    totalReach:             Number(m?.totalReach ?? 0) || 0,
+    totalClicks:            Number(m?.totalClicks ?? 0) || 0,
+    instagramReach:         Number(m?.instagramReach ?? 0) || 0,
+    instagramProfileVisits: Number(m?.instagramProfileVisits ?? 0) || 0,
+    newInstagramFollowers:  Number(m?.newInstagramFollowers ?? 0) || 0,
+    messagesInitiated:      Number(m?.messagesInitiated ?? 0) || 0,
+    videoRetentionRate:     parseFloat(m?.videoRetentionRate ?? "0") || 0,
+    purchases:              parseInt(m?.purchases ?? "0", 10) || 0,
+    purchaseValue:          parseFloat(m?.purchaseValue ?? "0") || 0,
+    cpm:                    parseFloat(m?.cpm ?? "0") || 0,
+    ctr:                    parseFloat(m?.ctr ?? "0") || 0,
+    costPerClick:           parseFloat(m?.costPerClick ?? "0") || 0,
+    costPerProfileVisit:    parseFloat(m?.costPerProfileVisit ?? "0") || 0,
+    costPerMessage:         parseFloat(m?.costPerMessage ?? "0") || 0,
+    costPerPurchase:        parseFloat(m?.costPerPurchase ?? "0") || 0,
+  });
+
+  const purchases       = dm.purchases ?? 0;
+  const purchaseValue   = dm.purchaseValue ?? 0;
+  const costPerMessage  = dm.costPerMessage ?? 0;
+  const costPerPurchase = dm.costPerPurchase ?? 0;
+  const hasPurchases    = purchases > 0 || purchaseValue > 0;
+  const totalSpent      = dm.totalSpent ?? 0;
+  const roas            = totalSpent > 0 && purchaseValue > 0 ? (purchaseValue / totalSpent).toFixed(2) : null;
 
   return (
     <div className="min-h-screen relative" style={{ background: "linear-gradient(135deg, #030509 0%, #0B0F19 50%, #030509 100%)" }}>
@@ -243,7 +261,7 @@ export default function PublicReport() {
               <HeroKPI
                 label="Cliques"
                 value={formatNumber(metrics.totalClicks)}
-                sub={`CTR ${formatPercentage(parseFloat(metrics.ctr))}`}
+                sub={`CTR ${formatPercentage(dm.ctr ?? 0)}`}
                 accent="violet"
                 icon={MousePointerClick}
               />
@@ -281,9 +299,9 @@ export default function PublicReport() {
             <SectionHeader icon={BarChart3} title="Performance dos Anúncios" accent="violet" />
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-10">
               <MetricCard label="Cliques Totais"  value={formatNumber(metrics.totalClicks)}                           accent="violet" large />
-              <MetricCard label="CTR"             value={formatPercentage(parseFloat(metrics.ctr))}                   accent="violet" />
+              <MetricCard label="CTR"             value={formatPercentage(dm.ctr ?? 0)}                               accent="violet" />
               <MetricCard label="Novos Seguidores"value={formatNumber(metrics.newInstagramFollowers)}                  accent="violet" />
-              <MetricCard label="Retenção de Vídeo" value={formatPercentage(parseFloat(metrics.videoRetentionRate))} accent="violet" />
+              <MetricCard label="Retenção de Vídeo" value={formatPercentage(dm.videoRetentionRate ?? 0)} accent="violet" />
             </div>
 
             <Divider />
@@ -296,9 +314,9 @@ export default function PublicReport() {
                 value={formatCurrency(totalSpent)}
                 accent="amber"
               />
-              <MetricCard label="CPC" value={formatCurrency(parseFloat(metrics.costPerClick))}       accent="amber" />
-              <MetricCard label="CPM" value={formatCurrency(parseFloat(metrics.cpm))}                accent="amber" />
-              <MetricCard label="Custo por Visita" value={formatCurrency(parseFloat(metrics.costPerProfileVisit))} accent="amber" />
+              <MetricCard label="CPC" value={(dm.costPerClick ?? 0) > 0 ? formatCurrency(dm.costPerClick ?? 0) : "—"}       accent="amber" />
+              <MetricCard label="CPM" value={(dm.cpm ?? 0) > 0 ? formatCurrency(dm.cpm ?? 0) : "—"}                accent="amber" />
+              <MetricCard label="Custo por Visita" value={(dm.costPerProfileVisit ?? 0) > 0 ? formatCurrency(dm.costPerProfileVisit ?? 0) : "—"} accent="amber" />
             </div>
 
             {/* ── SEÇÃO: Mensagens ── */}
@@ -371,8 +389,8 @@ export default function PublicReport() {
               messagesInitiated={metrics.messagesInitiated}
               purchases={purchases}
               totalSpent={totalSpent}
-              costPerClick={parseFloat(metrics.costPerClick)}
-              costPerProfileVisit={parseFloat(metrics.costPerProfileVisit)}
+              costPerClick={dm.costPerClick ?? 0}
+              costPerProfileVisit={dm.costPerProfileVisit ?? 0}
               costPerMessage={costPerMessage}
               costPerPurchase={costPerPurchase}
               purchaseValue={purchaseValue}
@@ -385,18 +403,18 @@ export default function PublicReport() {
               periodo={report.title}
               aiAnalysis={(report as any).aiAnalysis ?? null}
               metrics={{
-                ctr:                    parseFloat(metrics.ctr),
-                cpm:                    parseFloat(metrics.cpm),
+                ctr:                    dm.ctr ?? 0,
+                cpm:                    dm.cpm ?? 0,
                 totalReach:             metrics.totalReach,
                 totalImpressions:       metrics.totalImpressions,
                 totalSpent:             totalSpent,
                 totalClicks:            metrics.totalClicks,
-                costPerClick:           parseFloat(metrics.costPerClick),
-                videoRetentionRate:     parseFloat(metrics.videoRetentionRate),
+                costPerClick:           dm.costPerClick ?? 0,
+                videoRetentionRate:     dm.videoRetentionRate ?? 0,
                 newInstagramFollowers:  metrics.newInstagramFollowers,
                 messagesInitiated:      metrics.messagesInitiated,
                 instagramProfileVisits: metrics.instagramProfileVisits,
-                costPerProfileVisit:    parseFloat(metrics.costPerProfileVisit),
+                costPerProfileVisit:    dm.costPerProfileVisit ?? 0,
                 purchases,
                 purchaseValue,
                 costPerPurchase,

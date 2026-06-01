@@ -199,7 +199,7 @@ describe("Analytics - Metrics Analysis", () => {
       expect(analysis.ctr.insight).toContain("1.54");
       expect(analysis.cpm.insight).toContain("14.04");
       expect(analysis.alcance.insight).toContain("63"); // Pode estar formatado
-      expect(analysis.video.insight).toContain("17.48");
+      expect(analysis.video.insight).toContain("17.5"); // insight arredonda para 1 casa (toFixed(1))
     });
 
     it("should provide actionable recomendacoes", () => {

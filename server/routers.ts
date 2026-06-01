@@ -4,7 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
-import { calculateCPM, calculateCTR } from "../shared/metrics";
+import { calculateCPM, calculateCTR, deriveMetrics } from "../shared/metrics";
 import { nanoid } from "nanoid";
 import { TRPCError } from "@trpc/server";
 import { loginUser, registerUser, signSessionJwt } from "./_core/localAuth";
@@ -399,27 +399,44 @@ export const appRouter = router({
 
           // Gerar análise IA server-side e salvar no relatório
           try {
-            const purchases   = input.metrics.purchases  ?? 0;
-            const purchaseValue = input.metrics.purchaseValue ?? 0;
-            const totalSpent  = parseFloat(input.metrics.totalSpent);
+            // Preenche os custos derivados (gasto ÷ denominador) antes de enviar à IA
+            const dm = deriveMetrics({
+              totalSpent:             parseFloat(input.metrics.totalSpent),
+              totalImpressions:       input.metrics.totalImpressions,
+              totalClicks:            input.metrics.totalClicks,
+              instagramProfileVisits: input.metrics.instagramProfileVisits ?? 0,
+              messagesInitiated:      input.metrics.messagesInitiated ?? 0,
+              purchases:              input.metrics.purchases ?? 0,
+              purchaseValue:          input.metrics.purchaseValue ?? 0,
+              cpm,
+              ctr,
+              costPerClick:           parseFloat(input.metrics.costPerClick),
+              costPerProfileVisit:    parseFloat(input.metrics.costPerProfileVisit),
+              costPerMessage:         input.metrics.costPerMessage ?? 0,
+              costPerPurchase:        input.metrics.costPerPurchase ?? 0,
+            });
+
+            const totalSpent  = dm.totalSpent ?? 0;
+            const purchases   = dm.purchases ?? 0;
+            const purchaseValue = dm.purchaseValue ?? 0;
             const roas        = totalSpent > 0 && purchaseValue > 0 ? purchaseValue / totalSpent : 0;
 
             const aiResult = await generateAiAnalysis({
               totalSpent,
-              ctr,
-              cpm,
-              cpc:                    parseFloat(input.metrics.costPerClick),
+              ctr:                    dm.ctr ?? 0,
+              cpm:                    dm.cpm ?? 0,
+              cpc:                    dm.costPerClick ?? 0,
               totalImpressions:       input.metrics.totalImpressions,
               totalReach:             input.metrics.totalReach,
               totalClicks:            input.metrics.totalClicks,
               purchases,
               purchaseValue,
-              costPerPurchase:        input.metrics.costPerPurchase ?? 0,
+              costPerPurchase:        dm.costPerPurchase ?? 0,
               roas,
               messagesInitiated:      input.metrics.messagesInitiated ?? 0,
-              costPerMessage:         input.metrics.costPerMessage ?? 0,
+              costPerMessage:         dm.costPerMessage ?? 0,
               instagramProfileVisits: input.metrics.instagramProfileVisits ?? 0,
-              costPerProfileVisit:    parseFloat(input.metrics.costPerProfileVisit),
+              costPerProfileVisit:    dm.costPerProfileVisit ?? 0,
               newInstagramFollowers:  input.metrics.newInstagramFollowers ?? 0,
               videoRetentionRate:     parseFloat(input.metrics.videoRetentionRate),
               empresa:                company.name,
@@ -573,27 +590,44 @@ export const appRouter = router({
         // Gerar análise IA se ainda não existir (lazy — roda uma única vez, salva no banco)
         if (!report.aiAnalysis && metrics) {
           try {
-            const totalSpent    = parseFloat(metrics.totalSpent ?? "0");
-            const purchaseValue = parseFloat((metrics as any).purchaseValue ?? "0");
-            const purchases     = parseInt((metrics as any).purchases ?? "0", 10);
+            // Preenche os custos derivados (gasto ÷ denominador) antes de enviar à IA
+            const dm = deriveMetrics({
+              totalSpent:             parseFloat(metrics.totalSpent ?? "0"),
+              totalImpressions:       Number(metrics.totalImpressions ?? 0),
+              totalClicks:            Number(metrics.totalClicks ?? 0),
+              instagramProfileVisits: Number(metrics.instagramProfileVisits ?? 0),
+              messagesInitiated:      Number(metrics.messagesInitiated ?? 0),
+              purchases:              parseInt((metrics as any).purchases ?? "0", 10),
+              purchaseValue:          parseFloat((metrics as any).purchaseValue ?? "0"),
+              cpm:                    parseFloat(metrics.cpm ?? "0"),
+              ctr:                    parseFloat(metrics.ctr ?? "0"),
+              costPerClick:           parseFloat(metrics.costPerClick ?? "0"),
+              costPerProfileVisit:    parseFloat(metrics.costPerProfileVisit ?? "0"),
+              costPerMessage:         parseFloat((metrics as any).costPerMessage ?? "0"),
+              costPerPurchase:        parseFloat((metrics as any).costPerPurchase ?? "0"),
+            });
+
+            const totalSpent    = dm.totalSpent ?? 0;
+            const purchaseValue = dm.purchaseValue ?? 0;
+            const purchases     = dm.purchases ?? 0;
             const roas          = totalSpent > 0 && purchaseValue > 0 ? purchaseValue / totalSpent : 0;
 
             const aiResult = await generateAiAnalysis({
               totalSpent,
-              ctr:                    parseFloat(metrics.ctr ?? "0"),
-              cpm:                    parseFloat(metrics.cpm ?? "0"),
-              cpc:                    parseFloat(metrics.costPerClick ?? "0"),
+              ctr:                    dm.ctr ?? 0,
+              cpm:                    dm.cpm ?? 0,
+              cpc:                    dm.costPerClick ?? 0,
               totalImpressions:       metrics.totalImpressions,
               totalReach:             metrics.totalReach,
               totalClicks:            metrics.totalClicks,
               purchases,
               purchaseValue,
-              costPerPurchase:        parseFloat((metrics as any).costPerPurchase ?? "0"),
+              costPerPurchase:        dm.costPerPurchase ?? 0,
               roas,
               messagesInitiated:      metrics.messagesInitiated,
-              costPerMessage:         parseFloat((metrics as any).costPerMessage ?? "0"),
+              costPerMessage:         dm.costPerMessage ?? 0,
               instagramProfileVisits: metrics.instagramProfileVisits,
-              costPerProfileVisit:    parseFloat(metrics.costPerProfileVisit ?? "0"),
+              costPerProfileVisit:    dm.costPerProfileVisit ?? 0,
               newInstagramFollowers:  metrics.newInstagramFollowers,
               videoRetentionRate:     parseFloat(metrics.videoRetentionRate ?? "0"),
               empresa:                company?.name,

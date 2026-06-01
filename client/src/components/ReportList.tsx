@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { Copy, Trash2, Globe, Loader2, Edit2, X, Clock, CheckCircle2, Calendar, Brain } from "lucide-react";
 import { displayDate } from "@shared/dateParser";
+import { deriveMetrics } from "@shared/metrics";
 import { toast } from "sonner";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -19,7 +20,8 @@ interface ReportListProps {
 function extractMetrics(report: any) {
   const raw = Array.isArray(report.metrics) ? report.metrics[0] : report.metrics;
   if (!raw) return null;
-  return {
+  // Preenche os custos derivados (gasto ÷ denominador) para o diagnóstico do gestor
+  return deriveMetrics({
     ctr:                    parseFloat(raw.ctr ?? "0"),
     cpm:                    parseFloat(raw.cpm ?? "0"),
     totalReach:             Number(raw.totalReach ?? 0),
@@ -36,7 +38,7 @@ function extractMetrics(report: any) {
     purchaseValue:          parseFloat(raw.purchaseValue ?? "0"),
     costPerPurchase:        parseFloat(raw.costPerPurchase ?? "0"),
     costPerMessage:         parseFloat(raw.costPerMessage ?? "0"),
-  };
+  });
 }
 
 export default function ReportList({ reports, companyId, onUpdate, onEditReport }: ReportListProps) {
