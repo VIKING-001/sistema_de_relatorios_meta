@@ -84,13 +84,13 @@ function MetricCell({ label, value, color }: { label: string; value: string; col
   );
 }
 
-function MetricsGroup({ spend, revenue, roi, cpa }: { spend: number; revenue: number; roi: number; cpa: number }) {
+function MetricsGroup({ spend, revenue, roi, cpa, tracked }: { spend: number; revenue: number; roi: number; cpa: number; tracked?: boolean }) {
   const hasSpend = spend > 0;
   return (
     <div className="flex items-center gap-3 shrink-0 ml-3">
       <MetricCell label="Gasto"   value={hasSpend ? fmtBRL(spend) : "—"} color={hasSpend ? "text-white" : "text-white/20"} />
-      <MetricCell label="Receita" value={revenue > 0 ? fmtBRL(revenue) : "—"} color={revenue > 0 ? "text-emerald-400" : "text-white/20"} />
-      <MetricCell label="ROI"     value={hasSpend ? fmtPct(roi) : "—"} color={hasSpend ? (roi >= 0 ? "text-emerald-400" : "text-red-400") : "text-white/20"} />
+      <MetricCell label={tracked ? "Receita ✓" : "Receita"} value={revenue > 0 ? fmtBRL(revenue) : "—"} color={revenue > 0 ? (tracked ? "text-cyan-300" : "text-emerald-400") : "text-white/20"} />
+      <MetricCell label={tracked ? "ROAS ✓" : "ROI"}     value={hasSpend && (tracked ? revenue > 0 : true) ? (tracked ? `${((revenue) / spend).toFixed(2)}x` : fmtPct(roi)) : "—"} color={hasSpend ? (roi >= 0 ? "text-emerald-400" : "text-red-400") : "text-white/20"} />
       <MetricCell label="CPA"     value={cpa > 0 ? fmtBRL(cpa) : "—"} color={cpa > 0 ? "text-primary" : "text-white/20"} />
     </div>
   );
@@ -165,9 +165,9 @@ function AdsetRow({
 
 // ─── Campaign Row ─────────────────────────────────────────────────────────────
 function CampaignRow({
-  campaign, metrics, companyId, metaAccountId, startDate, endDate, openUtm, setOpenUtm,
+  campaign, metrics, tracked, companyId, metaAccountId, startDate, endDate, openUtm, setOpenUtm,
 }: {
-  campaign: any; metrics: any; companyId: number; metaAccountId: string;
+  campaign: any; metrics: any; tracked: any; companyId: number; metaAccountId: string;
   startDate: string; endDate: string; openUtm: string | null; setOpenUtm: (id: string | null) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -178,6 +178,15 @@ function CampaignRow({
   );
 
   const adsets: any[] = adsetsData ?? [];
+
+  // Rastreamento real (link UTM/venda) tem prioridade sobre o pixel do Meta
+  const spend       = metrics?.spend ?? 0;
+  const trackedRev  = tracked?.revenue ?? 0;
+  const hasTracking = !!tracked && ((tracked.linkCount ?? 0) > 0 || (tracked.salesCount ?? 0) > 0);
+  const useTracked  = trackedRev > 0;
+  const rowRevenue  = useTracked ? trackedRev : (metrics?.revenue ?? 0);
+  const rowRoi      = useTracked && spend > 0 ? ((trackedRev - spend) / spend) * 100 : (metrics?.roi ?? 0);
+  const rowCpa      = useTracked && (tracked?.salesCount ?? 0) > 0 ? spend / tracked.salesCount : (metrics?.cpa ?? 0);
 
   return (
     <>
@@ -203,6 +212,14 @@ function CampaignRow({
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
+          {hasTracking && (
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold text-cyan-300 bg-cyan-400/10 border border-cyan-400/25 shrink-0"
+              title={`${tracked.linkCount ?? 0} link(s) · ${tracked.clicks ?? 0} clique(s) · ${tracked.salesCount ?? 0} venda(s) rastreada(s)`}
+            >
+              <Link2 className="h-2.5 w-2.5" /> Rastreamento ativo
+            </span>
+          )}
           <StatusBadge status={campaign.effective_status || campaign.status || ""} />
           <button
             className={`px-2 py-1 rounded-lg border text-[10px] flex items-center gap-1 transition-all ${
@@ -223,10 +240,11 @@ function CampaignRow({
           </a>
         </div>
         <MetricsGroup
-          spend={metrics?.spend ?? 0}
-          revenue={metrics?.revenue ?? 0}
-          roi={metrics?.roi ?? 0}
-          cpa={metrics?.cpa ?? 0}
+          spend={spend}
+          revenue={rowRevenue}
+          roi={rowRoi}
+          cpa={rowCpa}
+          tracked={useTracked}
         />
       </div>
 
@@ -456,6 +474,17 @@ function CompanyDetailView({ company, onBack }: { company: any; onBack: () => vo
     return map;
   }, [insightsData]);
 
+  // Receita/cliques rastreados por nome de campanha (link UTM → venda real)
+  const { data: trackedData } = trpc.campaigns.trackedByCampaign.useQuery(
+    { companyId: company.id, startDate: dateRange.since, endDate: dateRange.until }
+  );
+  const trackedMap = useMemo(() => {
+    const map: Record<string, any> = {};
+    (trackedData ?? []).forEach((t: any) => { map[t.key] = t; });
+    return map;
+  }, [trackedData]);
+  const trackedFor = (name: string) => trackedMap[(name || "").trim().toLowerCase()] ?? null;
+
   const allCampaigns = campaignsData?.campaigns ?? [];
   const campaigns = useMemo(() => allCampaigns.filter(c => {
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase());
@@ -591,6 +620,7 @@ function CompanyDetailView({ company, onBack }: { company: any; onBack: () => vo
             key={campaign.id}
             campaign={campaign}
             metrics={insightsMap[campaign.id] ?? null}
+            tracked={trackedFor(campaign.name)}
             companyId={company.id}
             metaAccountId={company.metaAdAccountId}
             startDate={dateRange.since}

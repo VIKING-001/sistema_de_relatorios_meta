@@ -123,6 +123,80 @@ export const campaignsRouter = router({
     }),
 
   /**
+   * Receita/cliques rastreados por NOME de campanha (link UTM → venda real).
+   * Junta os links de `utmTracking` (cliques) com as vendas de `trackedSales`
+   * agrupando por `utmCampaign`. A chave de casamento é o nome da campanha
+   * (lowercase/trim) — bate com o nome da campanha do Meta na tela.
+   */
+  trackedByCampaign: protectedProcedure
+    .input(
+      z.object({
+        companyId: z.number().int().positive(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const userId = ctx.user?.id;
+      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+
+      const company = await db.getCompanyById(input.companyId);
+      if (!company || company.userId !== userId) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      // Links UTM + cliques por nome de campanha
+      const linksResult = await executeQuery(
+        `SELECT lower(trim("utmCampaign")) AS key,
+                MAX("utmCampaign") AS name,
+                COUNT(*) AS link_count,
+                COALESCE(SUM("clickCount"), 0) AS clicks
+         FROM "utmTracking"
+         WHERE "companyId" = $1 AND "utmCampaign" IS NOT NULL AND trim("utmCampaign") <> ''
+         GROUP BY lower(trim("utmCampaign"))`,
+        [input.companyId]
+      );
+
+      // Vendas rastreadas por nome de campanha (filtro de período opcional)
+      const params: any[] = [input.companyId];
+      let dateFilter = "";
+      if (input.startDate && input.endDate) {
+        dateFilter = `AND "saleDate"::date BETWEEN $2 AND $3`;
+        params.push(input.startDate, input.endDate);
+      }
+      const salesResult = await executeQuery(
+        `SELECT lower(trim("utmCampaign")) AS key,
+                COUNT(*) AS sales_count,
+                COALESCE(SUM("orderValue"), 0) AS revenue
+         FROM "trackedSales"
+         WHERE "companyId" = $1 AND "utmCampaign" IS NOT NULL AND trim("utmCampaign") <> '' ${dateFilter}
+         GROUP BY lower(trim("utmCampaign"))`,
+        params
+      );
+
+      // Mescla os dois conjuntos por chave
+      const map: Record<string, any> = {};
+      for (const r of linksResult.rows) {
+        map[r.key] = {
+          key: r.key,
+          name: r.name,
+          linkCount: parseInt(r.link_count || "0"),
+          clicks: parseInt(r.clicks || "0"),
+          salesCount: 0,
+          revenue: 0,
+        };
+      }
+      for (const r of salesResult.rows) {
+        const existing = map[r.key] || { key: r.key, name: r.key, linkCount: 0, clicks: 0 };
+        existing.salesCount = parseInt(r.sales_count || "0");
+        existing.revenue = parseFloat(r.revenue || "0");
+        map[r.key] = existing;
+      }
+
+      return Object.values(map);
+    }),
+
+  /**
    * Detalhes de uma campanha com seus adsets e anúncios
    */
   getDetail: protectedProcedure
