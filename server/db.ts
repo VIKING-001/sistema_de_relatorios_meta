@@ -466,9 +466,9 @@ export async function deleteReport(id: number) {
   await db.delete(reports).where(eq(reports.id, id));
 }
 
-export async function updateReportAiAnalysis(id: number, aiAnalysis: string) {
+export async function updateReportAiAnalysis(id: number, aiAnalysis: string | null) {
   const db = await getDb();
-  await db.update(reports).set({ aiAnalysis }).where(eq(reports.id, id));
+  await db.update(reports).set({ aiAnalysis: aiAnalysis as any }).where(eq(reports.id, id));
 }
 
 /**

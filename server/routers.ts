@@ -537,6 +537,10 @@ export const appRouter = router({
               costPerProfileVisit: input.metrics.costPerProfileVisit.toString(),
             });
           }
+
+          // Métricas alteradas → invalidar análise IA para que seja regerada
+          // na próxima abertura do relatório com os dados novos.
+          await db.updateReportAiAnalysis(input.id, null as any);
         }
 
         return updated;
