@@ -5,6 +5,7 @@ import { registerOAuthRoutes } from "./_core/oauth";
 import { appRouter } from "./routers";
 import { createContext } from "./_core/context";
 import webhookRoutes from "./webhookRoutes";
+import shortlinkRoutes from "./shortlinkRoutes";
 
 const app = express();
 
@@ -21,6 +22,9 @@ registerOAuthRoutes(app);
 // Webhooks de venda (Shopify, WooCommerce, Hotmart, Kiwify, genérico, teste)
 // Recebe em /webhook/* — precisa do rewrite correspondente em vercel.json
 app.use(webhookRoutes);
+
+// Links curtos de rastreamento UTM em /r/* (conta cliques e redireciona)
+app.use(shortlinkRoutes);
 
 // tRPC API
 app.use(
