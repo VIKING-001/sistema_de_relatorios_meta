@@ -29,21 +29,37 @@ export interface AiAnalysisResult {
   recomendacaoPrincipal: string;
 }
 
+// ── Rodízio de chaves Gemini ──────────────────────────────────────────────────
+// Mantém um índice global por processo (cold-start do Vercel reinicia em 0,
+// o que é suficiente para distribuir carga entre invocações).
+let _keyIndex = 0;
+
+function getGeminiKeys(): string[] {
+  const keys = [
+    process.env.GEMINI_API_KEY,
+    process.env.GEMINI_API_KEY_2,
+    process.env.GEMINI_API_KEY_3,
+    process.env.GOOGLE_API_KEY,
+  ].filter(Boolean) as string[];
+  if (keys.length === 0) throw new Error("Nenhuma GEMINI_API_KEY configurada");
+  return keys;
+}
+
+/** Escolhe a próxima chave em round-robin. */
+function pickKey(keys: string[]): string {
+  _keyIndex = (_keyIndex + 1) % keys.length;
+  return keys[_keyIndex];
+}
+
 /**
- * Gera análise de performance via z.ai (GLM-4-Flash).
- * Chamado no servidor durante a criação do relatório.
+ * Gera análise de performance via Google Gemini com rodízio de 3 chaves.
+ * Se uma chave atingir o limite (429), tenta automaticamente a próxima.
+ * Chamado no servidor durante a criação/abertura do relatório.
  */
 export async function generateAiAnalysis(input: AiAnalysisInput): Promise<AiAnalysisResult> {
-  // Google Gemini (gratuito) via endpoint compatível com OpenAI.
-  // Aceita GEMINI_API_KEY (preferencial) ou GOOGLE_API_KEY.
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-  if (!apiKey) throw new Error("GEMINI_API_KEY não configurada");
-
-  const client = new OpenAI({
-    apiKey,
-    baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
-  });
+  const keys = getGeminiKeys();
   const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  const BASE  = "https://generativelanguage.googleapis.com/v1beta/openai/";
 
   const brl = (v: number) =>
     v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -107,19 +123,43 @@ Responda SOMENTE com JSON válido (sem markdown, sem texto extra):
 
 REGRAS: máximo 4 itens por lista | cada item = 1 frase com o número real | se ROAS >= 3x destaque como ponto principal | listas podem ser vazias []`;
 
-  const response = await client.chat.completions.create({
-    model: MODEL,
-    messages: [{ role: "user", content: prompt }],
-    // gemini-2.5-flash é um modelo "thinking": sem orçamento suficiente ele
-    // gasta os tokens pensando e devolve JSON cortado. Desligamos o raciocínio
-    // (reasoning_effort=none) e damos folga no limite de saída.
-    max_tokens: 4096,
-    temperature: 0.7,
-    response_format: { type: "json_object" },
-    reasoning_effort: "none",
-  } as any);
+  // Rodízio: tenta cada chave em sequência; se 429 (limite atingido), passa para a próxima.
+  let lastError: any;
+  let text = "";
 
-  const text = response.choices[0]?.message?.content?.trim() ?? "";
+  // Começa pelo índice atual e percorre até n tentativas (uma por chave disponível)
+  for (let attempt = 0; attempt < keys.length; attempt++) {
+    const apiKey = pickKey(keys);
+    const client = new OpenAI({ apiKey, baseURL: BASE });
+    try {
+      const response = await client.chat.completions.create({
+        model: MODEL,
+        messages: [{ role: "user", content: prompt }],
+        // gemini-2.5-flash é "thinking" — desligar raciocínio evita JSON cortado
+        max_tokens: 4096,
+        temperature: 0.7,
+        response_format: { type: "json_object" },
+        reasoning_effort: "none",
+      } as any);
+      text = response.choices[0]?.message?.content?.trim() ?? "";
+      console.log(`[AI] chave ${attempt + 1}/${keys.length} (idx ${_keyIndex}) OK`);
+      break; // sucesso — sai do loop
+    } catch (err: any) {
+      lastError = err;
+      const status = err?.status ?? err?.response?.status;
+      if (status === 429) {
+        // Limite atingido nesta chave → tenta a próxima
+        console.warn(`[AI] chave idx ${_keyIndex} atingiu limite (429), tentando próxima...`);
+        continue;
+      }
+      // Erro diferente de 429 → não adianta tentar outra chave
+      throw err;
+    }
+  }
+
+  if (!text) {
+    throw lastError ?? new Error("Todas as chaves Gemini atingiram o limite de taxa");
+  }
 
   // Extrair JSON da resposta (pode vir com markdown)
   const jsonMatch = text.match(/\{[\s\S]*\}/);
