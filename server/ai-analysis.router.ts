@@ -110,10 +110,14 @@ REGRAS: máximo 4 itens por lista | cada item = 1 frase com o número real | se 
   const response = await client.chat.completions.create({
     model: MODEL,
     messages: [{ role: "user", content: prompt }],
-    max_tokens: 1024,
+    // gemini-2.5-flash é um modelo "thinking": sem orçamento suficiente ele
+    // gasta os tokens pensando e devolve JSON cortado. Desligamos o raciocínio
+    // (reasoning_effort=none) e damos folga no limite de saída.
+    max_tokens: 4096,
     temperature: 0.7,
     response_format: { type: "json_object" },
-  });
+    reasoning_effort: "none",
+  } as any);
 
   const text = response.choices[0]?.message?.content?.trim() ?? "";
 
