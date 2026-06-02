@@ -102,7 +102,7 @@ var require_package = __commonJS({
 var require_main = __commonJS({
   "node_modules/.pnpm/dotenv@17.2.3/node_modules/dotenv/lib/main.js"(exports2, module2) {
     var fs = require("fs");
-    var path = require("path");
+    var path2 = require("path");
     var os = require("os");
     var crypto5 = require("crypto");
     var packageJson = require_package();
@@ -251,7 +251,7 @@ var require_main = __commonJS({
           possibleVaultPath = options.path.endsWith(".vault") ? options.path : `${options.path}.vault`;
         }
       } else {
-        possibleVaultPath = path.resolve(process.cwd(), ".env.vault");
+        possibleVaultPath = path2.resolve(process.cwd(), ".env.vault");
       }
       if (fs.existsSync(possibleVaultPath)) {
         return possibleVaultPath;
@@ -259,7 +259,7 @@ var require_main = __commonJS({
       return null;
     }
     function _resolveHome(envPath) {
-      return envPath[0] === "~" ? path.join(os.homedir(), envPath.slice(1)) : envPath;
+      return envPath[0] === "~" ? path2.join(os.homedir(), envPath.slice(1)) : envPath;
     }
     function _configVault(options) {
       const debug = parseBoolean(process.env.DOTENV_CONFIG_DEBUG || options && options.debug);
@@ -276,7 +276,7 @@ var require_main = __commonJS({
       return { parsed };
     }
     function configDotenv(options) {
-      const dotenvPath = path.resolve(process.cwd(), ".env");
+      const dotenvPath = path2.resolve(process.cwd(), ".env");
       let encoding = "utf8";
       let processEnv = process.env;
       if (options && options.processEnv != null) {
@@ -304,13 +304,13 @@ var require_main = __commonJS({
       }
       let lastError;
       const parsedAll = {};
-      for (const path2 of optionPaths) {
+      for (const path3 of optionPaths) {
         try {
-          const parsed = DotenvModule.parse(fs.readFileSync(path2, { encoding }));
+          const parsed = DotenvModule.parse(fs.readFileSync(path3, { encoding }));
           DotenvModule.populate(parsedAll, parsed, options);
         } catch (e) {
           if (debug) {
-            _debug(`Failed to load ${path2} ${e.message}`);
+            _debug(`Failed to load ${path3} ${e.message}`);
           }
           lastError = e;
         }
@@ -323,7 +323,7 @@ var require_main = __commonJS({
         const shortPaths = [];
         for (const filePath of optionPaths) {
           try {
-            const relative = path.relative(process.cwd(), filePath);
+            const relative = path2.relative(process.cwd(), filePath);
             shortPaths.push(relative);
           } catch (e) {
             if (debug) {
@@ -479,8 +479,8 @@ var require_depd = __commonJS({
     var relative = require("path").relative;
     module2.exports = depd;
     var basePath = process.cwd();
-    function containsNamespace(str, namespace) {
-      var vals = str.split(/[ ,]+/);
+    function containsNamespace(str2, namespace) {
+      var vals = str2.split(/[ ,]+/);
       var ns = String(namespace).toLowerCase();
       for (var i = 0; i < vals.length; i++) {
         var val = vals[i];
@@ -507,21 +507,21 @@ var require_depd = __commonJS({
       return descriptor;
     }
     function createArgumentsString(arity) {
-      var str = "";
+      var str2 = "";
       for (var i = 0; i < arity; i++) {
-        str += ", arg" + i;
+        str2 += ", arg" + i;
       }
-      return str.substr(2);
+      return str2.substr(2);
     }
     function createStackString(stack) {
-      var str = this.name + ": " + this.namespace;
+      var str2 = this.name + ": " + this.namespace;
       if (this.message) {
-        str += " deprecated " + this.message;
+        str2 += " deprecated " + this.message;
       }
       for (var i = 0; i < stack.length; i++) {
-        str += "\n    at " + stack[i].toString();
+        str2 += "\n    at " + stack[i].toString();
       }
-      return str;
+      return str2;
     }
     function depd(namespace) {
       if (!namespace) {
@@ -550,15 +550,15 @@ var require_depd = __commonJS({
       if (process.noDeprecation) {
         return true;
       }
-      var str = process.env.NO_DEPRECATION || "";
-      return containsNamespace(str, namespace);
+      var str2 = process.env.NO_DEPRECATION || "";
+      return containsNamespace(str2, namespace);
     }
     function istraced(namespace) {
       if (process.traceDeprecation) {
         return true;
       }
-      var str = process.env.TRACE_DEPRECATION || "";
-      return containsNamespace(str, namespace);
+      var str2 = process.env.TRACE_DEPRECATION || "";
+      return containsNamespace(str2, namespace);
     }
     function log(message2, site) {
       var haslisteners = eehaslisteners(process, "deprecation");
@@ -671,15 +671,15 @@ var require_depd = __commonJS({
       return relative(basePath, callSite[0]) + ":" + callSite[1] + ":" + callSite[2];
     }
     function getStack() {
-      var limit = Error.stackTraceLimit;
+      var limit2 = Error.stackTraceLimit;
       var obj = {};
       var prep = Error.prepareStackTrace;
       Error.prepareStackTrace = prepareObjectStackTrace;
-      Error.stackTraceLimit = Math.max(10, limit);
+      Error.stackTraceLimit = Math.max(10, limit2);
       Error.captureStackTrace(obj);
       var stack = obj.stack.slice(1);
       Error.prepareStackTrace = prep;
-      Error.stackTraceLimit = limit;
+      Error.stackTraceLimit = limit2;
       return stack;
     }
     function prepareObjectStackTrace(obj, stack) {
@@ -832,16 +832,16 @@ var require_bytes = __commonJS({
         }
       }
       var val = value / map2[unit.toLowerCase()];
-      var str = val.toFixed(decimalPlaces);
+      var str2 = val.toFixed(decimalPlaces);
       if (!fixedDecimals) {
-        str = str.replace(formatDecimalsRegExp, "$1");
+        str2 = str2.replace(formatDecimalsRegExp, "$1");
       }
       if (thousandsSeparator) {
-        str = str.split(".").map(function(s, i) {
+        str2 = str2.split(".").map(function(s, i) {
           return i === 0 ? s.replace(formatThousandsRegExp, thousandsSeparator) : s;
         }).join(".");
       }
-      return str + unitSeparator + unit;
+      return str2 + unitSeparator + unit;
     }
     function parse3(val) {
       if (typeof val === "number" && !isNaN(val)) {
@@ -956,14 +956,14 @@ var require_content_type = __commonJS({
       return header;
     }
     function qstring(val) {
-      var str = String(val);
-      if (TOKEN_REGEXP.test(str)) {
-        return str;
+      var str2 = String(val);
+      if (TOKEN_REGEXP.test(str2)) {
+        return str2;
       }
-      if (str.length > 0 && !TEXT_REGEXP.test(str)) {
+      if (str2.length > 0 && !TEXT_REGEXP.test(str2)) {
         throw new TypeError("invalid parameter value");
       }
-      return '"' + str.replace(QUOTE_REGEXP, "\\$1") + '"';
+      return '"' + str2.replace(QUOTE_REGEXP, "\\$1") + '"';
     }
     function ContentType(type) {
       this.parameters = /* @__PURE__ */ Object.create(null);
@@ -1185,8 +1185,8 @@ var require_toidentifier = __commonJS({
   "node_modules/.pnpm/toidentifier@1.0.1/node_modules/toidentifier/index.js"(exports2, module2) {
     "use strict";
     module2.exports = toIdentifier;
-    function toIdentifier(str) {
-      return str.split(" ").map(function(token) {
+    function toIdentifier(str2) {
+      return str2.split(" ").map(function(token) {
         return token.slice(0, 1).toUpperCase() + token.slice(1);
       }).join("").replace(/[^ _0-9a-z]/gi, "");
     }
@@ -1377,13 +1377,13 @@ var require_ms = __commonJS({
         "val is not a non-empty string or a valid number. val=" + JSON.stringify(val)
       );
     };
-    function parse3(str) {
-      str = String(str);
-      if (str.length > 100) {
+    function parse3(str2) {
+      str2 = String(str2);
+      if (str2.length > 100) {
         return;
       }
       var match = /^((?:\d+)?\.?\d+) *(milliseconds?|msecs?|ms|seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|years?|yrs?|y)?$/i.exec(
-        str
+        str2
       );
       if (!match) {
         return;
@@ -1688,8 +1688,8 @@ var require_node = __commonJS({
     }
     exports2.formatters.o = function(v) {
       this.inspectOpts.colors = this.useColors;
-      return util.inspect(v, this.inspectOpts).split("\n").map(function(str) {
-        return str.trim();
+      return util.inspect(v, this.inspectOpts).split("\n").map(function(str2) {
+        return str2.trim();
       }).join(" ");
     };
     exports2.formatters.O = function(v) {
@@ -1787,7 +1787,7 @@ var require_destroy = __commonJS({
     "use strict";
     var EventEmitter = require("events").EventEmitter;
     var ReadStream = require("fs").ReadStream;
-    var Stream = require("stream");
+    var Stream2 = require("stream");
     var Zlib = require("zlib");
     module2.exports = destroy;
     function destroy(stream, suppress) {
@@ -1800,7 +1800,7 @@ var require_destroy = __commonJS({
       }
       if (isEventEmitter(stream) && suppress) {
         stream.removeAllListeners("error");
-        stream.addListener("error", noop2);
+        stream.addListener("error", noop3);
       }
       return stream;
     }
@@ -1831,7 +1831,7 @@ var require_destroy = __commonJS({
           } else {
             stream._binding.clear();
           }
-        } else if (stream._destroy && stream._destroy !== Stream.Transform.prototype._destroy) {
+        } else if (stream._destroy && stream._destroy !== Stream2.Transform.prototype._destroy) {
           stream.destroy();
         } else if (stream._destroy && typeof stream.close === "function") {
           stream.destroyed = true;
@@ -1844,7 +1844,7 @@ var require_destroy = __commonJS({
       }
     }
     function hasDestroy(stream) {
-      return stream instanceof Stream && typeof stream.destroy === "function";
+      return stream instanceof Stream2 && typeof stream.destroy === "function";
     }
     function isEventEmitter(val) {
       return val instanceof EventEmitter;
@@ -1855,7 +1855,7 @@ var require_destroy = __commonJS({
     function isZlibStream(stream) {
       return stream instanceof Zlib.Gzip || stream instanceof Zlib.Gunzip || stream instanceof Zlib.Deflate || stream instanceof Zlib.DeflateRaw || stream instanceof Zlib.Inflate || stream instanceof Zlib.InflateRaw || stream instanceof Zlib.Unzip;
     }
-    function noop2() {
+    function noop3() {
     }
     function onDrainClearBinding() {
       this._binding.clear();
@@ -1946,12 +1946,12 @@ var require_bom_handling = __commonJS({
       this.encoder = encoder2;
       this.addBOM = true;
     }
-    PrependBOMWrapper.prototype.write = function(str) {
+    PrependBOMWrapper.prototype.write = function(str2) {
       if (this.addBOM) {
-        str = BOMChar + str;
+        str2 = BOMChar + str2;
         this.addBOM = false;
       }
-      return this.encoder.write(str);
+      return this.encoder.write(str2);
     };
     PrependBOMWrapper.prototype.end = function() {
       return this.encoder.end();
@@ -2025,30 +2025,30 @@ var require_internal = __commonJS({
     function InternalEncoder(options, codec2) {
       this.enc = codec2.enc;
     }
-    InternalEncoder.prototype.write = function(str) {
-      return Buffer2.from(str, this.enc);
+    InternalEncoder.prototype.write = function(str2) {
+      return Buffer2.from(str2, this.enc);
     };
     InternalEncoder.prototype.end = function() {
     };
     function InternalEncoderBase64(options, codec2) {
       this.prevStr = "";
     }
-    InternalEncoderBase64.prototype.write = function(str) {
-      str = this.prevStr + str;
-      var completeQuads = str.length - str.length % 4;
-      this.prevStr = str.slice(completeQuads);
-      str = str.slice(0, completeQuads);
-      return Buffer2.from(str, "base64");
+    InternalEncoderBase64.prototype.write = function(str2) {
+      str2 = this.prevStr + str2;
+      var completeQuads = str2.length - str2.length % 4;
+      this.prevStr = str2.slice(completeQuads);
+      str2 = str2.slice(0, completeQuads);
+      return Buffer2.from(str2, "base64");
     };
     InternalEncoderBase64.prototype.end = function() {
       return Buffer2.from(this.prevStr, "base64");
     };
     function InternalEncoderCesu8(options, codec2) {
     }
-    InternalEncoderCesu8.prototype.write = function(str) {
-      var buf = Buffer2.alloc(str.length * 3), bufIdx = 0;
-      for (var i = 0; i < str.length; i++) {
-        var charCode = str.charCodeAt(i);
+    InternalEncoderCesu8.prototype.write = function(str2) {
+      var buf = Buffer2.alloc(str2.length * 3), bufIdx = 0;
+      for (var i = 0; i < str2.length; i++) {
+        var charCode = str2.charCodeAt(i);
         if (charCode < 128)
           buf[bufIdx++] = charCode;
         else if (charCode < 2048) {
@@ -2137,8 +2137,8 @@ var require_utf16 = __commonJS({
     Utf16BECodec.prototype.bomAware = true;
     function Utf16BEEncoder() {
     }
-    Utf16BEEncoder.prototype.write = function(str) {
-      var buf = Buffer2.from(str, "ucs2");
+    Utf16BEEncoder.prototype.write = function(str2) {
+      var buf = Buffer2.from(str2, "ucs2");
       for (var i = 0; i < buf.length; i += 2) {
         var tmp = buf[i];
         buf[i] = buf[i + 1];
@@ -2182,8 +2182,8 @@ var require_utf16 = __commonJS({
         options.addBOM = true;
       this.encoder = codec2.iconv.getEncoder("utf-16le", options);
     }
-    Utf16Encoder.prototype.write = function(str) {
-      return this.encoder.write(str);
+    Utf16Encoder.prototype.write = function(str2) {
+      return this.encoder.write(str2);
     };
     Utf16Encoder.prototype.end = function() {
       return this.encoder.end();
@@ -2257,8 +2257,8 @@ var require_utf7 = __commonJS({
     function Utf7Encoder(options, codec2) {
       this.iconv = codec2.iconv;
     }
-    Utf7Encoder.prototype.write = function(str) {
-      return Buffer2.from(str.replace(nonDirectChars, function(chunk) {
+    Utf7Encoder.prototype.write = function(str2) {
+      return Buffer2.from(str2.replace(nonDirectChars, function(chunk) {
         return "+" + (chunk === "+" ? "" : this.iconv.encode(chunk, "utf16-be").toString("base64").replace(/=+$/, "")) + "-";
       }.bind(this)));
     };
@@ -2336,10 +2336,10 @@ var require_utf7 = __commonJS({
       this.base64Accum = Buffer2.alloc(6);
       this.base64AccumIdx = 0;
     }
-    Utf7IMAPEncoder.prototype.write = function(str) {
-      var inBase64 = this.inBase64, base64Accum = this.base64Accum, base64AccumIdx = this.base64AccumIdx, buf = Buffer2.alloc(str.length * 5 + 10), bufIdx = 0;
-      for (var i2 = 0; i2 < str.length; i2++) {
-        var uChar = str.charCodeAt(i2);
+    Utf7IMAPEncoder.prototype.write = function(str2) {
+      var inBase64 = this.inBase64, base64Accum = this.base64Accum, base64AccumIdx = this.base64AccumIdx, buf = Buffer2.alloc(str2.length * 5 + 10), bufIdx = 0;
+      for (var i2 = 0; i2 < str2.length; i2++) {
+        var uChar = str2.charCodeAt(i2);
         if (32 <= uChar && uChar <= 126) {
           if (inBase64) {
             if (base64AccumIdx > 0) {
@@ -2469,10 +2469,10 @@ var require_sbcs_codec = __commonJS({
     function SBCSEncoder(options, codec2) {
       this.encodeBuf = codec2.encodeBuf;
     }
-    SBCSEncoder.prototype.write = function(str) {
-      var buf = Buffer2.alloc(str.length);
-      for (var i = 0; i < str.length; i++)
-        buf[i] = this.encodeBuf[str.charCodeAt(i)];
+    SBCSEncoder.prototype.write = function(str2) {
+      var buf = Buffer2.alloc(str2.length);
+      for (var i = 0; i < str2.length; i++)
+        buf[i] = this.encodeBuf[str2.charCodeAt(i)];
       return buf;
     };
     SBCSEncoder.prototype.end = function() {
@@ -3287,12 +3287,12 @@ var require_dbcs_codec = __commonJS({
       this.defaultCharSingleByte = codec2.defCharSB;
       this.gb18030 = codec2.gb18030;
     }
-    DBCSEncoder.prototype.write = function(str) {
-      var newBuf = Buffer2.alloc(str.length * (this.gb18030 ? 4 : 3)), leadSurrogate = this.leadSurrogate, seqObj = this.seqObj, nextChar = -1, i2 = 0, j = 0;
+    DBCSEncoder.prototype.write = function(str2) {
+      var newBuf = Buffer2.alloc(str2.length * (this.gb18030 ? 4 : 3)), leadSurrogate = this.leadSurrogate, seqObj = this.seqObj, nextChar = -1, i2 = 0, j = 0;
       while (true) {
         if (nextChar === -1) {
-          if (i2 == str.length) break;
-          var uCode = str.charCodeAt(i2++);
+          if (i2 == str2.length) break;
+          var uCode = str2.charCodeAt(i2++);
         } else {
           var uCode = nextChar;
           nextChar = -1;
@@ -5110,11 +5110,11 @@ var require_extend_node = __commonJS({
           return Buffer2.isNativeEncoding(encoding) || iconv.encodingExists(encoding);
         };
         original.BufferByteLength = Buffer2.byteLength;
-        Buffer2.byteLength = SlowBuffer.byteLength = function(str, encoding) {
+        Buffer2.byteLength = SlowBuffer.byteLength = function(str2, encoding) {
           encoding = String(encoding || "utf8").toLowerCase();
           if (Buffer2.isNativeEncoding(encoding))
-            return original.BufferByteLength.call(this, str, encoding);
-          return iconv.encode(str, encoding).length;
+            return original.BufferByteLength.call(this, str2, encoding);
+          return iconv.encode(str2, encoding).length;
         };
         original.BufferToString = Buffer2.prototype.toString;
         Buffer2.prototype.toString = function(encoding, start, end) {
@@ -5203,10 +5203,10 @@ var require_lib = __commonJS({
     iconv.encodings = null;
     iconv.defaultCharUnicode = "\uFFFD";
     iconv.defaultCharSingleByte = "?";
-    iconv.encode = function encode4(str, encoding, options) {
-      str = "" + (str || "");
+    iconv.encode = function encode5(str2, encoding, options) {
+      str2 = "" + (str2 || "");
       var encoder2 = iconv.getEncoder(encoding, options);
-      var res = encoder2.write(str);
+      var res = encoder2.write(str2);
       var trail = encoder2.end();
       return trail && trail.length > 0 ? Buffer2.concat([res, trail]) : res;
     };
@@ -5381,13 +5381,13 @@ var require_raw_body = __commonJS({
         throw new TypeError("argument callback is required");
       }
       var encoding = opts.encoding !== true ? opts.encoding : "utf-8";
-      var limit = bytes.parse(opts.limit);
+      var limit2 = bytes.parse(opts.limit);
       var length = opts.length != null && !isNaN(opts.length) ? parseInt(opts.length, 10) : null;
       if (done) {
-        return readStream(stream, encoding, length, limit, wrap(done));
+        return readStream(stream, encoding, length, limit2, wrap(done));
       }
       return new Promise(function executor(resolve, reject) {
-        readStream(stream, encoding, length, limit, function onRead(err, buf) {
+        readStream(stream, encoding, length, limit2, function onRead(err, buf) {
           if (err) return reject(err);
           resolve(buf);
         });
@@ -5399,14 +5399,14 @@ var require_raw_body = __commonJS({
         stream.pause();
       }
     }
-    function readStream(stream, encoding, length, limit, callback) {
+    function readStream(stream, encoding, length, limit2, callback) {
       var complete = false;
       var sync = true;
-      if (limit !== null && length !== null && length > limit) {
+      if (limit2 !== null && length !== null && length > limit2) {
         return done(createError(413, "request entity too large", {
           expected: length,
           length,
-          limit,
+          limit: limit2,
           type: "entity.too.large"
         }));
       }
@@ -5467,9 +5467,9 @@ var require_raw_body = __commonJS({
       function onData(chunk) {
         if (complete) return;
         received += chunk.length;
-        if (limit !== null && received > limit) {
+        if (limit2 !== null && received > limit2) {
           done(createError(413, "request entity too large", {
-            limit,
+            limit: limit2,
             received,
             type: "entity.too.large"
           }));
@@ -5750,14 +5750,14 @@ var require_read = __commonJS({
             return;
           }
         }
-        var str = body;
+        var str2 = body;
         try {
           debug("parse body");
-          str = typeof body !== "string" && encoding !== null ? iconv.decode(body, encoding) : body;
-          req.body = parse3(str);
+          str2 = typeof body !== "string" && encoding !== null ? iconv.decode(body, encoding) : body;
+          req.body = parse3(str2);
         } catch (err) {
           next(createError(400, err, {
-            body: str,
+            body: str2,
             type: err.type || "entity.parse.failed"
           }));
           return;
@@ -5902,14 +5902,14 @@ var require_media_typer = __commonJS({
       }
     }
     function qstring(val) {
-      var str = String(val);
-      if (tokenRegExp.test(str)) {
-        return str;
+      var str2 = String(val);
+      if (tokenRegExp.test(str2)) {
+        return str2;
       }
-      if (str.length > 0 && !textRegExp.test(str)) {
+      if (str2.length > 0 && !textRegExp.test(str2)) {
         throw new TypeError("invalid parameter value");
       }
-      return '"' + str.replace(quoteRegExp, "\\$1") + '"';
+      return '"' + str2.replace(quoteRegExp, "\\$1") + '"';
     }
     function splitType(string4) {
       var match = typeRegExp.exec(string4.toLowerCase());
@@ -14496,11 +14496,11 @@ var require_mime_types = __commonJS({
       }
       return false;
     }
-    function contentType(str) {
-      if (!str || typeof str !== "string") {
+    function contentType(str2) {
+      if (!str2 || typeof str2 !== "string") {
         return false;
       }
-      var mime = str.indexOf("/") === -1 ? exports2.lookup(str) : str;
+      var mime = str2.indexOf("/") === -1 ? exports2.lookup(str2) : str2;
       if (!mime) {
         return false;
       }
@@ -14521,11 +14521,11 @@ var require_mime_types = __commonJS({
       }
       return exts[0];
     }
-    function lookup(path) {
-      if (!path || typeof path !== "string") {
+    function lookup(path2) {
+      if (!path2 || typeof path2 !== "string") {
         return false;
       }
-      var extension2 = extname("x." + path).toLowerCase().substr(1);
+      var extension2 = extname("x." + path2).toLowerCase().substr(1);
       if (!extension2) {
         return false;
       }
@@ -14677,7 +14677,7 @@ var require_json = __commonJS({
     var JSON_SYNTAX_REGEXP = /#+/g;
     function json3(options) {
       var opts = options || {};
-      var limit = typeof opts.limit !== "number" ? bytes.parse(opts.limit || "100kb") : opts.limit;
+      var limit2 = typeof opts.limit !== "number" ? bytes.parse(opts.limit || "100kb") : opts.limit;
       var inflate = opts.inflate !== false;
       var reviver = opts.reviver;
       var strict = opts.strict !== false;
@@ -14738,17 +14738,17 @@ var require_json = __commonJS({
         read(req, res, next, parse3, debug, {
           encoding: charset,
           inflate,
-          limit,
+          limit: limit2,
           verify
         });
       };
     }
-    function createStrictSyntaxError(str, char2) {
-      var index = str.indexOf(char2);
+    function createStrictSyntaxError(str2, char2) {
+      var index = str2.indexOf(char2);
       var partial2 = "";
       if (index !== -1) {
-        partial2 = str.substring(0, index) + JSON_SYNTAX_CHAR;
-        for (var i = index + 1; i < str.length; i++) {
+        partial2 = str2.substring(0, index) + JSON_SYNTAX_CHAR;
+        for (var i = index + 1; i < str2.length; i++) {
           partial2 += JSON_SYNTAX_CHAR;
         }
       }
@@ -14758,14 +14758,14 @@ var require_json = __commonJS({
       } catch (e) {
         return normalizeJsonSyntaxError(e, {
           message: e.message.replace(JSON_SYNTAX_REGEXP, function(placeholder) {
-            return str.substring(index, index + placeholder.length);
+            return str2.substring(index, index + placeholder.length);
           }),
           stack: e.stack
         });
       }
     }
-    function firstchar(str) {
-      var match = FIRST_CHAR_REGEXP.exec(str);
+    function firstchar(str2) {
+      var match = FIRST_CHAR_REGEXP.exec(str2);
       return match ? match[1] : void 0;
     }
     function getCharset(req) {
@@ -14807,7 +14807,7 @@ var require_raw = __commonJS({
     function raw(options) {
       var opts = options || {};
       var inflate = opts.inflate !== false;
-      var limit = typeof opts.limit !== "number" ? bytes.parse(opts.limit || "100kb") : opts.limit;
+      var limit2 = typeof opts.limit !== "number" ? bytes.parse(opts.limit || "100kb") : opts.limit;
       var type = opts.type || "application/octet-stream";
       var verify = opts.verify || false;
       if (verify !== false && typeof verify !== "function") {
@@ -14838,7 +14838,7 @@ var require_raw = __commonJS({
         read(req, res, next, parse3, debug, {
           encoding: null,
           inflate,
-          limit,
+          limit: limit2,
           verify
         });
       };
@@ -14865,7 +14865,7 @@ var require_text = __commonJS({
       var opts = options || {};
       var defaultCharset = opts.defaultCharset || "utf-8";
       var inflate = opts.inflate !== false;
-      var limit = typeof opts.limit !== "number" ? bytes.parse(opts.limit || "100kb") : opts.limit;
+      var limit2 = typeof opts.limit !== "number" ? bytes.parse(opts.limit || "100kb") : opts.limit;
       var type = opts.type || "text/plain";
       var verify = opts.verify || false;
       if (verify !== false && typeof verify !== "function") {
@@ -14897,7 +14897,7 @@ var require_text = __commonJS({
         read(req, res, next, parse3, debug, {
           encoding: charset,
           inflate,
-          limit,
+          limit: limit2,
           verify
         });
       };
@@ -14971,20 +14971,20 @@ var require_object_inspect = __commonJS({
     var gPO = (typeof Reflect === "function" ? Reflect.getPrototypeOf : Object.getPrototypeOf) || ([].__proto__ === Array.prototype ? function(O) {
       return O.__proto__;
     } : null);
-    function addNumericSeparator(num, str) {
-      if (num === Infinity || num === -Infinity || num !== num || num && num > -1e3 && num < 1e3 || $test.call(/e/, str)) {
-        return str;
+    function addNumericSeparator(num, str2) {
+      if (num === Infinity || num === -Infinity || num !== num || num && num > -1e3 && num < 1e3 || $test.call(/e/, str2)) {
+        return str2;
       }
       var sepRegex = /[0-9](?=(?:[0-9]{3})+(?![0-9]))/g;
       if (typeof num === "number") {
         var int2 = num < 0 ? -$floor(-num) : $floor(num);
         if (int2 !== num) {
           var intStr = String(int2);
-          var dec = $slice.call(str, intStr.length + 1);
+          var dec = $slice.call(str2, intStr.length + 1);
           return $replace.call(intStr, sepRegex, "$&_") + "." + $replace.call($replace.call(dec, /([0-9]{3})/g, "$&_"), /_$/, "");
         }
       }
-      return $replace.call(str, sepRegex, "$&_");
+      return $replace.call(str2, sepRegex, "$&_");
     }
     var utilInspect = require_util_inspect();
     var inspectCustom = utilInspect.custom;
@@ -15001,20 +15001,20 @@ var require_object_inspect = __commonJS({
     };
     module2.exports = function inspect_(obj, options, depth, seen) {
       var opts = options || {};
-      if (has(opts, "quoteStyle") && !has(quotes, opts.quoteStyle)) {
+      if (has2(opts, "quoteStyle") && !has2(quotes, opts.quoteStyle)) {
         throw new TypeError('option "quoteStyle" must be "single" or "double"');
       }
-      if (has(opts, "maxStringLength") && (typeof opts.maxStringLength === "number" ? opts.maxStringLength < 0 && opts.maxStringLength !== Infinity : opts.maxStringLength !== null)) {
+      if (has2(opts, "maxStringLength") && (typeof opts.maxStringLength === "number" ? opts.maxStringLength < 0 && opts.maxStringLength !== Infinity : opts.maxStringLength !== null)) {
         throw new TypeError('option "maxStringLength", if provided, must be a positive integer, Infinity, or `null`');
       }
-      var customInspect = has(opts, "customInspect") ? opts.customInspect : true;
+      var customInspect = has2(opts, "customInspect") ? opts.customInspect : true;
       if (typeof customInspect !== "boolean" && customInspect !== "symbol") {
         throw new TypeError("option \"customInspect\", if provided, must be `true`, `false`, or `'symbol'`");
       }
-      if (has(opts, "indent") && opts.indent !== null && opts.indent !== "	" && !(parseInt(opts.indent, 10) === opts.indent && opts.indent > 0)) {
+      if (has2(opts, "indent") && opts.indent !== null && opts.indent !== "	" && !(parseInt(opts.indent, 10) === opts.indent && opts.indent > 0)) {
         throw new TypeError('option "indent" must be "\\t", an integer > 0, or `null`');
       }
-      if (has(opts, "numericSeparator") && typeof opts.numericSeparator !== "boolean") {
+      if (has2(opts, "numericSeparator") && typeof opts.numericSeparator !== "boolean") {
         throw new TypeError('option "numericSeparator", if provided, must be `true` or `false`');
       }
       var numericSeparator = opts.numericSeparator;
@@ -15034,8 +15034,8 @@ var require_object_inspect = __commonJS({
         if (obj === 0) {
           return Infinity / obj > 0 ? "0" : "-0";
         }
-        var str = String(obj);
-        return numericSeparator ? addNumericSeparator(obj, str) : str;
+        var str2 = String(obj);
+        return numericSeparator ? addNumericSeparator(obj, str2) : str2;
       }
       if (typeof obj === "bigint") {
         var bigIntStr = String(obj) + "n";
@@ -15046,7 +15046,7 @@ var require_object_inspect = __commonJS({
         depth = 0;
       }
       if (depth >= maxDepth && maxDepth > 0 && typeof obj === "object") {
-        return isArray(obj) ? "[Array]" : "[Object]";
+        return isArray2(obj) ? "[Array]" : "[Object]";
       }
       var indent = getIndent(opts, depth);
       if (typeof seen === "undefined") {
@@ -15063,7 +15063,7 @@ var require_object_inspect = __commonJS({
           var newOpts = {
             depth: opts.depth
           };
-          if (has(opts, "quoteStyle")) {
+          if (has2(opts, "quoteStyle")) {
             newOpts.quoteStyle = opts.quoteStyle;
           }
           return inspect_(value, newOpts, depth + 1, seen);
@@ -15092,7 +15092,7 @@ var require_object_inspect = __commonJS({
         s += "</" + $toLowerCase.call(String(obj.nodeName)) + ">";
         return s;
       }
-      if (isArray(obj)) {
+      if (isArray2(obj)) {
         if (obj.length === 0) {
           return "[]";
         }
@@ -15192,7 +15192,7 @@ var require_object_inspect = __commonJS({
     function canTrustToString(obj) {
       return !toStringTag || !(typeof obj === "object" && (toStringTag in obj || typeof obj[toStringTag] !== "undefined"));
     }
-    function isArray(obj) {
+    function isArray2(obj) {
       return toStr(obj) === "[object Array]" && canTrustToString(obj);
     }
     function isDate(obj) {
@@ -15241,11 +15241,11 @@ var require_object_inspect = __commonJS({
       }
       return false;
     }
-    var hasOwn = Object.prototype.hasOwnProperty || function(key) {
+    var hasOwn2 = Object.prototype.hasOwnProperty || function(key) {
       return key in this;
     };
-    function has(obj, key) {
-      return hasOwn.call(obj, key);
+    function has2(obj, key) {
+      return hasOwn2.call(obj, key);
     }
     function toStr(obj) {
       return objectToString.call(obj);
@@ -15355,15 +15355,15 @@ var require_object_inspect = __commonJS({
       }
       return typeof x.nodeName === "string" && typeof x.getAttribute === "function";
     }
-    function inspectString(str, opts) {
-      if (str.length > opts.maxStringLength) {
-        var remaining = str.length - opts.maxStringLength;
+    function inspectString(str2, opts) {
+      if (str2.length > opts.maxStringLength) {
+        var remaining = str2.length - opts.maxStringLength;
         var trailer = "... " + remaining + " more character" + (remaining > 1 ? "s" : "");
-        return inspectString($slice.call(str, 0, opts.maxStringLength), opts) + trailer;
+        return inspectString($slice.call(str2, 0, opts.maxStringLength), opts) + trailer;
       }
       var quoteRE = quoteREs[opts.quoteStyle || "single"];
       quoteRE.lastIndex = 0;
-      var s = $replace.call($replace.call(str, quoteRE, "\\$1"), /[\x00-\x1f]/g, lowbyte);
+      var s = $replace.call($replace.call(str2, quoteRE, "\\$1"), /[\x00-\x1f]/g, lowbyte);
       return wrapQuotes(s, "single", opts);
     }
     function lowbyte(c) {
@@ -15380,8 +15380,8 @@ var require_object_inspect = __commonJS({
       }
       return "\\x" + (n < 16 ? "0" : "") + $toUpperCase.call(n.toString(16));
     }
-    function markBoxed(str) {
-      return "Object(" + str + ")";
+    function markBoxed(str2) {
+      return "Object(" + str2 + ")";
     }
     function weakCollectionOf(type) {
       return type + " { ? }";
@@ -15420,12 +15420,12 @@ var require_object_inspect = __commonJS({
       return lineJoiner + $join.call(xs, "," + lineJoiner) + "\n" + indent.prev;
     }
     function arrObjKeys(obj, inspect) {
-      var isArr = isArray(obj);
+      var isArr = isArray2(obj);
       var xs = [];
       if (isArr) {
         xs.length = obj.length;
         for (var i = 0; i < obj.length; i++) {
-          xs[i] = has(obj, i) ? inspect(obj[i], obj) : "";
+          xs[i] = has2(obj, i) ? inspect(obj[i], obj) : "";
         }
       }
       var syms = typeof gOPS === "function" ? gOPS(obj) : [];
@@ -15437,7 +15437,7 @@ var require_object_inspect = __commonJS({
         }
       }
       for (var key in obj) {
-        if (!has(obj, key)) {
+        if (!has2(obj, key)) {
           continue;
         }
         if (isArr && String(Number(key)) === key && key < obj.length) {
@@ -15847,14 +15847,14 @@ var require_implementation = __commonJS({
       return arr;
     };
     var joiny = function(arr, joiner) {
-      var str = "";
+      var str2 = "";
       for (var i = 0; i < arr.length; i += 1) {
-        str += arr[i];
+        str2 += arr[i];
         if (i + 1 < arr.length) {
-          str += joiner;
+          str2 += joiner;
         }
       }
-      return str;
+      return str2;
     };
     module2.exports = function bind(that) {
       var target = this;
@@ -16243,7 +16243,7 @@ var require_get_intrinsic = __commonJS({
       "%WeakSetPrototype%": ["WeakSet", "prototype"]
     };
     var bind = require_function_bind();
-    var hasOwn = require_hasown();
+    var hasOwn2 = require_hasown();
     var $concat = bind.call($call, Array.prototype.concat);
     var $spliceApply = bind.call($apply, Array.prototype.splice);
     var $replace = bind.call($call, String.prototype.replace);
@@ -16268,11 +16268,11 @@ var require_get_intrinsic = __commonJS({
     var getBaseIntrinsic = function getBaseIntrinsic2(name, allowMissing) {
       var intrinsicName = name;
       var alias;
-      if (hasOwn(LEGACY_ALIASES, intrinsicName)) {
+      if (hasOwn2(LEGACY_ALIASES, intrinsicName)) {
         alias = LEGACY_ALIASES[intrinsicName];
         intrinsicName = "%" + alias[0] + "%";
       }
-      if (hasOwn(INTRINSICS, intrinsicName)) {
+      if (hasOwn2(INTRINSICS, intrinsicName)) {
         var value = INTRINSICS[intrinsicName];
         if (value === needsEval) {
           value = doEval(intrinsicName);
@@ -16321,7 +16321,7 @@ var require_get_intrinsic = __commonJS({
         }
         intrinsicBaseName += "." + part;
         intrinsicRealName = "%" + intrinsicBaseName + "%";
-        if (hasOwn(INTRINSICS, intrinsicRealName)) {
+        if (hasOwn2(INTRINSICS, intrinsicRealName)) {
           value = INTRINSICS[intrinsicRealName];
         } else if (value != null) {
           if (!(part in value)) {
@@ -16339,7 +16339,7 @@ var require_get_intrinsic = __commonJS({
               value = value[part];
             }
           } else {
-            isOwn = hasOwn(value, part);
+            isOwn = hasOwn2(value, part);
             value = value[part];
           }
           if (isOwn && !skipFurtherCaching) {
@@ -16574,8 +16574,8 @@ var require_utils = __commonJS({
   "node_modules/.pnpm/qs@6.13.0/node_modules/qs/lib/utils.js"(exports2, module2) {
     "use strict";
     var formats = require_formats();
-    var has = Object.prototype.hasOwnProperty;
-    var isArray = Array.isArray;
+    var has2 = Object.prototype.hasOwnProperty;
+    var isArray2 = Array.isArray;
     var hexTable = (function() {
       var array2 = [];
       for (var i = 0; i < 256; ++i) {
@@ -16587,7 +16587,7 @@ var require_utils = __commonJS({
       while (queue.length > 1) {
         var item = queue.pop();
         var obj = item.obj[item.prop];
-        if (isArray(obj)) {
+        if (isArray2(obj)) {
           var compacted = [];
           for (var j = 0; j < obj.length; ++j) {
             if (typeof obj[j] !== "undefined") {
@@ -16612,10 +16612,10 @@ var require_utils = __commonJS({
         return target;
       }
       if (typeof source !== "object") {
-        if (isArray(target)) {
+        if (isArray2(target)) {
           target.push(source);
         } else if (target && typeof target === "object") {
-          if (options && (options.plainObjects || options.allowPrototypes) || !has.call(Object.prototype, source)) {
+          if (options && (options.plainObjects || options.allowPrototypes) || !has2.call(Object.prototype, source)) {
             target[source] = true;
           }
         } else {
@@ -16627,12 +16627,12 @@ var require_utils = __commonJS({
         return [target].concat(source);
       }
       var mergeTarget = target;
-      if (isArray(target) && !isArray(source)) {
+      if (isArray2(target) && !isArray2(source)) {
         mergeTarget = arrayToObject(target, options);
       }
-      if (isArray(target) && isArray(source)) {
+      if (isArray2(target) && isArray2(source)) {
         source.forEach(function(item, i) {
-          if (has.call(target, i)) {
+          if (has2.call(target, i)) {
             var targetItem = target[i];
             if (targetItem && typeof targetItem === "object" && item && typeof item === "object") {
               target[i] = merge3(targetItem, item, options);
@@ -16647,7 +16647,7 @@ var require_utils = __commonJS({
       }
       return Object.keys(source).reduce(function(acc, key) {
         var value = source[key];
-        if (has.call(acc, key)) {
+        if (has2.call(acc, key)) {
           acc[key] = merge3(acc[key], value, options);
         } else {
           acc[key] = value;
@@ -16661,8 +16661,8 @@ var require_utils = __commonJS({
         return acc;
       }, target);
     };
-    var decode4 = function(str, decoder2, charset) {
-      var strWithoutPlus = str.replace(/\+/g, " ");
+    var decode4 = function(str2, decoder2, charset) {
+      var strWithoutPlus = str2.replace(/\+/g, " ");
       if (charset === "iso-8859-1") {
         return strWithoutPlus.replace(/%[0-9a-f]{2}/gi, unescape);
       }
@@ -16672,16 +16672,16 @@ var require_utils = __commonJS({
         return strWithoutPlus;
       }
     };
-    var limit = 1024;
-    var encode4 = function encode5(str, defaultEncoder, charset, kind, format) {
-      if (str.length === 0) {
-        return str;
+    var limit2 = 1024;
+    var encode5 = function encode6(str2, defaultEncoder, charset, kind, format) {
+      if (str2.length === 0) {
+        return str2;
       }
-      var string4 = str;
-      if (typeof str === "symbol") {
-        string4 = Symbol.prototype.toString.call(str);
-      } else if (typeof str !== "string") {
-        string4 = String(str);
+      var string4 = str2;
+      if (typeof str2 === "symbol") {
+        string4 = Symbol.prototype.toString.call(str2);
+      } else if (typeof str2 !== "string") {
+        string4 = String(str2);
       }
       if (charset === "iso-8859-1") {
         return escape(string4).replace(/%u[0-9a-f]{4}/gi, function($0) {
@@ -16689,8 +16689,8 @@ var require_utils = __commonJS({
         });
       }
       var out = "";
-      for (var j = 0; j < string4.length; j += limit) {
-        var segment = string4.length >= limit ? string4.slice(j, j + limit) : string4;
+      for (var j = 0; j < string4.length; j += limit2) {
+        var segment = string4.length >= limit2 ? string4.slice(j, j + limit2) : string4;
         var arr = [];
         for (var i = 0; i < segment.length; ++i) {
           var c = segment.charCodeAt(i);
@@ -16750,7 +16750,7 @@ var require_utils = __commonJS({
       return [].concat(a, b);
     };
     var maybeMap = function maybeMap2(val, fn) {
-      if (isArray(val)) {
+      if (isArray2(val)) {
         var mapped = [];
         for (var i = 0; i < val.length; i += 1) {
           mapped.push(fn(val[i]));
@@ -16765,7 +16765,7 @@ var require_utils = __commonJS({
       combine,
       compact,
       decode: decode4,
-      encode: encode4,
+      encode: encode5,
       isBuffer,
       isRegExp,
       maybeMap,
@@ -16781,7 +16781,7 @@ var require_stringify = __commonJS({
     var getSideChannel = require_side_channel();
     var utils = require_utils();
     var formats = require_formats();
-    var has = Object.prototype.hasOwnProperty;
+    var has2 = Object.prototype.hasOwnProperty;
     var arrayPrefixGenerators = {
       brackets: function brackets(prefix) {
         return prefix + "[]";
@@ -16794,14 +16794,14 @@ var require_stringify = __commonJS({
         return prefix;
       }
     };
-    var isArray = Array.isArray;
+    var isArray2 = Array.isArray;
     var push = Array.prototype.push;
     var pushToArray = function(arr, valueOrArray) {
-      push.apply(arr, isArray(valueOrArray) ? valueOrArray : [valueOrArray]);
+      push.apply(arr, isArray2(valueOrArray) ? valueOrArray : [valueOrArray]);
     };
     var toISO = Date.prototype.toISOString;
     var defaultFormat = formats["default"];
-    var defaults2 = {
+    var defaults3 = {
       addQueryPrefix: false,
       allowDots: false,
       allowEmptyArrays: false,
@@ -16826,13 +16826,13 @@ var require_stringify = __commonJS({
     var isNonNullishPrimitive = function isNonNullishPrimitive2(v) {
       return typeof v === "string" || typeof v === "number" || typeof v === "boolean" || typeof v === "symbol" || typeof v === "bigint";
     };
-    var sentinel = {};
-    var stringify = function stringify2(object2, prefix, generateArrayPrefix, commaRoundTrip, allowEmptyArrays, strictNullHandling, skipNulls, encodeDotInKeys, encoder2, filter, sort, allowDots, serializeDate, format, formatter, encodeValuesOnly, charset, sideChannel) {
+    var sentinel2 = {};
+    var stringify2 = function stringify3(object2, prefix, generateArrayPrefix, commaRoundTrip, allowEmptyArrays, strictNullHandling, skipNulls, encodeDotInKeys, encoder2, filter, sort, allowDots, serializeDate, format, formatter, encodeValuesOnly, charset, sideChannel) {
       var obj = object2;
       var tmpSc = sideChannel;
       var step = 0;
       var findFlag = false;
-      while ((tmpSc = tmpSc.get(sentinel)) !== void 0 && !findFlag) {
+      while ((tmpSc = tmpSc.get(sentinel2)) !== void 0 && !findFlag) {
         var pos = tmpSc.get(object2);
         step += 1;
         if (typeof pos !== "undefined") {
@@ -16842,7 +16842,7 @@ var require_stringify = __commonJS({
             findFlag = true;
           }
         }
-        if (typeof tmpSc.get(sentinel) === "undefined") {
+        if (typeof tmpSc.get(sentinel2) === "undefined") {
           step = 0;
         }
       }
@@ -16850,7 +16850,7 @@ var require_stringify = __commonJS({
         obj = filter(prefix, obj);
       } else if (obj instanceof Date) {
         obj = serializeDate(obj);
-      } else if (generateArrayPrefix === "comma" && isArray(obj)) {
+      } else if (generateArrayPrefix === "comma" && isArray2(obj)) {
         obj = utils.maybeMap(obj, function(value2) {
           if (value2 instanceof Date) {
             return serializeDate(value2);
@@ -16860,14 +16860,14 @@ var require_stringify = __commonJS({
       }
       if (obj === null) {
         if (strictNullHandling) {
-          return encoder2 && !encodeValuesOnly ? encoder2(prefix, defaults2.encoder, charset, "key", format) : prefix;
+          return encoder2 && !encodeValuesOnly ? encoder2(prefix, defaults3.encoder, charset, "key", format) : prefix;
         }
         obj = "";
       }
       if (isNonNullishPrimitive(obj) || utils.isBuffer(obj)) {
         if (encoder2) {
-          var keyValue = encodeValuesOnly ? prefix : encoder2(prefix, defaults2.encoder, charset, "key", format);
-          return [formatter(keyValue) + "=" + formatter(encoder2(obj, defaults2.encoder, charset, "value", format))];
+          var keyValue = encodeValuesOnly ? prefix : encoder2(prefix, defaults3.encoder, charset, "key", format);
+          return [formatter(keyValue) + "=" + formatter(encoder2(obj, defaults3.encoder, charset, "value", format))];
         }
         return [formatter(prefix) + "=" + formatter(String(obj))];
       }
@@ -16876,20 +16876,20 @@ var require_stringify = __commonJS({
         return values;
       }
       var objKeys;
-      if (generateArrayPrefix === "comma" && isArray(obj)) {
+      if (generateArrayPrefix === "comma" && isArray2(obj)) {
         if (encodeValuesOnly && encoder2) {
           obj = utils.maybeMap(obj, encoder2);
         }
         objKeys = [{ value: obj.length > 0 ? obj.join(",") || null : void 0 }];
-      } else if (isArray(filter)) {
+      } else if (isArray2(filter)) {
         objKeys = filter;
       } else {
         var keys = Object.keys(obj);
         objKeys = sort ? keys.sort(sort) : keys;
       }
       var encodedPrefix = encodeDotInKeys ? prefix.replace(/\./g, "%2E") : prefix;
-      var adjustedPrefix = commaRoundTrip && isArray(obj) && obj.length === 1 ? encodedPrefix + "[]" : encodedPrefix;
-      if (allowEmptyArrays && isArray(obj) && obj.length === 0) {
+      var adjustedPrefix = commaRoundTrip && isArray2(obj) && obj.length === 1 ? encodedPrefix + "[]" : encodedPrefix;
+      if (allowEmptyArrays && isArray2(obj) && obj.length === 0) {
         return adjustedPrefix + "[]";
       }
       for (var j = 0; j < objKeys.length; ++j) {
@@ -16899,11 +16899,11 @@ var require_stringify = __commonJS({
           continue;
         }
         var encodedKey = allowDots && encodeDotInKeys ? key.replace(/\./g, "%2E") : key;
-        var keyPrefix = isArray(obj) ? typeof generateArrayPrefix === "function" ? generateArrayPrefix(adjustedPrefix, encodedKey) : adjustedPrefix : adjustedPrefix + (allowDots ? "." + encodedKey : "[" + encodedKey + "]");
+        var keyPrefix = isArray2(obj) ? typeof generateArrayPrefix === "function" ? generateArrayPrefix(adjustedPrefix, encodedKey) : adjustedPrefix : adjustedPrefix + (allowDots ? "." + encodedKey : "[" + encodedKey + "]");
         sideChannel.set(object2, step);
         var valueSideChannel = getSideChannel();
-        valueSideChannel.set(sentinel, sideChannel);
-        pushToArray(values, stringify2(
+        valueSideChannel.set(sentinel2, sideChannel);
+        pushToArray(values, stringify3(
           value,
           keyPrefix,
           generateArrayPrefix,
@@ -16912,7 +16912,7 @@ var require_stringify = __commonJS({
           strictNullHandling,
           skipNulls,
           encodeDotInKeys,
-          generateArrayPrefix === "comma" && encodeValuesOnly && isArray(obj) ? null : encoder2,
+          generateArrayPrefix === "comma" && encodeValuesOnly && isArray2(obj) ? null : encoder2,
           filter,
           sort,
           allowDots,
@@ -16928,7 +16928,7 @@ var require_stringify = __commonJS({
     };
     var normalizeStringifyOptions = function normalizeStringifyOptions2(opts) {
       if (!opts) {
-        return defaults2;
+        return defaults3;
       }
       if (typeof opts.allowEmptyArrays !== "undefined" && typeof opts.allowEmptyArrays !== "boolean") {
         throw new TypeError("`allowEmptyArrays` option can only be `true` or `false`, when provided");
@@ -16939,20 +16939,20 @@ var require_stringify = __commonJS({
       if (opts.encoder !== null && typeof opts.encoder !== "undefined" && typeof opts.encoder !== "function") {
         throw new TypeError("Encoder has to be a function.");
       }
-      var charset = opts.charset || defaults2.charset;
+      var charset = opts.charset || defaults3.charset;
       if (typeof opts.charset !== "undefined" && opts.charset !== "utf-8" && opts.charset !== "iso-8859-1") {
         throw new TypeError("The charset option must be either utf-8, iso-8859-1, or undefined");
       }
       var format = formats["default"];
       if (typeof opts.format !== "undefined") {
-        if (!has.call(formats.formatters, opts.format)) {
+        if (!has2.call(formats.formatters, opts.format)) {
           throw new TypeError("Unknown format option provided.");
         }
         format = opts.format;
       }
       var formatter = formats.formatters[format];
-      var filter = defaults2.filter;
-      if (typeof opts.filter === "function" || isArray(opts.filter)) {
+      var filter = defaults3.filter;
+      if (typeof opts.filter === "function" || isArray2(opts.filter)) {
         filter = opts.filter;
       }
       var arrayFormat;
@@ -16961,32 +16961,32 @@ var require_stringify = __commonJS({
       } else if ("indices" in opts) {
         arrayFormat = opts.indices ? "indices" : "repeat";
       } else {
-        arrayFormat = defaults2.arrayFormat;
+        arrayFormat = defaults3.arrayFormat;
       }
       if ("commaRoundTrip" in opts && typeof opts.commaRoundTrip !== "boolean") {
         throw new TypeError("`commaRoundTrip` must be a boolean, or absent");
       }
-      var allowDots = typeof opts.allowDots === "undefined" ? opts.encodeDotInKeys === true ? true : defaults2.allowDots : !!opts.allowDots;
+      var allowDots = typeof opts.allowDots === "undefined" ? opts.encodeDotInKeys === true ? true : defaults3.allowDots : !!opts.allowDots;
       return {
-        addQueryPrefix: typeof opts.addQueryPrefix === "boolean" ? opts.addQueryPrefix : defaults2.addQueryPrefix,
+        addQueryPrefix: typeof opts.addQueryPrefix === "boolean" ? opts.addQueryPrefix : defaults3.addQueryPrefix,
         allowDots,
-        allowEmptyArrays: typeof opts.allowEmptyArrays === "boolean" ? !!opts.allowEmptyArrays : defaults2.allowEmptyArrays,
+        allowEmptyArrays: typeof opts.allowEmptyArrays === "boolean" ? !!opts.allowEmptyArrays : defaults3.allowEmptyArrays,
         arrayFormat,
         charset,
-        charsetSentinel: typeof opts.charsetSentinel === "boolean" ? opts.charsetSentinel : defaults2.charsetSentinel,
+        charsetSentinel: typeof opts.charsetSentinel === "boolean" ? opts.charsetSentinel : defaults3.charsetSentinel,
         commaRoundTrip: opts.commaRoundTrip,
-        delimiter: typeof opts.delimiter === "undefined" ? defaults2.delimiter : opts.delimiter,
-        encode: typeof opts.encode === "boolean" ? opts.encode : defaults2.encode,
-        encodeDotInKeys: typeof opts.encodeDotInKeys === "boolean" ? opts.encodeDotInKeys : defaults2.encodeDotInKeys,
-        encoder: typeof opts.encoder === "function" ? opts.encoder : defaults2.encoder,
-        encodeValuesOnly: typeof opts.encodeValuesOnly === "boolean" ? opts.encodeValuesOnly : defaults2.encodeValuesOnly,
+        delimiter: typeof opts.delimiter === "undefined" ? defaults3.delimiter : opts.delimiter,
+        encode: typeof opts.encode === "boolean" ? opts.encode : defaults3.encode,
+        encodeDotInKeys: typeof opts.encodeDotInKeys === "boolean" ? opts.encodeDotInKeys : defaults3.encodeDotInKeys,
+        encoder: typeof opts.encoder === "function" ? opts.encoder : defaults3.encoder,
+        encodeValuesOnly: typeof opts.encodeValuesOnly === "boolean" ? opts.encodeValuesOnly : defaults3.encodeValuesOnly,
         filter,
         format,
         formatter,
-        serializeDate: typeof opts.serializeDate === "function" ? opts.serializeDate : defaults2.serializeDate,
-        skipNulls: typeof opts.skipNulls === "boolean" ? opts.skipNulls : defaults2.skipNulls,
+        serializeDate: typeof opts.serializeDate === "function" ? opts.serializeDate : defaults3.serializeDate,
+        skipNulls: typeof opts.skipNulls === "boolean" ? opts.skipNulls : defaults3.skipNulls,
         sort: typeof opts.sort === "function" ? opts.sort : null,
-        strictNullHandling: typeof opts.strictNullHandling === "boolean" ? opts.strictNullHandling : defaults2.strictNullHandling
+        strictNullHandling: typeof opts.strictNullHandling === "boolean" ? opts.strictNullHandling : defaults3.strictNullHandling
       };
     };
     module2.exports = function(object2, opts) {
@@ -16997,7 +16997,7 @@ var require_stringify = __commonJS({
       if (typeof options.filter === "function") {
         filter = options.filter;
         obj = filter("", obj);
-      } else if (isArray(options.filter)) {
+      } else if (isArray2(options.filter)) {
         filter = options.filter;
         objKeys = filter;
       }
@@ -17019,7 +17019,7 @@ var require_stringify = __commonJS({
         if (options.skipNulls && obj[key] === null) {
           continue;
         }
-        pushToArray(keys, stringify(
+        pushToArray(keys, stringify2(
           obj[key],
           key,
           generateArrayPrefix,
@@ -17059,9 +17059,9 @@ var require_parse = __commonJS({
   "node_modules/.pnpm/qs@6.13.0/node_modules/qs/lib/parse.js"(exports2, module2) {
     "use strict";
     var utils = require_utils();
-    var has = Object.prototype.hasOwnProperty;
-    var isArray = Array.isArray;
-    var defaults2 = {
+    var has2 = Object.prototype.hasOwnProperty;
+    var isArray2 = Array.isArray;
+    var defaults3 = {
       allowDots: false,
       allowEmptyArrays: false,
       allowPrototypes: false,
@@ -17083,8 +17083,8 @@ var require_parse = __commonJS({
       strictDepth: false,
       strictNullHandling: false
     };
-    var interpretNumericEntities = function(str) {
-      return str.replace(/&#(\d+);/g, function($0, numberStr) {
+    var interpretNumericEntities = function(str2) {
+      return str2.replace(/&#(\d+);/g, function($0, numberStr) {
         return String.fromCharCode(parseInt(numberStr, 10));
       });
     };
@@ -17096,12 +17096,12 @@ var require_parse = __commonJS({
     };
     var isoSentinel = "utf8=%26%2310003%3B";
     var charsetSentinel = "utf8=%E2%9C%93";
-    var parseValues = function parseQueryStringValues(str, options) {
+    var parseValues = function parseQueryStringValues(str2, options) {
       var obj = { __proto__: null };
-      var cleanStr = options.ignoreQueryPrefix ? str.replace(/^\?/, "") : str;
+      var cleanStr = options.ignoreQueryPrefix ? str2.replace(/^\?/, "") : str2;
       cleanStr = cleanStr.replace(/%5B/gi, "[").replace(/%5D/gi, "]");
-      var limit = options.parameterLimit === Infinity ? void 0 : options.parameterLimit;
-      var parts = cleanStr.split(options.delimiter, limit);
+      var limit2 = options.parameterLimit === Infinity ? void 0 : options.parameterLimit;
+      var parts = cleanStr.split(options.delimiter, limit2);
       var skipIndex = -1;
       var i;
       var charset = options.charset;
@@ -17127,14 +17127,14 @@ var require_parse = __commonJS({
         var pos = bracketEqualsPos === -1 ? part.indexOf("=") : bracketEqualsPos + 1;
         var key, val;
         if (pos === -1) {
-          key = options.decoder(part, defaults2.decoder, charset, "key");
+          key = options.decoder(part, defaults3.decoder, charset, "key");
           val = options.strictNullHandling ? null : "";
         } else {
-          key = options.decoder(part.slice(0, pos), defaults2.decoder, charset, "key");
+          key = options.decoder(part.slice(0, pos), defaults3.decoder, charset, "key");
           val = utils.maybeMap(
             parseArrayValue(part.slice(pos + 1), options),
             function(encodedVal) {
-              return options.decoder(encodedVal, defaults2.decoder, charset, "value");
+              return options.decoder(encodedVal, defaults3.decoder, charset, "value");
             }
           );
         }
@@ -17142,9 +17142,9 @@ var require_parse = __commonJS({
           val = interpretNumericEntities(val);
         }
         if (part.indexOf("[]=") > -1) {
-          val = isArray(val) ? [val] : val;
+          val = isArray2(val) ? [val] : val;
         }
-        var existing = has.call(obj, key);
+        var existing = has2.call(obj, key);
         if (existing && options.duplicates === "combine") {
           obj[key] = utils.combine(obj[key], val);
         } else if (!existing || options.duplicates === "last") {
@@ -17189,7 +17189,7 @@ var require_parse = __commonJS({
       var parent = segment ? key.slice(0, segment.index) : key;
       var keys = [];
       if (parent) {
-        if (!options.plainObjects && has.call(Object.prototype, parent)) {
+        if (!options.plainObjects && has2.call(Object.prototype, parent)) {
           if (!options.allowPrototypes) {
             return;
           }
@@ -17199,7 +17199,7 @@ var require_parse = __commonJS({
       var i = 0;
       while (options.depth > 0 && (segment = child.exec(key)) !== null && i < options.depth) {
         i += 1;
-        if (!options.plainObjects && has.call(Object.prototype, segment[1].slice(1, -1))) {
+        if (!options.plainObjects && has2.call(Object.prototype, segment[1].slice(1, -1))) {
           if (!options.allowPrototypes) {
             return;
           }
@@ -17216,7 +17216,7 @@ var require_parse = __commonJS({
     };
     var normalizeParseOptions = function normalizeParseOptions2(opts) {
       if (!opts) {
-        return defaults2;
+        return defaults3;
       }
       if (typeof opts.allowEmptyArrays !== "undefined" && typeof opts.allowEmptyArrays !== "boolean") {
         throw new TypeError("`allowEmptyArrays` option can only be `true` or `false`, when provided");
@@ -17230,47 +17230,47 @@ var require_parse = __commonJS({
       if (typeof opts.charset !== "undefined" && opts.charset !== "utf-8" && opts.charset !== "iso-8859-1") {
         throw new TypeError("The charset option must be either utf-8, iso-8859-1, or undefined");
       }
-      var charset = typeof opts.charset === "undefined" ? defaults2.charset : opts.charset;
-      var duplicates = typeof opts.duplicates === "undefined" ? defaults2.duplicates : opts.duplicates;
+      var charset = typeof opts.charset === "undefined" ? defaults3.charset : opts.charset;
+      var duplicates = typeof opts.duplicates === "undefined" ? defaults3.duplicates : opts.duplicates;
       if (duplicates !== "combine" && duplicates !== "first" && duplicates !== "last") {
         throw new TypeError("The duplicates option must be either combine, first, or last");
       }
-      var allowDots = typeof opts.allowDots === "undefined" ? opts.decodeDotInKeys === true ? true : defaults2.allowDots : !!opts.allowDots;
+      var allowDots = typeof opts.allowDots === "undefined" ? opts.decodeDotInKeys === true ? true : defaults3.allowDots : !!opts.allowDots;
       return {
         allowDots,
-        allowEmptyArrays: typeof opts.allowEmptyArrays === "boolean" ? !!opts.allowEmptyArrays : defaults2.allowEmptyArrays,
-        allowPrototypes: typeof opts.allowPrototypes === "boolean" ? opts.allowPrototypes : defaults2.allowPrototypes,
-        allowSparse: typeof opts.allowSparse === "boolean" ? opts.allowSparse : defaults2.allowSparse,
-        arrayLimit: typeof opts.arrayLimit === "number" ? opts.arrayLimit : defaults2.arrayLimit,
+        allowEmptyArrays: typeof opts.allowEmptyArrays === "boolean" ? !!opts.allowEmptyArrays : defaults3.allowEmptyArrays,
+        allowPrototypes: typeof opts.allowPrototypes === "boolean" ? opts.allowPrototypes : defaults3.allowPrototypes,
+        allowSparse: typeof opts.allowSparse === "boolean" ? opts.allowSparse : defaults3.allowSparse,
+        arrayLimit: typeof opts.arrayLimit === "number" ? opts.arrayLimit : defaults3.arrayLimit,
         charset,
-        charsetSentinel: typeof opts.charsetSentinel === "boolean" ? opts.charsetSentinel : defaults2.charsetSentinel,
-        comma: typeof opts.comma === "boolean" ? opts.comma : defaults2.comma,
-        decodeDotInKeys: typeof opts.decodeDotInKeys === "boolean" ? opts.decodeDotInKeys : defaults2.decodeDotInKeys,
-        decoder: typeof opts.decoder === "function" ? opts.decoder : defaults2.decoder,
-        delimiter: typeof opts.delimiter === "string" || utils.isRegExp(opts.delimiter) ? opts.delimiter : defaults2.delimiter,
+        charsetSentinel: typeof opts.charsetSentinel === "boolean" ? opts.charsetSentinel : defaults3.charsetSentinel,
+        comma: typeof opts.comma === "boolean" ? opts.comma : defaults3.comma,
+        decodeDotInKeys: typeof opts.decodeDotInKeys === "boolean" ? opts.decodeDotInKeys : defaults3.decodeDotInKeys,
+        decoder: typeof opts.decoder === "function" ? opts.decoder : defaults3.decoder,
+        delimiter: typeof opts.delimiter === "string" || utils.isRegExp(opts.delimiter) ? opts.delimiter : defaults3.delimiter,
         // eslint-disable-next-line no-implicit-coercion, no-extra-parens
-        depth: typeof opts.depth === "number" || opts.depth === false ? +opts.depth : defaults2.depth,
+        depth: typeof opts.depth === "number" || opts.depth === false ? +opts.depth : defaults3.depth,
         duplicates,
         ignoreQueryPrefix: opts.ignoreQueryPrefix === true,
-        interpretNumericEntities: typeof opts.interpretNumericEntities === "boolean" ? opts.interpretNumericEntities : defaults2.interpretNumericEntities,
-        parameterLimit: typeof opts.parameterLimit === "number" ? opts.parameterLimit : defaults2.parameterLimit,
+        interpretNumericEntities: typeof opts.interpretNumericEntities === "boolean" ? opts.interpretNumericEntities : defaults3.interpretNumericEntities,
+        parameterLimit: typeof opts.parameterLimit === "number" ? opts.parameterLimit : defaults3.parameterLimit,
         parseArrays: opts.parseArrays !== false,
-        plainObjects: typeof opts.plainObjects === "boolean" ? opts.plainObjects : defaults2.plainObjects,
-        strictDepth: typeof opts.strictDepth === "boolean" ? !!opts.strictDepth : defaults2.strictDepth,
-        strictNullHandling: typeof opts.strictNullHandling === "boolean" ? opts.strictNullHandling : defaults2.strictNullHandling
+        plainObjects: typeof opts.plainObjects === "boolean" ? opts.plainObjects : defaults3.plainObjects,
+        strictDepth: typeof opts.strictDepth === "boolean" ? !!opts.strictDepth : defaults3.strictDepth,
+        strictNullHandling: typeof opts.strictNullHandling === "boolean" ? opts.strictNullHandling : defaults3.strictNullHandling
       };
     };
-    module2.exports = function(str, opts) {
+    module2.exports = function(str2, opts) {
       var options = normalizeParseOptions(opts);
-      if (str === "" || str === null || typeof str === "undefined") {
+      if (str2 === "" || str2 === null || typeof str2 === "undefined") {
         return options.plainObjects ? /* @__PURE__ */ Object.create(null) : {};
       }
-      var tempObj = typeof str === "string" ? parseValues(str, options) : str;
+      var tempObj = typeof str2 === "string" ? parseValues(str2, options) : str2;
       var obj = options.plainObjects ? /* @__PURE__ */ Object.create(null) : {};
       var keys = Object.keys(tempObj);
       for (var i = 0; i < keys.length; ++i) {
         var key = keys[i];
-        var newObj = parseKeys(key, tempObj[key], options, typeof str === "string");
+        var newObj = parseKeys(key, tempObj[key], options, typeof str2 === "string");
         obj = utils.merge(obj, newObj, options);
       }
       if (options.allowSparse === true) {
@@ -17285,13 +17285,13 @@ var require_parse = __commonJS({
 var require_lib2 = __commonJS({
   "node_modules/.pnpm/qs@6.13.0/node_modules/qs/lib/index.js"(exports2, module2) {
     "use strict";
-    var stringify = require_stringify();
+    var stringify2 = require_stringify();
     var parse3 = require_parse();
     var formats = require_formats();
     module2.exports = {
       formats,
       parse: parse3,
-      stringify
+      stringify: stringify2
     };
   }
 });
@@ -17316,7 +17316,7 @@ var require_urlencoded = __commonJS({
       }
       var extended = opts.extended !== false;
       var inflate = opts.inflate !== false;
-      var limit = typeof opts.limit !== "number" ? bytes.parse(opts.limit || "100kb") : opts.limit;
+      var limit2 = typeof opts.limit !== "number" ? bytes.parse(opts.limit || "100kb") : opts.limit;
       var type = opts.type || "application/x-www-form-urlencoded";
       var verify = opts.verify || false;
       var depth = typeof opts.depth !== "number" ? Number(opts.depth || 32) : opts.depth;
@@ -17359,7 +17359,7 @@ var require_urlencoded = __commonJS({
           debug,
           encoding: charset,
           inflate,
-          limit,
+          limit: limit2,
           verify,
           depth
         });
@@ -17414,13 +17414,13 @@ var require_urlencoded = __commonJS({
         return void 0;
       }
     }
-    function parameterCount(body, limit) {
+    function parameterCount(body, limit2) {
       var count = 0;
       var index = 0;
       while ((index = body.indexOf("&", index)) !== -1) {
         count++;
         index++;
-        if (count === limit) {
+        if (count === limit2) {
           return void 0;
         }
       }
@@ -17597,17 +17597,17 @@ var require_escape_html = __commonJS({
     var matchHtmlRegExp = /["'&<>]/;
     module2.exports = escapeHtml;
     function escapeHtml(string4) {
-      var str = "" + string4;
-      var match = matchHtmlRegExp.exec(str);
+      var str2 = "" + string4;
+      var match = matchHtmlRegExp.exec(str2);
       if (!match) {
-        return str;
+        return str2;
       }
       var escape2;
       var html = "";
       var index = 0;
       var lastIndex = 0;
-      for (index = match.index; index < str.length; index++) {
-        switch (str.charCodeAt(index)) {
+      for (index = match.index; index < str2.length; index++) {
+        switch (str2.charCodeAt(index)) {
           case 34:
             escape2 = "&quot;";
             break;
@@ -17627,12 +17627,12 @@ var require_escape_html = __commonJS({
             continue;
         }
         if (lastIndex !== index) {
-          html += str.substring(lastIndex, index);
+          html += str2.substring(lastIndex, index);
         }
         lastIndex = index + 1;
         html += escape2;
       }
-      return lastIndex !== index ? html + str.substring(lastIndex, index) : html;
+      return lastIndex !== index ? html + str2.substring(lastIndex, index) : html;
     }
   }
 });
@@ -17672,20 +17672,20 @@ var require_parseurl = __commonJS({
       parsed._raw = url3;
       return req._parsedOriginalUrl = parsed;
     }
-    function fastparse(str) {
-      if (typeof str !== "string" || str.charCodeAt(0) !== 47) {
-        return parse3(str);
+    function fastparse(str2) {
+      if (typeof str2 !== "string" || str2.charCodeAt(0) !== 47) {
+        return parse3(str2);
       }
-      var pathname = str;
+      var pathname = str2;
       var query = null;
       var search = null;
-      for (var i = 1; i < str.length; i++) {
-        switch (str.charCodeAt(i)) {
+      for (var i = 1; i < str2.length; i++) {
+        switch (str2.charCodeAt(i)) {
           case 63:
             if (search === null) {
-              pathname = str.substring(0, i);
-              query = str.substring(i + 1);
-              search = str.substring(i);
+              pathname = str2.substring(0, i);
+              query = str2.substring(i + 1);
+              search = str2.substring(i);
             }
             break;
           case 9:
@@ -17702,12 +17702,12 @@ var require_parseurl = __commonJS({
           /* #  */
           case 160:
           case 65279:
-            return parse3(str);
+            return parse3(str2);
         }
       }
       var url3 = Url !== void 0 ? new Url() : {};
-      url3.path = str;
-      url3.href = str;
+      url3.path = str2;
+      url3.href = str2;
       url3.pathname = pathname;
       if (search !== null) {
         url3.query = query;
@@ -17912,7 +17912,7 @@ var require_path_to_regexp = __commonJS({
   "node_modules/.pnpm/path-to-regexp@0.1.12/node_modules/path-to-regexp/index.js"(exports2, module2) {
     module2.exports = pathToRegexp;
     var MATCHING_GROUP_REGEXP = /\\.|\((?:\?<(.*?)>)?(?!\?)/g;
-    function pathToRegexp(path, keys, options) {
+    function pathToRegexp(path2, keys, options) {
       options = options || {};
       keys = keys || [];
       var strict = options.strict;
@@ -17926,8 +17926,8 @@ var require_path_to_regexp = __commonJS({
       var pos = 0;
       var backtrack = "";
       var m;
-      if (path instanceof RegExp) {
-        while (m = MATCHING_GROUP_REGEXP.exec(path.source)) {
+      if (path2 instanceof RegExp) {
+        while (m = MATCHING_GROUP_REGEXP.exec(path2.source)) {
           if (m[0][0] === "\\") continue;
           keys.push({
             name: m[1] || name++,
@@ -17935,18 +17935,18 @@ var require_path_to_regexp = __commonJS({
             offset: m.index
           });
         }
-        return path;
+        return path2;
       }
-      if (Array.isArray(path)) {
-        path = path.map(function(value) {
+      if (Array.isArray(path2)) {
+        path2 = path2.map(function(value) {
           return pathToRegexp(value, keys, options).source;
         });
-        return new RegExp(path.join("|"), flags);
+        return new RegExp(path2.join("|"), flags);
       }
-      if (typeof path !== "string") {
+      if (typeof path2 !== "string") {
         throw new TypeError("path must be a string, array of strings, or regular expression");
       }
-      path = path.replace(
+      path2 = path2.replace(
         /\\.|(\/)?(\.)?:(\w+)(\(.*?\))?(\*)?(\?)?|[.*]|\/\(/g,
         function(match, slash, format, key, capture, star, optional2, offset) {
           if (match[0] === "\\") {
@@ -17963,7 +17963,7 @@ var require_path_to_regexp = __commonJS({
           if (slash || format) {
             backtrack = "";
           } else {
-            backtrack += path.slice(pos, offset);
+            backtrack += path2.slice(pos, offset);
           }
           pos = offset + match.length;
           if (match === "*") {
@@ -17991,7 +17991,7 @@ var require_path_to_regexp = __commonJS({
           return result;
         }
       );
-      while (m = MATCHING_GROUP_REGEXP.exec(path)) {
+      while (m = MATCHING_GROUP_REGEXP.exec(path2)) {
         if (m[0][0] === "\\") continue;
         if (keysOffset + i === keys.length || keys[keysOffset + i].offset > m.index) {
           keys.splice(keysOffset + i, 0, {
@@ -18003,13 +18003,13 @@ var require_path_to_regexp = __commonJS({
         }
         i++;
       }
-      path += strict ? "" : path[path.length - 1] === "/" ? "?" : "/?";
+      path2 += strict ? "" : path2[path2.length - 1] === "/" ? "?" : "/?";
       if (end) {
-        path += "$";
-      } else if (path[path.length - 1] !== "/") {
-        path += lookahead ? "(?=/|$)" : "(?:/|$)";
+        path2 += "$";
+      } else if (path2[path2.length - 1] !== "/") {
+        path2 += lookahead ? "(?=/|$)" : "(?:/|$)";
       }
-      return new RegExp("^" + path, flags);
+      return new RegExp("^" + path2, flags);
     }
   }
 });
@@ -18022,19 +18022,19 @@ var require_layer = __commonJS({
     var debug = require_src()("express:router:layer");
     var hasOwnProperty = Object.prototype.hasOwnProperty;
     module2.exports = Layer;
-    function Layer(path, options, fn) {
+    function Layer(path2, options, fn) {
       if (!(this instanceof Layer)) {
-        return new Layer(path, options, fn);
+        return new Layer(path2, options, fn);
       }
-      debug("new %o", path);
+      debug("new %o", path2);
       var opts = options || {};
       this.handle = fn;
       this.name = fn.name || "<anonymous>";
       this.params = void 0;
       this.path = void 0;
-      this.regexp = pathRegexp(path, this.keys = [], opts);
-      this.regexp.fast_star = path === "*";
-      this.regexp.fast_slash = path === "/" && opts.end === false;
+      this.regexp = pathRegexp(path2, this.keys = [], opts);
+      this.regexp.fast_star = path2 === "*";
+      this.regexp.fast_slash = path2 === "/" && opts.end === false;
     }
     Layer.prototype.handle_error = function handle_error(error46, req, res, next) {
       var fn = this.handle;
@@ -18058,20 +18058,20 @@ var require_layer = __commonJS({
         next(err);
       }
     };
-    Layer.prototype.match = function match(path) {
+    Layer.prototype.match = function match(path2) {
       var match2;
-      if (path != null) {
+      if (path2 != null) {
         if (this.regexp.fast_slash) {
           this.params = {};
           this.path = "";
           return true;
         }
         if (this.regexp.fast_star) {
-          this.params = { "0": decode_param(path) };
-          this.path = path;
+          this.params = { "0": decode_param(path2) };
+          this.path = path2;
           return true;
         }
-        match2 = this.regexp.exec(path);
+        match2 = this.regexp.exec(path2);
       }
       if (!match2) {
         this.params = void 0;
@@ -18164,10 +18164,10 @@ var require_route = __commonJS({
     var slice = Array.prototype.slice;
     var toString = Object.prototype.toString;
     module2.exports = Route;
-    function Route(path) {
-      this.path = path;
+    function Route(path2) {
+      this.path = path2;
       this.stack = [];
-      debug("new %o", path);
+      debug("new %o", path2);
       this.methods = {};
     }
     Route.prototype._handles_method = function _handles_method(method) {
@@ -18297,17 +18297,17 @@ var require_router = __commonJS({
     var toString = Object.prototype.toString;
     var proto = module2.exports = function(options) {
       var opts = options || {};
-      function router2(req, res, next) {
-        router2.handle(req, res, next);
+      function router3(req, res, next) {
+        router3.handle(req, res, next);
       }
-      setPrototypeOf(router2, proto);
-      router2.params = {};
-      router2._params = [];
-      router2.caseSensitive = opts.caseSensitive;
-      router2.mergeParams = opts.mergeParams;
-      router2.strict = opts.strict;
-      router2.stack = [];
-      return router2;
+      setPrototypeOf(router3, proto);
+      router3.params = {};
+      router3._params = [];
+      router3.caseSensitive = opts.caseSensitive;
+      router3.mergeParams = opts.mergeParams;
+      router3.strict = opts.strict;
+      router3.stack = [];
+      return router3;
     };
     proto.param = function param(name, fn) {
       if (typeof name === "function") {
@@ -18379,8 +18379,8 @@ var require_router = __commonJS({
         if (++sync > 100) {
           return setImmediate(next, err);
         }
-        var path = getPathname(req);
-        if (path == null) {
+        var path2 = getPathname(req);
+        if (path2 == null) {
           return done(layerError);
         }
         var layer;
@@ -18388,7 +18388,7 @@ var require_router = __commonJS({
         var route;
         while (match !== true && idx < stack.length) {
           layer = stack[idx++];
-          match = matchLayer(layer, path);
+          match = matchLayer(layer, path2);
           route = layer.route;
           if (typeof match !== "boolean") {
             layerError = layerError || match;
@@ -18426,18 +18426,18 @@ var require_router = __commonJS({
           } else if (route) {
             layer.handle_request(req, res, next);
           } else {
-            trim_prefix(layer, layerError, layerPath, path);
+            trim_prefix(layer, layerError, layerPath, path2);
           }
           sync = 0;
         });
       }
-      function trim_prefix(layer, layerError, layerPath, path) {
+      function trim_prefix(layer, layerError, layerPath, path2) {
         if (layerPath.length !== 0) {
-          if (layerPath !== path.slice(0, layerPath.length)) {
+          if (layerPath !== path2.slice(0, layerPath.length)) {
             next(layerError);
             return;
           }
-          var c = path[layerPath.length];
+          var c = path2[layerPath.length];
           if (c && c !== "/" && c !== ".") return next(layerError);
           debug("trim prefix (%s) from url %s", layerPath, req.url);
           removed = layerPath;
@@ -18515,7 +18515,7 @@ var require_router = __commonJS({
     };
     proto.use = function use(fn) {
       var offset = 0;
-      var path = "/";
+      var path2 = "/";
       if (typeof fn !== "function") {
         var arg = fn;
         while (Array.isArray(arg) && arg.length !== 0) {
@@ -18523,7 +18523,7 @@ var require_router = __commonJS({
         }
         if (typeof arg !== "function") {
           offset = 1;
-          path = fn;
+          path2 = fn;
         }
       }
       var callbacks = flatten(slice.call(arguments, offset));
@@ -18535,8 +18535,8 @@ var require_router = __commonJS({
         if (typeof fn !== "function") {
           throw new TypeError("Router.use() requires a middleware function but got a " + gettype(fn));
         }
-        debug("use %o %s", path, fn.name || "<anonymous>");
-        var layer = new Layer(path, {
+        debug("use %o %s", path2, fn.name || "<anonymous>");
+        var layer = new Layer(path2, {
           sensitive: this.caseSensitive,
           strict: false,
           end: false
@@ -18546,9 +18546,9 @@ var require_router = __commonJS({
       }
       return this;
     };
-    proto.route = function route(path) {
-      var route2 = new Route(path);
-      var layer = new Layer(path, {
+    proto.route = function route(path2) {
+      var route2 = new Route(path2);
+      var layer = new Layer(path2, {
         sensitive: this.caseSensitive,
         strict: this.strict,
         end: true
@@ -18558,8 +18558,8 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      proto[method] = function(path) {
-        var route = this.route(path);
+      proto[method] = function(path2) {
+        var route = this.route(path2);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
       };
@@ -18595,9 +18595,9 @@ var require_router = __commonJS({
       }
       return toString.call(obj).replace(objectRegExp, "$1");
     }
-    function matchLayer(layer, path) {
+    function matchLayer(layer, path2) {
       try {
-        return layer.match(path);
+        return layer.match(path2);
       } catch (err) {
         return err;
       }
@@ -18715,13 +18715,13 @@ var require_view = __commonJS({
   "node_modules/.pnpm/express@4.21.2/node_modules/express/lib/view.js"(exports2, module2) {
     "use strict";
     var debug = require_src()("express:view");
-    var path = require("path");
+    var path2 = require("path");
     var fs = require("fs");
-    var dirname = path.dirname;
-    var basename = path.basename;
-    var extname = path.extname;
-    var join = path.join;
-    var resolve = path.resolve;
+    var dirname = path2.dirname;
+    var basename = path2.basename;
+    var extname = path2.extname;
+    var join = path2.join;
+    var resolve = path2.resolve;
     module2.exports = View2;
     function View2(name, options) {
       var opts = options || {};
@@ -18750,17 +18750,17 @@ var require_view = __commonJS({
       this.path = this.lookup(fileName);
     }
     View2.prototype.lookup = function lookup(name) {
-      var path2;
+      var path3;
       var roots = [].concat(this.root);
       debug('lookup "%s"', name);
-      for (var i = 0; i < roots.length && !path2; i++) {
+      for (var i = 0; i < roots.length && !path3; i++) {
         var root = roots[i];
         var loc = resolve(root, name);
         var dir = dirname(loc);
         var file2 = basename(loc);
-        path2 = this.resolve(dir, file2);
+        path3 = this.resolve(dir, file2);
       }
-      return path2;
+      return path3;
     };
     View2.prototype.render = function render(options, callback) {
       debug('render "%s"', this.path);
@@ -18768,21 +18768,21 @@ var require_view = __commonJS({
     };
     View2.prototype.resolve = function resolve2(dir, file2) {
       var ext = this.ext;
-      var path2 = join(dir, file2);
-      var stat = tryStat(path2);
+      var path3 = join(dir, file2);
+      var stat = tryStat(path3);
       if (stat && stat.isFile()) {
-        return path2;
+        return path3;
       }
-      path2 = join(dir, basename(file2, ext), "index" + ext);
-      stat = tryStat(path2);
+      path3 = join(dir, basename(file2, ext), "index" + ext);
+      stat = tryStat(path3);
       if (stat && stat.isFile()) {
-        return path2;
+        return path3;
       }
     };
-    function tryStat(path2) {
-      debug('stat "%s"', path2);
+    function tryStat(path3) {
+      debug('stat "%s"', path3);
       try {
-        return fs.statSync(path2);
+        return fs.statSync(path3);
       } catch (e) {
         return void 0;
       }
@@ -18920,8 +18920,8 @@ var require_content_disposition = __commonJS({
       }
       return string4;
     }
-    function decodefield(str) {
-      var match = EXT_VALUE_REGEXP.exec(str);
+    function decodefield(str2) {
+      var match = EXT_VALUE_REGEXP.exec(str2);
       if (!match) {
         throw new TypeError("invalid extended field value");
       }
@@ -18989,19 +18989,19 @@ var require_content_disposition = __commonJS({
       }
       return new ContentDisposition(type, params);
     }
-    function pdecode(str, hex3) {
+    function pdecode(str2, hex3) {
       return String.fromCharCode(parseInt(hex3, 16));
     }
     function pencode(char2) {
       return "%" + String(char2).charCodeAt(0).toString(16).toUpperCase();
     }
     function qstring(val) {
-      var str = String(val);
-      return '"' + str.replace(QUOTE_REGEXP, "\\$1") + '"';
+      var str2 = String(val);
+      return '"' + str2.replace(QUOTE_REGEXP, "\\$1") + '"';
     }
     function ustring(val) {
-      var str = String(val);
-      var encoded = encodeURIComponent(str).replace(ENCODE_URL_ATTR_CHAR_REGEXP, pencode);
+      var str2 = String(val);
+      var encoded = encodeURIComponent(str2).replace(ENCODE_URL_ATTR_CHAR_REGEXP, pencode);
       return "UTF-8''" + encoded;
     }
     function ContentDisposition(type, parameters) {
@@ -19114,19 +19114,19 @@ var require_fresh = __commonJS({
       var timestamp2 = date6 && Date.parse(date6);
       return typeof timestamp2 === "number" ? timestamp2 : NaN;
     }
-    function parseTokenList(str) {
+    function parseTokenList(str2) {
       var end = 0;
       var list = [];
       var start = 0;
-      for (var i = 0, len = str.length; i < len; i++) {
-        switch (str.charCodeAt(i)) {
+      for (var i = 0, len = str2.length; i < len; i++) {
+        switch (str2.charCodeAt(i)) {
           case 32:
             if (start === end) {
               start = end = i + 1;
             }
             break;
           case 44:
-            list.push(str.substring(start, end));
+            list.push(str2.substring(start, end));
             start = end = i + 1;
             break;
           default:
@@ -19134,7 +19134,7 @@ var require_fresh = __commonJS({
             break;
         }
       }
-      list.push(str.substring(start, end));
+      list.push(str2.substring(start, end));
       return list;
     }
   }
@@ -19150,7 +19150,7 @@ var require_types = __commonJS({
 // node_modules/.pnpm/mime@1.6.0/node_modules/mime/mime.js
 var require_mime = __commonJS({
   "node_modules/.pnpm/mime@1.6.0/node_modules/mime/mime.js"(exports2, module2) {
-    var path = require("path");
+    var path2 = require("path");
     var fs = require("fs");
     function Mime() {
       this.types = /* @__PURE__ */ Object.create(null);
@@ -19180,8 +19180,8 @@ var require_mime = __commonJS({
       this.define(map2);
       this._loading = null;
     };
-    Mime.prototype.lookup = function(path2, fallback) {
-      var ext = path2.replace(/^.*[\.\/\\]/, "").toLowerCase();
+    Mime.prototype.lookup = function(path3, fallback) {
+      var ext = path3.replace(/^.*[\.\/\\]/, "").toLowerCase();
       return this.types[ext] || fallback || this.default_type;
     };
     Mime.prototype.extension = function(mimeType) {
@@ -19222,13 +19222,13 @@ var require_ms2 = __commonJS({
         "val is not a non-empty string or a valid number. val=" + JSON.stringify(val)
       );
     };
-    function parse3(str) {
-      str = String(str);
-      if (str.length > 100) {
+    function parse3(str2) {
+      str2 = String(str2);
+      if (str2.length > 100) {
         return;
       }
       var match = /^(-?(?:\d+)?\.?\d+) *(milliseconds?|msecs?|ms|seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|weeks?|w|years?|yrs?|y)?$/i.exec(
-        str
+        str2
       );
       if (!match) {
         return;
@@ -19322,17 +19322,17 @@ var require_range_parser = __commonJS({
   "node_modules/.pnpm/range-parser@1.2.1/node_modules/range-parser/index.js"(exports2, module2) {
     "use strict";
     module2.exports = rangeParser;
-    function rangeParser(size, str, options) {
-      if (typeof str !== "string") {
+    function rangeParser(size, str2, options) {
+      if (typeof str2 !== "string") {
         throw new TypeError("argument str must be a string");
       }
-      var index = str.indexOf("=");
+      var index = str2.indexOf("=");
       if (index === -1) {
         return -2;
       }
-      var arr = str.slice(index + 1).split(",");
+      var arr = str2.slice(index + 1).split(",");
       var ranges = [];
-      ranges.type = str.slice(0, index);
+      ranges.type = str2.slice(0, index);
       for (var i = 0; i < arr.length; i++) {
         var range = arr[i].split("-");
         var start = parseInt(range[0], 10);
@@ -19415,28 +19415,28 @@ var require_send = __commonJS({
     var ms = require_ms2();
     var onFinished = require_on_finished();
     var parseRange = require_range_parser();
-    var path = require("path");
+    var path2 = require("path");
     var statuses = require_statuses();
-    var Stream = require("stream");
+    var Stream2 = require("stream");
     var util = require("util");
-    var extname = path.extname;
-    var join = path.join;
-    var normalize = path.normalize;
-    var resolve = path.resolve;
-    var sep = path.sep;
+    var extname = path2.extname;
+    var join = path2.join;
+    var normalize = path2.normalize;
+    var resolve = path2.resolve;
+    var sep = path2.sep;
     var BYTES_RANGE_REGEXP = /^ *bytes=/;
     var MAX_MAXAGE = 60 * 60 * 24 * 365 * 1e3;
     var UP_PATH_REGEXP = /(?:^|[\\/])\.\.(?:[\\/]|$)/;
     module2.exports = send;
     module2.exports.mime = mime;
-    function send(req, path2, options) {
-      return new SendStream(req, path2, options);
+    function send(req, path3, options) {
+      return new SendStream(req, path3, options);
     }
-    function SendStream(req, path2, options) {
-      Stream.call(this);
+    function SendStream(req, path3, options) {
+      Stream2.call(this);
       var opts = options || {};
       this.options = opts;
-      this.path = path2;
+      this.path = path3;
       this.req = req;
       this._acceptRanges = opts.acceptRanges !== void 0 ? Boolean(opts.acceptRanges) : true;
       this._cacheControl = opts.cacheControl !== void 0 ? Boolean(opts.cacheControl) : true;
@@ -19464,7 +19464,7 @@ var require_send = __commonJS({
         this.from(opts.from);
       }
     }
-    util.inherits(SendStream, Stream);
+    util.inherits(SendStream, Stream2);
     SendStream.prototype.etag = deprecate.function(function etag2(val) {
       this._etag = Boolean(val);
       debug("etag %s", this._etag);
@@ -19482,8 +19482,8 @@ var require_send = __commonJS({
       this._index = index2;
       return this;
     }, "send.index: pass index as option");
-    SendStream.prototype.root = function root(path2) {
-      this._root = resolve(String(path2));
+    SendStream.prototype.root = function root(path3) {
+      this._root = resolve(String(path3));
       debug("root %s", this._root);
       return this;
     };
@@ -19596,10 +19596,10 @@ var require_send = __commonJS({
       var lastModified = this.res.getHeader("Last-Modified");
       return parseHttpDate(lastModified) <= parseHttpDate(ifRange);
     };
-    SendStream.prototype.redirect = function redirect(path2) {
+    SendStream.prototype.redirect = function redirect(path3) {
       var res = this.res;
       if (hasListeners(this, "directory")) {
-        this.emit("directory", res, path2);
+        this.emit("directory", res, path3);
         return;
       }
       if (this.hasTrailingSlash()) {
@@ -19619,42 +19619,42 @@ var require_send = __commonJS({
     SendStream.prototype.pipe = function pipe2(res) {
       var root = this._root;
       this.res = res;
-      var path2 = decode4(this.path);
-      if (path2 === -1) {
+      var path3 = decode4(this.path);
+      if (path3 === -1) {
         this.error(400);
         return res;
       }
-      if (~path2.indexOf("\0")) {
+      if (~path3.indexOf("\0")) {
         this.error(400);
         return res;
       }
       var parts;
       if (root !== null) {
-        if (path2) {
-          path2 = normalize("." + sep + path2);
+        if (path3) {
+          path3 = normalize("." + sep + path3);
         }
-        if (UP_PATH_REGEXP.test(path2)) {
-          debug('malicious path "%s"', path2);
+        if (UP_PATH_REGEXP.test(path3)) {
+          debug('malicious path "%s"', path3);
           this.error(403);
           return res;
         }
-        parts = path2.split(sep);
-        path2 = normalize(join(root, path2));
+        parts = path3.split(sep);
+        path3 = normalize(join(root, path3));
       } else {
-        if (UP_PATH_REGEXP.test(path2)) {
-          debug('malicious path "%s"', path2);
+        if (UP_PATH_REGEXP.test(path3)) {
+          debug('malicious path "%s"', path3);
           this.error(403);
           return res;
         }
-        parts = normalize(path2).split(sep);
-        path2 = resolve(path2);
+        parts = normalize(path3).split(sep);
+        path3 = resolve(path3);
       }
       if (containsDotFile(parts)) {
         var access = this._dotfiles;
         if (access === void 0) {
           access = parts[parts.length - 1][0] === "." ? this._hidden ? "allow" : "ignore" : "allow";
         }
-        debug('%s dotfile "%s"', access, path2);
+        debug('%s dotfile "%s"', access, path3);
         switch (access) {
           case "allow":
             break;
@@ -19668,13 +19668,13 @@ var require_send = __commonJS({
         }
       }
       if (this._index.length && this.hasTrailingSlash()) {
-        this.sendIndex(path2);
+        this.sendIndex(path3);
         return res;
       }
-      this.sendFile(path2);
+      this.sendFile(path3);
       return res;
     };
-    SendStream.prototype.send = function send2(path2, stat) {
+    SendStream.prototype.send = function send2(path3, stat) {
       var len = stat.size;
       var options = this.options;
       var opts = {};
@@ -19686,9 +19686,9 @@ var require_send = __commonJS({
         this.headersAlreadySent();
         return;
       }
-      debug('pipe "%s"', path2);
-      this.setHeader(path2, stat);
-      this.type(path2);
+      debug('pipe "%s"', path3);
+      this.setHeader(path3, stat);
+      this.type(path3);
       if (this.isConditionalGET()) {
         if (this.isPreconditionFailure()) {
           this.error(412);
@@ -19737,26 +19737,26 @@ var require_send = __commonJS({
         res.end();
         return;
       }
-      this.stream(path2, opts);
+      this.stream(path3, opts);
     };
-    SendStream.prototype.sendFile = function sendFile(path2) {
+    SendStream.prototype.sendFile = function sendFile(path3) {
       var i = 0;
       var self = this;
-      debug('stat "%s"', path2);
-      fs.stat(path2, function onstat(err, stat) {
-        if (err && err.code === "ENOENT" && !extname(path2) && path2[path2.length - 1] !== sep) {
+      debug('stat "%s"', path3);
+      fs.stat(path3, function onstat(err, stat) {
+        if (err && err.code === "ENOENT" && !extname(path3) && path3[path3.length - 1] !== sep) {
           return next(err);
         }
         if (err) return self.onStatError(err);
-        if (stat.isDirectory()) return self.redirect(path2);
-        self.emit("file", path2, stat);
-        self.send(path2, stat);
+        if (stat.isDirectory()) return self.redirect(path3);
+        self.emit("file", path3, stat);
+        self.send(path3, stat);
       });
       function next(err) {
         if (self._extensions.length <= i) {
           return err ? self.onStatError(err) : self.error(404);
         }
-        var p = path2 + "." + self._extensions[i++];
+        var p = path3 + "." + self._extensions[i++];
         debug('stat "%s"', p);
         fs.stat(p, function(err2, stat) {
           if (err2) return next(err2);
@@ -19766,7 +19766,7 @@ var require_send = __commonJS({
         });
       }
     };
-    SendStream.prototype.sendIndex = function sendIndex(path2) {
+    SendStream.prototype.sendIndex = function sendIndex(path3) {
       var i = -1;
       var self = this;
       function next(err) {
@@ -19774,7 +19774,7 @@ var require_send = __commonJS({
           if (err) return self.onStatError(err);
           return self.error(404);
         }
-        var p = join(path2, self._index[i]);
+        var p = join(path3, self._index[i]);
         debug('stat "%s"', p);
         fs.stat(p, function(err2, stat) {
           if (err2) return next(err2);
@@ -19785,10 +19785,10 @@ var require_send = __commonJS({
       }
       next();
     };
-    SendStream.prototype.stream = function stream(path2, options) {
+    SendStream.prototype.stream = function stream(path3, options) {
       var self = this;
       var res = this.res;
-      var stream2 = fs.createReadStream(path2, options);
+      var stream2 = fs.createReadStream(path3, options);
       this.emit("stream", stream2);
       stream2.pipe(res);
       function cleanup() {
@@ -19803,10 +19803,10 @@ var require_send = __commonJS({
         self.emit("end");
       });
     };
-    SendStream.prototype.type = function type(path2) {
+    SendStream.prototype.type = function type(path3) {
       var res = this.res;
       if (res.getHeader("Content-Type")) return;
-      var type2 = mime.lookup(path2);
+      var type2 = mime.lookup(path3);
       if (!type2) {
         debug("no content-type");
         return;
@@ -19815,9 +19815,9 @@ var require_send = __commonJS({
       debug("content-type %s", type2);
       res.setHeader("Content-Type", type2 + (charset ? "; charset=" + charset : ""));
     };
-    SendStream.prototype.setHeader = function setHeader(path2, stat) {
+    SendStream.prototype.setHeader = function setHeader(path3, stat) {
       var res = this.res;
-      this.emit("headers", res, path2, stat);
+      this.emit("headers", res, path3, stat);
       if (this._acceptRanges && !res.getHeader("Accept-Ranges")) {
         debug("accept ranges");
         res.setHeader("Accept-Ranges", "bytes");
@@ -19847,13 +19847,13 @@ var require_send = __commonJS({
         res.removeHeader(headers[i]);
       }
     }
-    function collapseLeadingSlashes(str) {
-      for (var i = 0; i < str.length; i++) {
-        if (str[i] !== "/") {
+    function collapseLeadingSlashes(str2) {
+      for (var i = 0; i < str2.length; i++) {
+        if (str2[i] !== "/") {
           break;
         }
       }
-      return i > 1 ? "/" + str.substr(i) : str;
+      return i > 1 ? "/" + str2.substr(i) : str2;
     }
     function containsDotFile(parts) {
       for (var i = 0; i < parts.length; i++) {
@@ -19876,9 +19876,9 @@ var require_send = __commonJS({
       }
       return err instanceof Error ? createError(status, err, { expose: false }) : createError(status, err);
     }
-    function decode4(path2) {
+    function decode4(path3) {
       try {
-        return decodeURIComponent(path2);
+        return decodeURIComponent(path3);
       } catch (err) {
         return -1;
       }
@@ -19906,12 +19906,12 @@ var require_send = __commonJS({
       var timestamp2 = date6 && Date.parse(date6);
       return typeof timestamp2 === "number" ? timestamp2 : NaN;
     }
-    function parseTokenList(str) {
+    function parseTokenList(str2) {
       var end = 0;
       var list = [];
       var start = 0;
-      for (var i = 0, len = str.length; i < len; i++) {
-        switch (str.charCodeAt(i)) {
+      for (var i = 0, len = str2.length; i < len; i++) {
+        switch (str2.charCodeAt(i)) {
           case 32:
             if (start === end) {
               start = end = i + 1;
@@ -19919,7 +19919,7 @@ var require_send = __commonJS({
             break;
           case 44:
             if (start !== end) {
-              list.push(str.substring(start, end));
+              list.push(str2.substring(start, end));
             }
             start = end = i + 1;
             break;
@@ -19929,7 +19929,7 @@ var require_send = __commonJS({
         }
       }
       if (start !== end) {
-        list.push(str.substring(start, end));
+        list.push(str2.substring(start, end));
       }
       return list;
     }
@@ -20679,11 +20679,11 @@ var require_proxy_addr = __commonJS({
     }
     function parseipNotation(note) {
       var pos = note.lastIndexOf("/");
-      var str = pos !== -1 ? note.substring(0, pos) : note;
-      if (!isip(str)) {
-        throw new TypeError("invalid IP address: " + str);
+      var str2 = pos !== -1 ? note.substring(0, pos) : note;
+      if (!isip(str2)) {
+        throw new TypeError("invalid IP address: " + str2);
       }
-      var ip = parseip(str);
+      var ip = parseip(str2);
       if (pos === -1 && ip.kind() === "ipv6" && ip.isIPv4MappedAddress()) {
         ip = ip.toIPv4Address();
       }
@@ -20787,10 +20787,10 @@ var require_utils2 = __commonJS({
     var querystring = require("querystring");
     exports2.etag = createETagGenerator({ weak: false });
     exports2.wetag = createETagGenerator({ weak: true });
-    exports2.isAbsolute = function(path) {
-      if ("/" === path[0]) return true;
-      if (":" === path[1] && ("\\" === path[2] || "/" === path[2])) return true;
-      if ("\\\\" === path.substring(0, 2)) return true;
+    exports2.isAbsolute = function(path2) {
+      if ("/" === path2[0]) return true;
+      if (":" === path2[1] && ("\\" === path2[2] || "/" === path2[2])) return true;
+      if ("\\\\" === path2.substring(0, 2)) return true;
     };
     exports2.flatten = deprecate.function(
       flatten,
@@ -20810,8 +20810,8 @@ var require_utils2 = __commonJS({
       contentDisposition,
       "utils.contentDisposition: use content-disposition npm module instead"
     );
-    function acceptParams(str) {
-      var parts = str.split(/ *; */);
+    function acceptParams(str2) {
+      var parts = str2.split(/ *; */);
       var ret = { value: parts[0], quality: 1, params: {} };
       for (var i = 1; i < parts.length; ++i) {
         var pms = parts[i].split(/ *= */);
@@ -20897,8 +20897,8 @@ var require_utils2 = __commonJS({
         return etag(buf, options);
       };
     }
-    function parseExtendedQueryString(str) {
-      return qs.parse(str, {
+    function parseExtendedQueryString(str2) {
+      return qs.parse(str2, {
         allowPrototypes: true
       });
     }
@@ -20913,7 +20913,7 @@ var require_application = __commonJS({
   "node_modules/.pnpm/express@4.21.2/node_modules/express/lib/application.js"(exports2, module2) {
     "use strict";
     var finalhandler = require_finalhandler();
-    var Router = require_router();
+    var Router2 = require_router();
     var methods = require_methods();
     var middleware = require_init();
     var query = require_query();
@@ -20978,7 +20978,7 @@ var require_application = __commonJS({
     };
     app2.lazyrouter = function lazyrouter() {
       if (!this._router) {
-        this._router = new Router({
+        this._router = new Router2({
           caseSensitive: this.enabled("case sensitive routing"),
           strict: this.enabled("strict routing")
         });
@@ -20987,21 +20987,21 @@ var require_application = __commonJS({
       }
     };
     app2.handle = function handle(req, res, callback) {
-      var router2 = this._router;
+      var router3 = this._router;
       var done = callback || finalhandler(req, res, {
         env: this.get("env"),
         onerror: logerror.bind(this)
       });
-      if (!router2) {
+      if (!router3) {
         debug("no routes defined on app");
         done();
         return;
       }
-      router2.handle(req, res, done);
+      router3.handle(req, res, done);
     };
     app2.use = function use(fn) {
       var offset = 0;
-      var path = "/";
+      var path2 = "/";
       if (typeof fn !== "function") {
         var arg = fn;
         while (Array.isArray(arg) && arg.length !== 0) {
@@ -21009,7 +21009,7 @@ var require_application = __commonJS({
         }
         if (typeof arg !== "function") {
           offset = 1;
-          path = fn;
+          path2 = fn;
         }
       }
       var fns = flatten(slice.call(arguments, offset));
@@ -21017,15 +21017,15 @@ var require_application = __commonJS({
         throw new TypeError("app.use() requires a middleware function");
       }
       this.lazyrouter();
-      var router2 = this._router;
+      var router3 = this._router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router2.use(path, fn2);
+          return router3.use(path2, fn2);
         }
-        debug(".use app under %s", path);
-        fn2.mountpath = path;
+        debug(".use app under %s", path2);
+        fn2.mountpath = path2;
         fn2.parent = this;
-        router2.use(path, function mounted_app(req, res, next) {
+        router3.use(path2, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             setPrototypeOf(req, orig.request);
@@ -21037,9 +21037,9 @@ var require_application = __commonJS({
       }, this);
       return this;
     };
-    app2.route = function route(path) {
+    app2.route = function route(path2) {
       this.lazyrouter();
-      return this._router.route(path);
+      return this._router.route(path2);
     };
     app2.engine = function engine(ext, fn) {
       if (typeof fn !== "function") {
@@ -21090,7 +21090,7 @@ var require_application = __commonJS({
       }
       return this;
     };
-    app2.path = function path() {
+    app2.path = function path2() {
       return this.parent ? this.parent.path() + this.mountpath : "";
     };
     app2.enabled = function enabled(setting) {
@@ -21106,19 +21106,19 @@ var require_application = __commonJS({
       return this.set(setting, false);
     };
     methods.forEach(function(method) {
-      app2[method] = function(path) {
+      app2[method] = function(path2) {
         if (method === "get" && arguments.length === 1) {
-          return this.set(path);
+          return this.set(path2);
         }
         this.lazyrouter();
-        var route = this._router.route(path);
+        var route = this._router.route(path2);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
       };
     });
-    app2.all = function all(path) {
+    app2.all = function all(path2) {
       this.lazyrouter();
-      var route = this._router.route(path);
+      var route = this._router.route(path2);
       var args = slice.call(arguments, 1);
       for (var i = 0; i < methods.length; i++) {
         route[methods[i]].apply(route, args);
@@ -21202,8 +21202,8 @@ var require_charset = __commonJS({
       accepts.length = j;
       return accepts;
     }
-    function parseCharset(str, i) {
-      var match = simpleCharsetRegExp.exec(str);
+    function parseCharset(str2, i) {
+      var match = simpleCharsetRegExp.exec(str2);
       if (!match) return null;
       var charset = match[1];
       var q = 1;
@@ -21300,8 +21300,8 @@ var require_encoding = __commonJS({
       accepts.length = j;
       return accepts;
     }
-    function parseEncoding(str, i) {
-      var match = simpleEncodingRegExp.exec(str);
+    function parseEncoding(str2, i) {
+      var match = simpleEncodingRegExp.exec(str2);
       if (!match) return null;
       var encoding = match[1];
       var q = 1;
@@ -21387,8 +21387,8 @@ var require_language = __commonJS({
       accepts.length = j;
       return accepts;
     }
-    function parseLanguage(str, i) {
-      var match = simpleLanguageRegExp.exec(str);
+    function parseLanguage(str2, i) {
+      var match = simpleLanguageRegExp.exec(str2);
       if (!match) return null;
       var prefix = match[1];
       var suffix = match[2];
@@ -21482,8 +21482,8 @@ var require_mediaType = __commonJS({
       accepts.length = j;
       return accepts;
     }
-    function parseMediaType(str, i) {
-      var match = simpleMediaTypeRegExp.exec(str);
+    function parseMediaType(str2, i) {
+      var match = simpleMediaTypeRegExp.exec(str2);
       if (!match) return null;
       var params = /* @__PURE__ */ Object.create(null);
       var q = 1;
@@ -21584,15 +21584,15 @@ var require_mediaType = __commonJS({
       }
       return count;
     }
-    function splitKeyValuePair(str) {
-      var index = str.indexOf("=");
+    function splitKeyValuePair(str2) {
+      var index = str2.indexOf("=");
       var key;
       var val;
       if (index === -1) {
-        key = str;
+        key = str2;
       } else {
-        key = str.substr(0, index);
-        val = str.substr(index + 1);
+        key = str2.substr(0, index);
+        val = str2.substr(index + 1);
       }
       return [key, val];
     }
@@ -21608,8 +21608,8 @@ var require_mediaType = __commonJS({
       accepts.length = j + 1;
       return accepts;
     }
-    function splitParameters(str) {
-      var parameters = str.split(";");
+    function splitParameters(str2) {
+      var parameters = str2.split(";");
       for (var i = 1, j = 0; i < parameters.length; i++) {
         if (quoteCount(parameters[j]) % 2 == 0) {
           parameters[++j] = parameters[i];
@@ -21877,7 +21877,7 @@ var require_request = __commonJS({
       var subdomains2 = !isIP(hostname3) ? hostname3.split(".").reverse() : [hostname3];
       return subdomains2.slice(offset);
     });
-    defineGetter(req, "path", function path() {
+    defineGetter(req, "path", function path2() {
       return parse3(this).pathname;
     });
     defineGetter(req, "hostname", function hostname3() {
@@ -21938,11 +21938,11 @@ var require_cookie_signature = __commonJS({
     exports2.unsign = function(val, secret) {
       if ("string" != typeof val) throw new TypeError("Signed cookie string must be provided.");
       if ("string" != typeof secret) throw new TypeError("Secret string must be provided.");
-      var str = val.slice(0, val.lastIndexOf(".")), mac = exports2.sign(str, secret);
-      return sha1(mac) == sha1(val) ? str : false;
+      var str2 = val.slice(0, val.lastIndexOf(".")), mac = exports2.sign(str2, secret);
+      return sha1(mac) == sha1(val) ? str2 : false;
     };
-    function sha1(str) {
-      return crypto5.createHash("sha1").update(str).digest("hex");
+    function sha1(str2) {
+      return crypto5.createHash("sha1").update(str2).digest("hex");
     }
   }
 });
@@ -21958,54 +21958,54 @@ var require_cookie = __commonJS({
     var cookieValueRegExp = /^("?)[\u0021\u0023-\u002B\u002D-\u003A\u003C-\u005B\u005D-\u007E]*\1$/;
     var domainValueRegExp = /^([.]?[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)([.][a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$/i;
     var pathValueRegExp = /^[\u0020-\u003A\u003D-\u007E]*$/;
-    function parse3(str, opt) {
-      if (typeof str !== "string") {
+    function parse3(str2, opt) {
+      if (typeof str2 !== "string") {
         throw new TypeError("argument str must be a string");
       }
       var obj = {};
-      var len = str.length;
+      var len = str2.length;
       if (len < 2) return obj;
       var dec = opt && opt.decode || decode4;
       var index = 0;
       var eqIdx = 0;
       var endIdx = 0;
       do {
-        eqIdx = str.indexOf("=", index);
+        eqIdx = str2.indexOf("=", index);
         if (eqIdx === -1) break;
-        endIdx = str.indexOf(";", index);
+        endIdx = str2.indexOf(";", index);
         if (endIdx === -1) {
           endIdx = len;
         } else if (eqIdx > endIdx) {
-          index = str.lastIndexOf(";", eqIdx - 1) + 1;
+          index = str2.lastIndexOf(";", eqIdx - 1) + 1;
           continue;
         }
-        var keyStartIdx = startIndex(str, index, eqIdx);
-        var keyEndIdx = endIndex(str, eqIdx, keyStartIdx);
-        var key = str.slice(keyStartIdx, keyEndIdx);
+        var keyStartIdx = startIndex(str2, index, eqIdx);
+        var keyEndIdx = endIndex(str2, eqIdx, keyStartIdx);
+        var key = str2.slice(keyStartIdx, keyEndIdx);
         if (!obj.hasOwnProperty(key)) {
-          var valStartIdx = startIndex(str, eqIdx + 1, endIdx);
-          var valEndIdx = endIndex(str, endIdx, valStartIdx);
-          if (str.charCodeAt(valStartIdx) === 34 && str.charCodeAt(valEndIdx - 1) === 34) {
+          var valStartIdx = startIndex(str2, eqIdx + 1, endIdx);
+          var valEndIdx = endIndex(str2, endIdx, valStartIdx);
+          if (str2.charCodeAt(valStartIdx) === 34 && str2.charCodeAt(valEndIdx - 1) === 34) {
             valStartIdx++;
             valEndIdx--;
           }
-          var val = str.slice(valStartIdx, valEndIdx);
+          var val = str2.slice(valStartIdx, valEndIdx);
           obj[key] = tryDecode(val, dec);
         }
         index = endIdx + 1;
       } while (index < len);
       return obj;
     }
-    function startIndex(str, index, max) {
+    function startIndex(str2, index, max) {
       do {
-        var code = str.charCodeAt(index);
+        var code = str2.charCodeAt(index);
         if (code !== 32 && code !== 9) return index;
       } while (++index < max);
       return max;
     }
-    function endIndex(str, index, min) {
+    function endIndex(str2, index, min) {
       while (index > min) {
-        var code = str.charCodeAt(--index);
+        var code = str2.charCodeAt(--index);
         if (code !== 32 && code !== 9) return index + 1;
       }
       return min;
@@ -22022,54 +22022,54 @@ var require_cookie = __commonJS({
       if (!cookieValueRegExp.test(value)) {
         throw new TypeError("argument val is invalid");
       }
-      var str = name + "=" + value;
-      if (!opt) return str;
+      var str2 = name + "=" + value;
+      if (!opt) return str2;
       if (null != opt.maxAge) {
         var maxAge = Math.floor(opt.maxAge);
         if (!isFinite(maxAge)) {
           throw new TypeError("option maxAge is invalid");
         }
-        str += "; Max-Age=" + maxAge;
+        str2 += "; Max-Age=" + maxAge;
       }
       if (opt.domain) {
         if (!domainValueRegExp.test(opt.domain)) {
           throw new TypeError("option domain is invalid");
         }
-        str += "; Domain=" + opt.domain;
+        str2 += "; Domain=" + opt.domain;
       }
       if (opt.path) {
         if (!pathValueRegExp.test(opt.path)) {
           throw new TypeError("option path is invalid");
         }
-        str += "; Path=" + opt.path;
+        str2 += "; Path=" + opt.path;
       }
       if (opt.expires) {
         var expires = opt.expires;
         if (!isDate(expires) || isNaN(expires.valueOf())) {
           throw new TypeError("option expires is invalid");
         }
-        str += "; Expires=" + expires.toUTCString();
+        str2 += "; Expires=" + expires.toUTCString();
       }
       if (opt.httpOnly) {
-        str += "; HttpOnly";
+        str2 += "; HttpOnly";
       }
       if (opt.secure) {
-        str += "; Secure";
+        str2 += "; Secure";
       }
       if (opt.partitioned) {
-        str += "; Partitioned";
+        str2 += "; Partitioned";
       }
       if (opt.priority) {
         var priority = typeof opt.priority === "string" ? opt.priority.toLowerCase() : opt.priority;
         switch (priority) {
           case "low":
-            str += "; Priority=Low";
+            str2 += "; Priority=Low";
             break;
           case "medium":
-            str += "; Priority=Medium";
+            str2 += "; Priority=Medium";
             break;
           case "high":
-            str += "; Priority=High";
+            str2 += "; Priority=High";
             break;
           default:
             throw new TypeError("option priority is invalid");
@@ -22079,34 +22079,34 @@ var require_cookie = __commonJS({
         var sameSite = typeof opt.sameSite === "string" ? opt.sameSite.toLowerCase() : opt.sameSite;
         switch (sameSite) {
           case true:
-            str += "; SameSite=Strict";
+            str2 += "; SameSite=Strict";
             break;
           case "lax":
-            str += "; SameSite=Lax";
+            str2 += "; SameSite=Lax";
             break;
           case "strict":
-            str += "; SameSite=Strict";
+            str2 += "; SameSite=Strict";
             break;
           case "none":
-            str += "; SameSite=None";
+            str2 += "; SameSite=None";
             break;
           default:
             throw new TypeError("option sameSite is invalid");
         }
       }
-      return str;
+      return str2;
     }
-    function decode4(str) {
-      return str.indexOf("%") !== -1 ? decodeURIComponent(str) : str;
+    function decode4(str2) {
+      return str2.indexOf("%") !== -1 ? decodeURIComponent(str2) : str2;
     }
     function isDate(val) {
       return __toString.call(val) === "[object Date]";
     }
-    function tryDecode(str, decode5) {
+    function tryDecode(str2, decode5) {
       try {
-        return decode5(str);
+        return decode5(str2);
       } catch (e) {
-        return str;
+        return str2;
       }
     }
   }
@@ -22198,7 +22198,7 @@ var require_response = __commonJS({
     var http = require("http");
     var isAbsolute = require_utils2().isAbsolute;
     var onFinished = require_on_finished();
-    var path = require("path");
+    var path2 = require("path");
     var statuses = require_statuses();
     var merge2 = require_utils_merge();
     var sign = require_cookie_signature().sign;
@@ -22207,9 +22207,9 @@ var require_response = __commonJS({
     var setCharset = require_utils2().setCharset;
     var cookie = require_cookie();
     var send = require_send();
-    var extname = path.extname;
+    var extname = path2.extname;
     var mime = send.mime;
-    var resolve = path.resolve;
+    var resolve = path2.resolve;
     var vary = require_vary();
     var res = Object.create(http.ServerResponse.prototype);
     module2.exports = res;
@@ -22336,7 +22336,7 @@ var require_response = __commonJS({
       var escape2 = app2.get("json escape");
       var replacer = app2.get("json replacer");
       var spaces = app2.get("json spaces");
-      var body = stringify(val, replacer, spaces, escape2);
+      var body = stringify2(val, replacer, spaces, escape2);
       if (!this.get("Content-Type")) {
         this.set("Content-Type", "application/json");
       }
@@ -22358,7 +22358,7 @@ var require_response = __commonJS({
       var escape2 = app2.get("json escape");
       var replacer = app2.get("json replacer");
       var spaces = app2.get("json spaces");
-      var body = stringify(val, replacer, spaces, escape2);
+      var body = stringify2(val, replacer, spaces, escape2);
       var callback = this.req.query[app2.get("jsonp callback name")];
       if (!this.get("Content-Type")) {
         this.set("X-Content-Type-Options", "nosniff");
@@ -22386,26 +22386,26 @@ var require_response = __commonJS({
       this.type("txt");
       return this.send(body);
     };
-    res.sendFile = function sendFile(path2, options, callback) {
+    res.sendFile = function sendFile(path3, options, callback) {
       var done = callback;
       var req = this.req;
       var res2 = this;
       var next = req.next;
       var opts = options || {};
-      if (!path2) {
+      if (!path3) {
         throw new TypeError("path argument is required to res.sendFile");
       }
-      if (typeof path2 !== "string") {
+      if (typeof path3 !== "string") {
         throw new TypeError("path must be a string to res.sendFile");
       }
       if (typeof options === "function") {
         done = options;
         opts = {};
       }
-      if (!opts.root && !isAbsolute(path2)) {
+      if (!opts.root && !isAbsolute(path3)) {
         throw new TypeError("path must be absolute or specify root to res.sendFile");
       }
-      var pathname = encodeURI(path2);
+      var pathname = encodeURI(path3);
       var file2 = send(req, pathname, opts);
       sendfile(res2, file2, opts, function(err) {
         if (done) return done(err);
@@ -22415,7 +22415,7 @@ var require_response = __commonJS({
         }
       });
     };
-    res.sendfile = function(path2, options, callback) {
+    res.sendfile = function(path3, options, callback) {
       var done = callback;
       var req = this.req;
       var res2 = this;
@@ -22425,7 +22425,7 @@ var require_response = __commonJS({
         done = options;
         opts = {};
       }
-      var file2 = send(req, path2, opts);
+      var file2 = send(req, path3, opts);
       sendfile(res2, file2, opts, function(err) {
         if (done) return done(err);
         if (err && err.code === "EISDIR") return next();
@@ -22438,7 +22438,7 @@ var require_response = __commonJS({
       res.sendfile,
       "res.sendfile: Use res.sendFile instead"
     );
-    res.download = function download(path2, filename, options, callback) {
+    res.download = function download(path3, filename, options, callback) {
       var done = callback;
       var name = filename;
       var opts = options || null;
@@ -22455,7 +22455,7 @@ var require_response = __commonJS({
         opts = filename;
       }
       var headers = {
-        "Content-Disposition": contentDisposition(name || path2)
+        "Content-Disposition": contentDisposition(name || path3)
       };
       if (opts && opts.headers) {
         var keys = Object.keys(opts.headers);
@@ -22468,7 +22468,7 @@ var require_response = __commonJS({
       }
       opts = Object.create(opts);
       opts.headers = headers;
-      var fullPath = !opts.root ? resolve(path2) : path2;
+      var fullPath = !opts.root ? resolve(path3) : path3;
       return this.sendFile(fullPath, opts, done);
     };
     res.contentType = res.type = function contentType(type) {
@@ -22634,9 +22634,9 @@ var require_response = __commonJS({
         opts = {};
       }
       opts._locals = self.locals;
-      done = done || function(err, str) {
+      done = done || function(err, str2) {
         if (err) return req.next(err);
-        self.send(str);
+        self.send(str2);
       };
       app2.render(view, opts, done);
     };
@@ -22705,7 +22705,7 @@ var require_response = __commonJS({
       }
       file2.pipe(res2);
     }
-    function stringify(value, replacer, spaces, escape2) {
+    function stringify2(value, replacer, spaces, escape2) {
       var json3 = replacer || spaces ? JSON.stringify(value, replacer, spaces) : JSON.stringify(value);
       if (escape2 && typeof json3 === "string") {
         json3 = json3.replace(/[<>&]/g, function(c) {
@@ -22769,11 +22769,11 @@ var require_serve_static = __commonJS({
         }
         var forwardError = !fallthrough;
         var originalUrl = parseUrl.original(req);
-        var path = parseUrl(req).pathname;
-        if (path === "/" && originalUrl.pathname.substr(-1) !== "/") {
-          path = "";
+        var path2 = parseUrl(req).pathname;
+        if (path2 === "/" && originalUrl.pathname.substr(-1) !== "/") {
+          path2 = "";
         }
-        var stream = send(req, path, opts);
+        var stream = send(req, path2, opts);
         stream.on("directory", onDirectory);
         if (setHeaders) {
           stream.on("headers", setHeaders);
@@ -22793,13 +22793,13 @@ var require_serve_static = __commonJS({
         stream.pipe(res);
       };
     }
-    function collapseLeadingSlashes(str) {
-      for (var i = 0; i < str.length; i++) {
-        if (str.charCodeAt(i) !== 47) {
+    function collapseLeadingSlashes(str2) {
+      for (var i = 0; i < str2.length; i++) {
+        if (str2.charCodeAt(i) !== 47) {
           break;
         }
       }
-      return i > 1 ? "/" + str.substr(i) : str;
+      return i > 1 ? "/" + str2.substr(i) : str2;
     }
     function createHtmlDocument(title, body) {
       return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<title>' + title + "</title>\n</head>\n<body>\n<pre>" + body + "</pre>\n</body>\n</html>\n";
@@ -22841,7 +22841,7 @@ var require_express = __commonJS({
     var mixin = require_merge_descriptors();
     var proto = require_application();
     var Route = require_route();
-    var Router = require_router();
+    var Router2 = require_router();
     var req = require_request();
     var res = require_response();
     exports2 = module2.exports = createApplication;
@@ -22864,7 +22864,7 @@ var require_express = __commonJS({
     exports2.request = req;
     exports2.response = res;
     exports2.Route = Route;
-    exports2.Router = Router;
+    exports2.Router = Router2;
     exports2.json = bodyParser.json;
     exports2.query = require_query();
     exports2.raw = bodyParser.raw;
@@ -22927,47 +22927,47 @@ var require_dist = __commonJS({
       C.prototype = /* @__PURE__ */ Object.create(null);
       return C;
     })();
-    function parse3(str, options) {
+    function parse3(str2, options) {
       const obj = new NullObject();
-      const len = str.length;
+      const len = str2.length;
       if (len < 2)
         return obj;
       const dec = options?.decode || decode4;
       let index = 0;
       do {
-        const eqIdx = str.indexOf("=", index);
+        const eqIdx = str2.indexOf("=", index);
         if (eqIdx === -1)
           break;
-        const colonIdx = str.indexOf(";", index);
+        const colonIdx = str2.indexOf(";", index);
         const endIdx = colonIdx === -1 ? len : colonIdx;
         if (eqIdx > endIdx) {
-          index = str.lastIndexOf(";", eqIdx - 1) + 1;
+          index = str2.lastIndexOf(";", eqIdx - 1) + 1;
           continue;
         }
-        const keyStartIdx = startIndex(str, index, eqIdx);
-        const keyEndIdx = endIndex(str, eqIdx, keyStartIdx);
-        const key = str.slice(keyStartIdx, keyEndIdx);
+        const keyStartIdx = startIndex(str2, index, eqIdx);
+        const keyEndIdx = endIndex(str2, eqIdx, keyStartIdx);
+        const key = str2.slice(keyStartIdx, keyEndIdx);
         if (obj[key] === void 0) {
-          let valStartIdx = startIndex(str, eqIdx + 1, endIdx);
-          let valEndIdx = endIndex(str, endIdx, valStartIdx);
-          const value = dec(str.slice(valStartIdx, valEndIdx));
+          let valStartIdx = startIndex(str2, eqIdx + 1, endIdx);
+          let valEndIdx = endIndex(str2, endIdx, valStartIdx);
+          const value = dec(str2.slice(valStartIdx, valEndIdx));
           obj[key] = value;
         }
         index = endIdx + 1;
       } while (index < len);
       return obj;
     }
-    function startIndex(str, index, max) {
+    function startIndex(str2, index, max) {
       do {
-        const code = str.charCodeAt(index);
+        const code = str2.charCodeAt(index);
         if (code !== 32 && code !== 9)
           return index;
       } while (++index < max);
       return max;
     }
-    function endIndex(str, index, min) {
+    function endIndex(str2, index, min) {
       while (index > min) {
-        const code = str.charCodeAt(--index);
+        const code = str2.charCodeAt(--index);
         if (code !== 32 && code !== 9)
           return index + 1;
       }
@@ -22982,53 +22982,53 @@ var require_dist = __commonJS({
       if (!cookieValueRegExp.test(value)) {
         throw new TypeError(`argument val is invalid: ${val}`);
       }
-      let str = name + "=" + value;
+      let str2 = name + "=" + value;
       if (!options)
-        return str;
+        return str2;
       if (options.maxAge !== void 0) {
         if (!Number.isInteger(options.maxAge)) {
           throw new TypeError(`option maxAge is invalid: ${options.maxAge}`);
         }
-        str += "; Max-Age=" + options.maxAge;
+        str2 += "; Max-Age=" + options.maxAge;
       }
       if (options.domain) {
         if (!domainValueRegExp.test(options.domain)) {
           throw new TypeError(`option domain is invalid: ${options.domain}`);
         }
-        str += "; Domain=" + options.domain;
+        str2 += "; Domain=" + options.domain;
       }
       if (options.path) {
         if (!pathValueRegExp.test(options.path)) {
           throw new TypeError(`option path is invalid: ${options.path}`);
         }
-        str += "; Path=" + options.path;
+        str2 += "; Path=" + options.path;
       }
       if (options.expires) {
         if (!isDate(options.expires) || !Number.isFinite(options.expires.valueOf())) {
           throw new TypeError(`option expires is invalid: ${options.expires}`);
         }
-        str += "; Expires=" + options.expires.toUTCString();
+        str2 += "; Expires=" + options.expires.toUTCString();
       }
       if (options.httpOnly) {
-        str += "; HttpOnly";
+        str2 += "; HttpOnly";
       }
       if (options.secure) {
-        str += "; Secure";
+        str2 += "; Secure";
       }
       if (options.partitioned) {
-        str += "; Partitioned";
+        str2 += "; Partitioned";
       }
       if (options.priority) {
         const priority = typeof options.priority === "string" ? options.priority.toLowerCase() : void 0;
         switch (priority) {
           case "low":
-            str += "; Priority=Low";
+            str2 += "; Priority=Low";
             break;
           case "medium":
-            str += "; Priority=Medium";
+            str2 += "; Priority=Medium";
             break;
           case "high":
-            str += "; Priority=High";
+            str2 += "; Priority=High";
             break;
           default:
             throw new TypeError(`option priority is invalid: ${options.priority}`);
@@ -23039,27 +23039,27 @@ var require_dist = __commonJS({
         switch (sameSite) {
           case true:
           case "strict":
-            str += "; SameSite=Strict";
+            str2 += "; SameSite=Strict";
             break;
           case "lax":
-            str += "; SameSite=Lax";
+            str2 += "; SameSite=Lax";
             break;
           case "none":
-            str += "; SameSite=None";
+            str2 += "; SameSite=None";
             break;
           default:
             throw new TypeError(`option sameSite is invalid: ${options.sameSite}`);
         }
       }
-      return str;
+      return str2;
     }
-    function decode4(str) {
-      if (str.indexOf("%") === -1)
-        return str;
+    function decode4(str2) {
+      if (str2.indexOf("%") === -1)
+        return str2;
       try {
-        return decodeURIComponent(str);
+        return decodeURIComponent(str2);
       } catch (e) {
-        return str;
+        return str2;
       }
     }
     function isDate(val) {
@@ -23185,9 +23185,9 @@ var require_postgres_date = __commonJS({
     var DATE_TIME = /(\d{1,})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})(\.\d{1,})?.*?( BC)?$/;
     var DATE = /^(\d{1,})-(\d{2})-(\d{2})( BC)?$/;
     var TIME_ZONE = /([Z+-])(\d{2})?:?(\d{2})?:?(\d{2})?/;
-    var INFINITY = /^-?infinity$/;
+    var INFINITY2 = /^-?infinity$/;
     module2.exports = function parseDate(isoDate) {
-      if (INFINITY.test(isoDate)) {
+      if (INFINITY2.test(isoDate)) {
         return Number(isoDate.replace("i", "I"));
       }
       var matches = DATE_TIME.exec(isoDate);
@@ -24071,7 +24071,7 @@ var require_defaults = __commonJS({
 var require_utils3 = __commonJS({
   "node_modules/.pnpm/pg@8.20.0/node_modules/pg/lib/utils.js"(exports2, module2) {
     "use strict";
-    var defaults2 = require_defaults();
+    var defaults3 = require_defaults();
     var util = require("util");
     var { isDate } = util.types || util;
     function escapeElement(elementRepresentation) {
@@ -24122,7 +24122,7 @@ var require_utils3 = __commonJS({
           return buf.slice(val.byteOffset, val.byteOffset + val.byteLength);
         }
         if (isDate(val)) {
-          if (defaults2.parseInputDatesAsUTC) {
+          if (defaults3.parseInputDatesAsUTC) {
             return dateToStringUTC(val);
           } else {
             return dateToString(val);
@@ -24185,20 +24185,20 @@ var require_utils3 = __commonJS({
       }
       return config2;
     }
-    var escapeIdentifier2 = function(str) {
-      return '"' + str.replace(/"/g, '""') + '"';
+    var escapeIdentifier2 = function(str2) {
+      return '"' + str2.replace(/"/g, '""') + '"';
     };
-    var escapeLiteral2 = function(str) {
+    var escapeLiteral2 = function(str2) {
       let hasBackslash = false;
       let escaped = "'";
-      if (str == null) {
+      if (str2 == null) {
         return "''";
       }
-      if (typeof str !== "string") {
+      if (typeof str2 !== "string") {
         return "''";
       }
-      for (let i = 0; i < str.length; i++) {
-        const c = str[i];
+      for (let i = 0; i < str2.length; i++) {
+        const c = str2[i];
         if (c === "'") {
           escaped += c + c;
         } else if (c === "\\") {
@@ -24646,22 +24646,22 @@ var require_type_overrides = __commonJS({
 var require_pg_connection_string = __commonJS({
   "node_modules/.pnpm/pg-connection-string@2.12.0/node_modules/pg-connection-string/index.js"(exports2, module2) {
     "use strict";
-    function parse3(str, options = {}) {
-      if (str.charAt(0) === "/") {
-        const config3 = str.split(" ");
+    function parse3(str2, options = {}) {
+      if (str2.charAt(0) === "/") {
+        const config3 = str2.split(" ");
         return { host: config3[0], database: config3[1] };
       }
       const config2 = {};
       let result;
       let dummyHost = false;
-      if (/ |%[^a-f0-9]|%[a-f0-9][^a-f0-9]/i.test(str)) {
-        str = encodeURI(str).replace(/%25(\d\d)/g, "%$1");
+      if (/ |%[^a-f0-9]|%[a-f0-9][^a-f0-9]/i.test(str2)) {
+        str2 = encodeURI(str2).replace(/%25(\d\d)/g, "%$1");
       }
       try {
         try {
-          result = new URL(str, "postgres://base");
+          result = new URL(str2, "postgres://base");
         } catch (e) {
-          result = new URL(str.replace("@/", "@___DUMMY___/"), "postgres://base");
+          result = new URL(str2.replace("@/", "@___DUMMY___/"), "postgres://base");
           dummyHost = true;
         }
       } catch (err) {
@@ -24804,8 +24804,8 @@ var require_pg_connection_string = __commonJS({
       }, {});
       return poolConfig;
     }
-    function parseIntoClientConfig(str) {
-      return toClientConfig(parse3(str));
+    function parseIntoClientConfig(str2) {
+      return toClientConfig(parse3(str2));
     }
     function deprecatedSslModeWarning(sslmode) {
       if (!deprecatedSslModeWarning.warned && typeof process !== "undefined" && process.emitWarning) {
@@ -24832,7 +24832,7 @@ var require_connection_parameters = __commonJS({
   "node_modules/.pnpm/pg@8.20.0/node_modules/pg/lib/connection-parameters.js"(exports2, module2) {
     "use strict";
     var dns = require("dns");
-    var defaults2 = require_defaults();
+    var defaults3 = require_defaults();
     var parse3 = require_pg_connection_string().parse;
     var val = function(key, config2, envVar) {
       if (config2[key]) {
@@ -24844,7 +24844,7 @@ var require_connection_parameters = __commonJS({
       } else {
         envVar = process.env[envVar];
       }
-      return envVar || defaults2[key];
+      return envVar || defaults3[key];
     };
     var readSSLConfigFromEnvironment = function() {
       switch (process.env.PGSSLMODE) {
@@ -24858,7 +24858,7 @@ var require_connection_parameters = __commonJS({
         case "no-verify":
           return { rejectUnauthorized: false };
       }
-      return defaults2.ssl;
+      return defaults3.ssl;
     };
     var quoteParamValue = function(value) {
       return "'" + ("" + value).replace(/\\/g, "\\\\").replace(/'/g, "\\'") + "'";
@@ -26418,12 +26418,12 @@ var require_split2 = __commonJS({
         self.push(val);
       }
     }
-    function noop2(incoming) {
+    function noop3(incoming) {
       return incoming;
     }
     function split(matcher, mapper, options) {
       matcher = matcher || /\r?\n/;
-      mapper = mapper || noop2;
+      mapper = mapper || noop3;
       options = options || {};
       switch (arguments.length) {
         case 1:
@@ -26442,7 +26442,7 @@ var require_split2 = __commonJS({
             matcher = /\r?\n/;
           } else if (typeof mapper === "object") {
             options = mapper;
-            mapper = noop2;
+            mapper = noop3;
           }
       }
       options = Object.assign({}, options);
@@ -26472,8 +26472,8 @@ var require_split2 = __commonJS({
 var require_helper = __commonJS({
   "node_modules/.pnpm/pgpass@1.0.5/node_modules/pgpass/lib/helper.js"(exports2, module2) {
     "use strict";
-    var path = require("path");
-    var Stream = require("stream").Stream;
+    var path2 = require("path");
+    var Stream2 = require("stream").Stream;
     var split = require_split2();
     var util = require("util");
     var defaultPort = 5432;
@@ -26490,7 +26490,7 @@ var require_helper = __commonJS({
     var nrOfFields = fieldNames.length;
     var passKey = fieldNames[nrOfFields - 1];
     function warn() {
-      var isWritable = warnStream instanceof Stream && true === warnStream.writable;
+      var isWritable = warnStream instanceof Stream2 && true === warnStream.writable;
       if (isWritable) {
         var args = Array.prototype.slice.call(arguments).concat("\n");
         warnStream.write(util.format.apply(util, args));
@@ -26511,7 +26511,7 @@ var require_helper = __commonJS({
     };
     module2.exports.getFileName = function(rawEnv) {
       var env = rawEnv || process.env;
-      var file2 = env.PGPASSFILE || (isWin ? path.join(env.APPDATA || "./", "postgresql", "pgpass.conf") : path.join(env.HOME || "./", ".pgpass"));
+      var file2 = env.PGPASSFILE || (isWin ? path2.join(env.APPDATA || "./", "postgresql", "pgpass.conf") : path2.join(env.HOME || "./", ".pgpass"));
       return file2;
     };
     module2.exports.usePgPass = function(stats, fname) {
@@ -26643,7 +26643,7 @@ var require_helper = __commonJS({
 var require_lib3 = __commonJS({
   "node_modules/.pnpm/pgpass@1.0.5/node_modules/pgpass/lib/index.js"(exports2, module2) {
     "use strict";
-    var path = require("path");
+    var path2 = require("path");
     var fs = require("fs");
     var helper = require_helper();
     module2.exports = function(connInfo, cb) {
@@ -26670,7 +26670,7 @@ var require_client = __commonJS({
     var TypeOverrides2 = require_type_overrides();
     var ConnectionParameters = require_connection_parameters();
     var Query2 = require_query2();
-    var defaults2 = require_defaults();
+    var defaults3 = require_defaults();
     var Connection2 = require_connection();
     var crypto5 = require_utils4();
     var activeQueryDeprecationNotice = nodeUtils.deprecate(
@@ -26735,7 +26735,7 @@ var require_client = __commonJS({
           encoding: this.connectionParameters.client_encoding || "utf8"
         });
         this._queryQueue = [];
-        this.binary = c.binary || defaults2.binary;
+        this.binary = c.binary || defaults3.binary;
         this.processID = null;
         this.secretKey = null;
         this.ssl = this.connectionParameters.ssl || false;
@@ -27136,11 +27136,11 @@ var require_client = __commonJS({
       // escapeIdentifier and escapeLiteral moved to utility functions & exported
       // on PG
       // re-exported here for backwards compatibility
-      escapeIdentifier(str) {
-        return utils.escapeIdentifier(str);
+      escapeIdentifier(str2) {
+        return utils.escapeIdentifier(str2);
       }
-      escapeLiteral(str) {
-        return utils.escapeLiteral(str);
+      escapeLiteral(str2) {
+        return utils.escapeLiteral(str2);
       }
       _pulseQueryQueue() {
         if (this.readyForQuery === true) {
@@ -28111,7 +28111,7 @@ var require_lib4 = __commonJS({
   "node_modules/.pnpm/pg@8.20.0/node_modules/pg/lib/index.js"(exports2, module2) {
     "use strict";
     var Client2 = require_client();
-    var defaults2 = require_defaults();
+    var defaults3 = require_defaults();
     var Connection2 = require_connection();
     var Result2 = require_result();
     var utils = require_utils3();
@@ -28127,7 +28127,7 @@ var require_lib4 = __commonJS({
       };
     };
     var PG = function(clientConstructor2) {
-      this.defaults = defaults2;
+      this.defaults = defaults3;
       this.Client = clientConstructor2;
       this.Query = this.Client.Query;
       this.Pool = poolFactory(this.Client);
@@ -28353,8 +28353,8 @@ var require_util = __commonJS({
     }
     exports2.find = find;
     function forEach(record2, run2) {
-      Object.entries(record2).forEach(function(_a) {
-        var _b = __read(_a, 2), key = _b[0], value = _b[1];
+      Object.entries(record2).forEach(function(_a3) {
+        var _b = __read(_a3, 2), key = _b[0], value = _b[1];
         return run2(value, key);
       });
     }
@@ -28438,10 +28438,10 @@ var require_is = __commonJS({
       return exports2.isPlainObject(payload) && Object.keys(payload).length === 0;
     };
     exports2.isEmptyObject = isEmptyObject;
-    var isArray = function(payload) {
+    var isArray2 = function(payload) {
       return Array.isArray(payload);
     };
-    exports2.isArray = isArray;
+    exports2.isArray = isArray2;
     var isString = function(payload) {
       return typeof payload === "string";
     };
@@ -28515,8 +28515,8 @@ var require_pathstringifier = __commonJS({
       return key.replace(/\./g, "\\.");
     };
     exports2.escapeKey = escapeKey;
-    var stringifyPath = function(path) {
-      return path.map(String).map(exports2.escapeKey).join(".");
+    var stringifyPath = function(path2) {
+      return path2.map(String).map(exports2.escapeKey).join(".");
     };
     exports2.stringifyPath = stringifyPath;
     var parsePath = function(string4) {
@@ -28843,26 +28843,26 @@ var require_accessDeep = __commonJS({
       }
       return keys.next().value;
     };
-    function validatePath(path) {
-      if (util_1.includes(path, "__proto__")) {
+    function validatePath(path2) {
+      if (util_1.includes(path2, "__proto__")) {
         throw new Error("__proto__ is not allowed as a property");
       }
-      if (util_1.includes(path, "prototype")) {
+      if (util_1.includes(path2, "prototype")) {
         throw new Error("prototype is not allowed as a property");
       }
-      if (util_1.includes(path, "constructor")) {
+      if (util_1.includes(path2, "constructor")) {
         throw new Error("constructor is not allowed as a property");
       }
     }
-    var getDeep = function(object2, path) {
-      validatePath(path);
-      for (var i = 0; i < path.length; i++) {
-        var key = path[i];
+    var getDeep = function(object2, path2) {
+      validatePath(path2);
+      for (var i = 0; i < path2.length; i++) {
+        var key = path2[i];
         if (is_1.isSet(object2)) {
           object2 = getNthKey(object2, +key);
         } else if (is_1.isMap(object2)) {
           var row = +key;
-          var type = +path[++i] === 0 ? "key" : "value";
+          var type = +path2[++i] === 0 ? "key" : "value";
           var keyOfRow = getNthKey(object2, row);
           switch (type) {
             case "key":
@@ -28879,14 +28879,14 @@ var require_accessDeep = __commonJS({
       return object2;
     };
     exports2.getDeep = getDeep;
-    var setDeep = function(object2, path, mapper) {
-      validatePath(path);
-      if (path.length === 0) {
+    var setDeep = function(object2, path2, mapper) {
+      validatePath(path2);
+      if (path2.length === 0) {
         return mapper(object2);
       }
       var parent = object2;
-      for (var i = 0; i < path.length - 1; i++) {
-        var key = path[i];
+      for (var i = 0; i < path2.length - 1; i++) {
+        var key = path2[i];
         if (is_1.isArray(parent)) {
           var index = +key;
           parent = parent[index];
@@ -28896,12 +28896,12 @@ var require_accessDeep = __commonJS({
           var row = +key;
           parent = getNthKey(parent, row);
         } else if (is_1.isMap(parent)) {
-          var isEnd = i === path.length - 2;
+          var isEnd = i === path2.length - 2;
           if (isEnd) {
             break;
           }
           var row = +key;
-          var type = +path[++i] === 0 ? "key" : "value";
+          var type = +path2[++i] === 0 ? "key" : "value";
           var keyOfRow = getNthKey(parent, row);
           switch (type) {
             case "key":
@@ -28913,7 +28913,7 @@ var require_accessDeep = __commonJS({
           }
         }
       }
-      var lastKey = path[path.length - 1];
+      var lastKey = path2[path2.length - 1];
       if (is_1.isArray(parent)) {
         parent[+lastKey] = mapper(parent[+lastKey]);
       } else if (is_1.isPlainObject(parent)) {
@@ -28928,7 +28928,7 @@ var require_accessDeep = __commonJS({
         }
       }
       if (is_1.isMap(parent)) {
-        var row = +path[path.length - 2];
+        var row = +path2[path2.length - 2];
         var keyToRow = getNthKey(parent, row);
         var type = +lastKey === 0 ? "key" : "value";
         switch (type) {
@@ -28999,7 +28999,7 @@ var require_plainer = __commonJS({
         });
         return;
       }
-      var _a = __read(tree, 2), nodeValue = _a[0], children = _a[1];
+      var _a3 = __read(tree, 2), nodeValue = _a3[0], children = _a3[1];
       if (children) {
         util_1.forEach(children, function(child, key) {
           traverse(child, walker2, __spreadArray(__spreadArray([], __read(origin)), __read(pathstringifier_2.parsePath(key))));
@@ -29008,8 +29008,8 @@ var require_plainer = __commonJS({
       walker2(nodeValue, origin);
     }
     function applyValueAnnotations(plain, annotations, superJson) {
-      traverse(annotations, function(type, path) {
-        plain = accessDeep_1.setDeep(plain, path, function(v) {
+      traverse(annotations, function(type, path2) {
+        plain = accessDeep_1.setDeep(plain, path2, function(v) {
           return transformer_1.untransformValue(v, type, superJson);
         });
       });
@@ -29017,8 +29017,8 @@ var require_plainer = __commonJS({
     }
     exports2.applyValueAnnotations = applyValueAnnotations;
     function applyReferentialEqualityAnnotations(plain, annotations) {
-      function apply(identicalPaths, path) {
-        var object2 = accessDeep_1.getDeep(plain, pathstringifier_2.parsePath(path));
+      function apply(identicalPaths, path2) {
+        var object2 = accessDeep_1.getDeep(plain, pathstringifier_2.parsePath(path2));
         identicalPaths.map(pathstringifier_2.parsePath).forEach(function(identicalObjectPath) {
           plain = accessDeep_1.setDeep(plain, identicalObjectPath, function() {
             return object2;
@@ -29026,7 +29026,7 @@ var require_plainer = __commonJS({
         });
       }
       if (is_1.isArray(annotations)) {
-        var _a = __read(annotations, 2), root = _a[0], other = _a[1];
+        var _a3 = __read(annotations, 2), root = _a3[0], other = _a3[1];
         root.forEach(function(identicalPath) {
           plain = accessDeep_1.setDeep(plain, pathstringifier_2.parsePath(identicalPath), function() {
             return plain;
@@ -29044,12 +29044,12 @@ var require_plainer = __commonJS({
     var isDeep = function(object2, superJson) {
       return is_1.isPlainObject(object2) || is_1.isArray(object2) || is_1.isMap(object2) || is_1.isSet(object2) || transformer_1.isInstanceOfRegisteredClass(object2, superJson);
     };
-    function addIdentity(object2, path, identities) {
+    function addIdentity(object2, path2, identities) {
       var existingSet = identities.get(object2);
       if (existingSet) {
-        existingSet.push(path);
+        existingSet.push(path2);
       } else {
-        identities.set(object2, [path]);
+        identities.set(object2, [path2]);
       }
     }
     function generateReferentialEqualityAnnotations(identitites, dedupe) {
@@ -29060,13 +29060,13 @@ var require_plainer = __commonJS({
           return;
         }
         if (!dedupe) {
-          paths = paths.map(function(path) {
-            return path.map(String);
+          paths = paths.map(function(path2) {
+            return path2.map(String);
           }).sort(function(a, b) {
             return a.length - b.length;
           });
         }
-        var _a = __read(paths), representativePath = _a[0], identicalPaths = _a.slice(1);
+        var _a3 = __read(paths), representativePath = _a3[0], identicalPaths = _a3.slice(1);
         if (representativePath.length === 0) {
           rootEqualityPaths = identicalPaths.map(pathstringifier_1.stringifyPath);
         } else {
@@ -29084,10 +29084,10 @@ var require_plainer = __commonJS({
       }
     }
     exports2.generateReferentialEqualityAnnotations = generateReferentialEqualityAnnotations;
-    var walker = function(object2, identities, superJson, dedupe, path, objectsInThisPath, seenObjects) {
-      var _a;
-      if (path === void 0) {
-        path = [];
+    var walker = function(object2, identities, superJson, dedupe, path2, objectsInThisPath, seenObjects) {
+      var _a3;
+      if (path2 === void 0) {
+        path2 = [];
       }
       if (objectsInThisPath === void 0) {
         objectsInThisPath = [];
@@ -29097,7 +29097,7 @@ var require_plainer = __commonJS({
       }
       var primitive = is_1.isPrimitive(object2);
       if (!primitive) {
-        addIdentity(object2, path, identities);
+        addIdentity(object2, path2, identities);
         var seen = seenObjects.get(object2);
         if (seen) {
           return dedupe ? {
@@ -29124,11 +29124,11 @@ var require_plainer = __commonJS({
         };
       }
       var transformationResult = transformer_1.transformValue(object2, superJson);
-      var transformed = (_a = transformationResult === null || transformationResult === void 0 ? void 0 : transformationResult.value) !== null && _a !== void 0 ? _a : object2;
+      var transformed = (_a3 = transformationResult === null || transformationResult === void 0 ? void 0 : transformationResult.value) !== null && _a3 !== void 0 ? _a3 : object2;
       var transformedValue = is_1.isArray(transformed) ? [] : {};
       var innerAnnotations = {};
       util_1.forEach(transformed, function(value, index) {
-        var recursiveResult = exports2.walker(value, identities, superJson, dedupe, __spreadArray(__spreadArray([], __read(path)), [index]), __spreadArray(__spreadArray([], __read(objectsInThisPath)), [object2]), seenObjects);
+        var recursiveResult = exports2.walker(value, identities, superJson, dedupe, __spreadArray(__spreadArray([], __read(path2)), [index]), __spreadArray(__spreadArray([], __read(objectsInThisPath)), [object2]), seenObjects);
         transformedValue[index] = recursiveResult.transformedValue;
         if (is_1.isArray(recursiveResult.annotations)) {
           innerAnnotations[index] = recursiveResult.annotations;
@@ -29164,7 +29164,7 @@ var require_cjs = __commonJS({
     function isAnyObject(payload) {
       return getType(payload) === "Object";
     }
-    function isArray(payload) {
+    function isArray2(payload) {
       return getType(payload) === "Array";
     }
     function isBlob(payload) {
@@ -29177,7 +29177,7 @@ var require_cjs = __commonJS({
       return getType(payload) === "Date" && !isNaN(payload);
     }
     function isEmptyArray(payload) {
-      return isArray(payload) && payload.length === 0;
+      return isArray2(payload) && payload.length === 0;
     }
     function isPlainObject3(payload) {
       if (getType(payload) !== "Object")
@@ -29198,7 +29198,7 @@ var require_cjs = __commonJS({
       return getType(payload) === "File";
     }
     function isFullArray(payload) {
-      return isArray(payload) && payload.length > 0;
+      return isArray2(payload) && payload.length > 0;
     }
     function isFullObject(payload) {
       return isPlainObject3(payload) && Object.keys(payload).length > 0;
@@ -29293,7 +29293,7 @@ var require_cjs = __commonJS({
     }
     exports2.getType = getType;
     exports2.isAnyObject = isAnyObject;
-    exports2.isArray = isArray;
+    exports2.isArray = isArray2;
     exports2.isBlob = isBlob;
     exports2.isBoolean = isBoolean;
     exports2.isDate = isDate;
@@ -29419,12 +29419,12 @@ var require_dist3 = __commonJS({
     var SuperJSON = (
       /** @class */
       (function() {
-        function SuperJSON2(_a) {
-          var _b = _a === void 0 ? {} : _a, _c = _b.dedupe, dedupe = _c === void 0 ? false : _c;
+        function SuperJSON2(_a3) {
+          var _b = _a3 === void 0 ? {} : _a3, _c = _b.dedupe, dedupe = _c === void 0 ? false : _c;
           this.classRegistry = new class_registry_1.ClassRegistry();
           this.symbolRegistry = new registry_1.Registry(function(s) {
-            var _a2;
-            return (_a2 = s.description) !== null && _a2 !== void 0 ? _a2 : "";
+            var _a4;
+            return (_a4 = s.description) !== null && _a4 !== void 0 ? _a4 : "";
           });
           this.customTransformerRegistry = new custom_transformer_registry_1.CustomTransformerRegistry();
           this.allowedErrorProps = [];
@@ -29472,12 +29472,12 @@ var require_dist3 = __commonJS({
           this.customTransformerRegistry.register(__assign({ name }, transformer));
         };
         SuperJSON2.prototype.allowErrorProps = function() {
-          var _a;
+          var _a3;
           var props = [];
           for (var _i = 0; _i < arguments.length; _i++) {
             props[_i] = arguments[_i];
           }
-          (_a = this.allowedErrorProps).push.apply(_a, __spreadArray([], __read(props)));
+          (_a3 = this.allowedErrorProps).push.apply(_a3, __spreadArray([], __read(props)));
         };
         SuperJSON2.defaultInstance = new SuperJSON2();
         SuperJSON2.serialize = SuperJSON2.defaultInstance.serialize.bind(SuperJSON2.defaultInstance);
@@ -29523,7 +29523,7 @@ module.exports = __toCommonJS(vercelEntry_exports);
 })();
 
 // server/vercelEntry.ts
-var import_express = __toESM(require_express2(), 1);
+var import_express2 = __toESM(require_express2(), 1);
 
 // node_modules/.pnpm/@trpc+server@11.6.0_typescript@5.9.3/node_modules/@trpc/server/dist/utils-CLZnJdb_.mjs
 var TRPC_ERROR_CODES_BY_KEY = {
@@ -29629,27 +29629,27 @@ var noop = () => {
 var freezeIfAvailable = (obj) => {
   if (Object.freeze) Object.freeze(obj);
 };
-function createInnerProxy(callback, path, memo2) {
+function createInnerProxy(callback, path2, memo2) {
   var _memo$cacheKey;
-  const cacheKey = path.join(".");
+  const cacheKey = path2.join(".");
   (_memo$cacheKey = memo2[cacheKey]) !== null && _memo$cacheKey !== void 0 || (memo2[cacheKey] = new Proxy(noop, {
     get(_obj, key) {
       if (typeof key !== "string" || key === "then") return void 0;
-      return createInnerProxy(callback, [...path, key], memo2);
+      return createInnerProxy(callback, [...path2, key], memo2);
     },
     apply(_1, _2, args) {
-      const lastOfPath = path[path.length - 1];
+      const lastOfPath = path2[path2.length - 1];
       let opts = {
         args,
-        path
+        path: path2
       };
       if (lastOfPath === "call") opts = {
         args: args.length >= 2 ? [args[1]] : [],
-        path: path.slice(0, -1)
+        path: path2.slice(0, -1)
       };
       else if (lastOfPath === "apply") opts = {
         args: args.length >= 2 ? args[1] : [],
-        path: path.slice(0, -1)
+        path: path2.slice(0, -1)
       };
       freezeIfAvailable(opts.args);
       freezeIfAvailable(opts.path);
@@ -29777,7 +29777,7 @@ var require_objectSpread2 = __commonJS2({ "../../node_modules/.pnpm/@oxc-project
 } });
 var import_objectSpread2 = __toESM2(require_objectSpread2(), 1);
 function getErrorShape(opts) {
-  const { path, error: error46, config: config2 } = opts;
+  const { path: path2, error: error46, config: config2 } = opts;
   const { code } = opts.error;
   const shape = {
     message: error46.message,
@@ -29788,7 +29788,7 @@ function getErrorShape(opts) {
     }
   };
   if (config2.isDev && typeof opts.error.stack === "string") shape.data.stack = opts.error.stack;
-  if (typeof path === "string") shape.data.path = path;
+  if (typeof path2 === "string") shape.data.path = path2;
   return config2.errorFormatter((0, import_objectSpread2.default)((0, import_objectSpread2.default)({}, opts), {}, { shape }));
 }
 
@@ -29914,12 +29914,12 @@ function createRouterFactory(config2) {
         })
       };
     }
-    function step(from, path = []) {
+    function step(from, path2 = []) {
       const aggregate = omitPrototype({});
       for (const [key, item] of Object.entries(from !== null && from !== void 0 ? from : {})) {
         if (isLazy(item)) {
-          lazy$1[[...path, key].join(".")] = createLazyLoader({
-            path,
+          lazy$1[[...path2, key].join(".")] = createLazyLoader({
+            path: path2,
             ref: item,
             key,
             aggregate
@@ -29927,14 +29927,14 @@ function createRouterFactory(config2) {
           continue;
         }
         if (isRouter(item)) {
-          aggregate[key] = step(item._def.record, [...path, key]);
+          aggregate[key] = step(item._def.record, [...path2, key]);
           continue;
         }
         if (!isProcedure(item)) {
-          aggregate[key] = step(item, [...path, key]);
+          aggregate[key] = step(item, [...path2, key]);
           continue;
         }
-        const newPath = [...path, key].join(".");
+        const newPath = [...path2, key].join(".");
         if (procedures[newPath]) throw new Error(`Duplicate key: ${newPath}`);
         procedures[newPath] = item;
         aggregate[key] = item;
@@ -29948,43 +29948,43 @@ function createRouterFactory(config2) {
       procedures,
       lazy: lazy$1
     }, emptyRouter), {}, { record: record2 });
-    const router2 = (0, import_objectSpread22.default)((0, import_objectSpread22.default)({}, record2), {}, {
+    const router3 = (0, import_objectSpread22.default)((0, import_objectSpread22.default)({}, record2), {}, {
       _def,
       createCaller: createCallerFactory()({ _def })
     });
-    return router2;
+    return router3;
   }
   return createRouterInner;
 }
 function isProcedure(procedureOrRouter) {
   return typeof procedureOrRouter === "function";
 }
-async function getProcedureAtPath(router2, path) {
-  const { _def } = router2;
-  let procedure = _def.procedures[path];
+async function getProcedureAtPath(router3, path2) {
+  const { _def } = router3;
+  let procedure = _def.procedures[path2];
   while (!procedure) {
-    const key = Object.keys(_def.lazy).find((key$1) => path.startsWith(key$1));
+    const key = Object.keys(_def.lazy).find((key$1) => path2.startsWith(key$1));
     if (!key) return null;
     const lazyRouter = _def.lazy[key];
     await lazyRouter.load();
-    procedure = _def.procedures[path];
+    procedure = _def.procedures[path2];
   }
   return procedure;
 }
 function createCallerFactory() {
-  return function createCallerInner(router2) {
-    const { _def } = router2;
+  return function createCallerInner(router3) {
+    const { _def } = router3;
     return function createCaller(ctxOrCallback, opts) {
       return createRecursiveProxy(async (innerOpts) => {
-        const { path, args } = innerOpts;
-        const fullPath = path.join(".");
-        if (path.length === 1 && path[0] === "_def") return _def;
-        const procedure = await getProcedureAtPath(router2, fullPath);
+        const { path: path2, args } = innerOpts;
+        const fullPath = path2.join(".");
+        if (path2.length === 1 && path2[0] === "_def") return _def;
+        const procedure = await getProcedureAtPath(router3, fullPath);
         let ctx = void 0;
         try {
           if (!procedure) throw new TRPCError({
             code: "NOT_FOUND",
-            message: `No procedure found on path "${path}"`
+            message: `No procedure found on path "${path2}"`
           });
           ctx = isFunction(ctxOrCallback) ? await Promise.resolve(ctxOrCallback()) : ctxOrCallback;
           return await procedure({
@@ -30026,7 +30026,7 @@ function mergeRouters(...routerList) {
     }
     return prev;
   }, defaultTransformer);
-  const router2 = createRouterFactory({
+  const router3 = createRouterFactory({
     errorFormatter,
     transformer,
     isDev: routerList.every((r) => r._def._config.isDev),
@@ -30034,7 +30034,7 @@ function mergeRouters(...routerList) {
     isServer: routerList.every((r) => r._def._config.isServer),
     $types: (_routerList$ = routerList[0]) === null || _routerList$ === void 0 ? void 0 : _routerList$._def._config.$types
   })(record2);
-  return router2;
+  return router3;
 }
 var trackedSymbol = Symbol();
 function isTrackedEnvelope(value) {
@@ -30126,10 +30126,10 @@ function parseConnectionParamsFromUnknown(parsed) {
     });
   }
 }
-function parseConnectionParamsFromString(str) {
+function parseConnectionParamsFromString(str2) {
   let parsed;
   try {
-    parsed = JSON.parse(str);
+    parsed = JSON.parse(str2);
   } catch (cause) {
     throw new TRPCError({
       code: "PARSE_ERROR",
@@ -30194,10 +30194,10 @@ var jsonContentTypeHandler = {
       }
       return acc;
     });
-    const calls = await Promise.all(paths.map(async (path, index) => {
-      const procedure = await getProcedureAtPath(opts.router, path);
+    const calls = await Promise.all(paths.map(async (path2, index) => {
+      const procedure = await getProcedureAtPath(opts.router, path2);
       return {
-        path,
+        path: path2,
         procedure,
         getRawInput: async () => {
           const inputs = await getInputs.read();
@@ -31029,9 +31029,9 @@ function isPromise(value) {
   return (isObject(value) || isFunction(value)) && typeof (value === null || value === void 0 ? void 0 : value["then"]) === "function" && typeof (value === null || value === void 0 ? void 0 : value["catch"]) === "function";
 }
 var MaxDepthError = class extends Error {
-  constructor(path) {
-    super("Max depth reached at path: " + path.join("."));
-    this.path = path;
+  constructor(path2) {
+    super("Max depth reached at path: " + path2.join("."));
+    this.path = path2;
   }
 };
 function createBatchStreamProducer(_x3) {
@@ -31049,16 +31049,16 @@ function _createBatchStreamProducer() {
       mergedIterables.add(iterable$1);
       return idx;
     }
-    function encodePromise(promise2, path) {
+    function encodePromise(promise2, path2) {
       return registerAsync(/* @__PURE__ */ (function() {
         var _ref = (0, import_wrapAsyncGenerator$2.default)(function* (idx) {
-          const error46 = checkMaxDepth(path);
+          const error46 = checkMaxDepth(path2);
           if (error46) {
             promise2.catch((cause) => {
               var _opts$onError;
               (_opts$onError = opts.onError) === null || _opts$onError === void 0 || _opts$onError.call(opts, {
                 error: cause,
-                path
+                path: path2
               });
             });
             promise2 = Promise.reject(error46);
@@ -31068,20 +31068,20 @@ function _createBatchStreamProducer() {
             yield [
               idx,
               PROMISE_STATUS_FULFILLED,
-              encode4(next, path)
+              encode5(next, path2)
             ];
           } catch (cause) {
             var _opts$onError2, _opts$formatError;
             (_opts$onError2 = opts.onError) === null || _opts$onError2 === void 0 || _opts$onError2.call(opts, {
               error: cause,
-              path
+              path: path2
             });
             yield [
               idx,
               PROMISE_STATUS_REJECTED,
               (_opts$formatError = opts.formatError) === null || _opts$formatError === void 0 ? void 0 : _opts$formatError.call(opts, {
                 error: cause,
-                path
+                path: path2
               })
             ];
           }
@@ -31091,12 +31091,12 @@ function _createBatchStreamProducer() {
         };
       })());
     }
-    function encodeAsyncIterable(iterable$1, path) {
+    function encodeAsyncIterable(iterable$1, path2) {
       return registerAsync(/* @__PURE__ */ (function() {
         var _ref2 = (0, import_wrapAsyncGenerator$2.default)(function* (idx) {
           try {
             var _usingCtx$1 = (0, import_usingCtx$1.default)();
-            const error46 = checkMaxDepth(path);
+            const error46 = checkMaxDepth(path2);
             if (error46) throw error46;
             const iterator = _usingCtx$1.a(iteratorResource(iterable$1));
             try {
@@ -31106,28 +31106,28 @@ function _createBatchStreamProducer() {
                   yield [
                     idx,
                     ASYNC_ITERABLE_STATUS_RETURN,
-                    encode4(next.value, path)
+                    encode5(next.value, path2)
                   ];
                   break;
                 }
                 yield [
                   idx,
                   ASYNC_ITERABLE_STATUS_YIELD,
-                  encode4(next.value, path)
+                  encode5(next.value, path2)
                 ];
               }
             } catch (cause) {
               var _opts$onError3, _opts$formatError2;
               (_opts$onError3 = opts.onError) === null || _opts$onError3 === void 0 || _opts$onError3.call(opts, {
                 error: cause,
-                path
+                path: path2
               });
               yield [
                 idx,
                 ASYNC_ITERABLE_STATUS_ERROR,
                 (_opts$formatError2 = opts.formatError) === null || _opts$formatError2 === void 0 ? void 0 : _opts$formatError2.call(opts, {
                   error: cause,
-                  path
+                  path: path2
                 })
               ];
             }
@@ -31142,27 +31142,27 @@ function _createBatchStreamProducer() {
         };
       })());
     }
-    function checkMaxDepth(path) {
-      if (opts.maxDepth && path.length > opts.maxDepth) return new MaxDepthError(path);
+    function checkMaxDepth(path2) {
+      if (opts.maxDepth && path2.length > opts.maxDepth) return new MaxDepthError(path2);
       return null;
     }
-    function encodeAsync3(value, path) {
-      if (isPromise(value)) return [CHUNK_VALUE_TYPE_PROMISE, encodePromise(value, path)];
+    function encodeAsync3(value, path2) {
+      if (isPromise(value)) return [CHUNK_VALUE_TYPE_PROMISE, encodePromise(value, path2)];
       if (isAsyncIterable(value)) {
-        if (opts.maxDepth && path.length >= opts.maxDepth) throw new Error("Max depth reached");
-        return [CHUNK_VALUE_TYPE_ASYNC_ITERABLE, encodeAsyncIterable(value, path)];
+        if (opts.maxDepth && path2.length >= opts.maxDepth) throw new Error("Max depth reached");
+        return [CHUNK_VALUE_TYPE_ASYNC_ITERABLE, encodeAsyncIterable(value, path2)];
       }
       return null;
     }
-    function encode4(value, path) {
+    function encode5(value, path2) {
       if (value === void 0) return [[]];
-      const reg = encodeAsync3(value, path);
+      const reg = encodeAsync3(value, path2);
       if (reg) return [[placeholder], [null, ...reg]];
       if (!isPlainObject(value)) return [[value]];
       const newObj = {};
       const asyncValues = [];
       for (const [key, item] of Object.entries(value)) {
-        const transformed = encodeAsync3(item, [...path, key]);
+        const transformed = encodeAsync3(item, [...path2, key]);
         if (!transformed) {
           newObj[key] = item;
           continue;
@@ -31173,7 +31173,7 @@ function _createBatchStreamProducer() {
       return [[newObj], ...asyncValues];
     }
     const newHead = {};
-    for (const [key, item] of Object.entries(data)) newHead[key] = encode4(item, [key]);
+    for (const [key, item] of Object.entries(data)) newHead[key] = encode5(item, [key]);
     yield newHead;
     let iterable = mergedIterables;
     if (opts.pingMs) iterable = withPing(mergedIterables, opts.pingMs);
@@ -31396,7 +31396,7 @@ function initResponse(initOpts) {
   return { status };
 }
 function caughtErrorToData(cause, errorOpts) {
-  const { router: router2, req, onError } = errorOpts.opts;
+  const { router: router3, req, onError } = errorOpts.opts;
   const error46 = getTRPCErrorFromUnknown(cause);
   onError === null || onError === void 0 || onError({
     error: error46,
@@ -31407,14 +31407,14 @@ function caughtErrorToData(cause, errorOpts) {
     req
   });
   const untransformedJSON = { error: getErrorShape({
-    config: router2._def._config,
+    config: router3._def._config,
     error: error46,
     type: errorOpts.type,
     path: errorOpts.path,
     input: errorOpts.input,
     ctx: errorOpts.ctx
   }) };
-  const transformedJSON = transformTRPCResponse(router2._def._config, untransformedJSON);
+  const transformedJSON = transformTRPCResponse(router3._def._config, untransformedJSON);
   const body = JSON.stringify(transformedJSON);
   return {
     error: error46,
@@ -31429,9 +31429,9 @@ function isDataStream(v) {
 }
 async function resolveResponse(opts) {
   var _ref, _opts$allowBatching, _opts$batching, _opts$allowMethodOver, _config$sse$enabled, _config$sse;
-  const { router: router2, req } = opts;
+  const { router: router3, req } = opts;
   const headers = new Headers([["vary", "trpc-accept"]]);
-  const config2 = router2._def._config;
+  const config2 = router3._def._config;
   const url2 = new URL(req.url);
   if (req.method === "HEAD") return new Response(null, { status: 204 });
   const allowBatching = (_ref = (_opts$allowBatching = opts.allowBatching) !== null && _opts$allowBatching !== void 0 ? _opts$allowBatching : (_opts$batching = opts.batching) === null || _opts$batching === void 0 ? void 0 : _opts$batching.enabled) !== null && _ref !== void 0 ? _ref : true;
@@ -31441,7 +31441,7 @@ async function resolveResponse(opts) {
       return [void 0, await getRequestInfo({
         req,
         path: decodeURIComponent(opts.path),
-        router: router2,
+        router: router3,
         searchParams: url2.searchParams,
         headers: opts.req.headers,
         url: url2
@@ -31583,11 +31583,11 @@ async function resolveResponse(opts) {
               var _call$procedure$_def$2, _call$procedure3, _opts$onError2;
               const error$1 = getTRPCErrorFromUnknown(errorOpts.error);
               const input = call === null || call === void 0 ? void 0 : call.result();
-              const path = call === null || call === void 0 ? void 0 : call.path;
+              const path2 = call === null || call === void 0 ? void 0 : call.path;
               const type = (_call$procedure$_def$2 = call === null || call === void 0 || (_call$procedure3 = call.procedure) === null || _call$procedure3 === void 0 ? void 0 : _call$procedure3._def.type) !== null && _call$procedure$_def$2 !== void 0 ? _call$procedure$_def$2 : "unknown";
               (_opts$onError2 = opts.onError) === null || _opts$onError2 === void 0 || _opts$onError2.call(opts, {
                 error: error$1,
-                path,
+                path: path2,
                 input,
                 ctx: ctxManager.valueOrUndefined(),
                 req: opts.req,
@@ -31598,7 +31598,7 @@ async function resolveResponse(opts) {
                 ctx: ctxManager.valueOrUndefined(),
                 error: error$1,
                 input,
-                path,
+                path: path2,
                 type
               });
               return shape;
@@ -31667,14 +31667,14 @@ async function resolveResponse(opts) {
           const call = info === null || info === void 0 ? void 0 : info.calls[errorOpts.path[0]];
           const error46 = getTRPCErrorFromUnknown(errorOpts.error);
           const input = call === null || call === void 0 ? void 0 : call.result();
-          const path = call === null || call === void 0 ? void 0 : call.path;
+          const path2 = call === null || call === void 0 ? void 0 : call.path;
           const type = (_call$procedure$_def$3 = call === null || call === void 0 || (_call$procedure4 = call.procedure) === null || _call$procedure4 === void 0 ? void 0 : _call$procedure4._def.type) !== null && _call$procedure$_def$3 !== void 0 ? _call$procedure$_def$3 : "unknown";
           const shape = getErrorShape({
             config: config2,
             ctx: ctxManager.valueOrUndefined(),
             error: error46,
             input,
-            path,
+            path: path2,
             type
           });
           return shape;
@@ -32251,18 +32251,18 @@ async function nodeHTTPRequestHandler(opts) {
 var import_objectSpread26 = __toESM2(require_objectSpread2(), 1);
 function createExpressMiddleware(opts) {
   return (req, res) => {
-    let path = "";
+    let path2 = "";
     run(async () => {
-      path = req.path.slice(req.path.lastIndexOf("/") + 1);
+      path2 = req.path.slice(req.path.lastIndexOf("/") + 1);
       await nodeHTTPRequestHandler((0, import_objectSpread26.default)((0, import_objectSpread26.default)({}, opts), {}, {
         req,
         res,
-        path
+        path: path2
       }));
     }).catch(internal_exceptionHandler((0, import_objectSpread26.default)({
       req,
       res,
-      path
+      path: path2
     }, opts)));
   };
 }
@@ -33228,8 +33228,8 @@ var day = hour * 24;
 var week = day * 7;
 var year = day * 365.25;
 var REGEX = /^(\+|\-)? ?(\d+|\d+\.\d+) ?(seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|weeks?|w|years?|yrs?|y)(?: (ago|from now))?$/i;
-var secs_default = (str) => {
-  const matched = REGEX.exec(str);
+var secs_default = (str2) => {
+  const matched = REGEX.exec(str2);
   if (!matched || matched[4] && matched[1]) {
     throw new TypeError("Invalid time period format");
   }
@@ -34716,8 +34716,8 @@ function sql(strings, ...params) {
     return new SQL(list);
   }
   sql2.fromList = fromList;
-  function raw(str) {
-    return new SQL([new StringChunk(str)]);
+  function raw(str2) {
+    return new SQL([new StringChunk(str2)]);
   }
   sql2.raw = raw;
   function join(chunks, separator) {
@@ -34989,7 +34989,7 @@ var SelectionProxyHandler = class _SelectionProxyHandler {
 function mapResultRow(columns, row, joinsNotNullableMap) {
   const nullifyMap = {};
   const result = columns.reduce(
-    (result2, { path, field }, columnIndex) => {
+    (result2, { path: path2, field }, columnIndex) => {
       let decoder2;
       if (is(field, Column)) {
         decoder2 = field;
@@ -34999,8 +34999,8 @@ function mapResultRow(columns, row, joinsNotNullableMap) {
         decoder2 = field.sql.decoder;
       }
       let node = result2;
-      for (const [pathChunkIndex, pathChunk] of path.entries()) {
-        if (pathChunkIndex < path.length - 1) {
+      for (const [pathChunkIndex, pathChunk] of path2.entries()) {
+        if (pathChunkIndex < path2.length - 1) {
           if (!(pathChunk in node)) {
             node[pathChunk] = {};
           }
@@ -35008,8 +35008,8 @@ function mapResultRow(columns, row, joinsNotNullableMap) {
         } else {
           const rawValue = row[columnIndex];
           const value = node[pathChunk] = rawValue === null ? null : decoder2.mapFromDriverValue(rawValue);
-          if (joinsNotNullableMap && is(field, Column) && path.length === 2) {
-            const objectName = path[0];
+          if (joinsNotNullableMap && is(field, Column) && path2.length === 2) {
+            const objectName = path2[0];
             if (!(objectName in nullifyMap)) {
               nullifyMap[objectName] = value === null ? getTableName(field.table) : false;
             } else if (typeof nullifyMap[objectName] === "string" && nullifyMap[objectName] !== getTableName(field.table)) {
@@ -37083,8 +37083,8 @@ var PgDialect = class {
   escapeParam(num) {
     return `$${num + 1}`;
   }
-  escapeString(str) {
-    return `'${str.replace(/'/g, "''")}'`;
+  escapeString(str2) {
+    return `'${str2.replace(/'/g, "''")}'`;
   }
   buildWithCTE(queries) {
     if (!queries?.length) return void 0;
@@ -37243,7 +37243,7 @@ var PgDialect = class {
     joins,
     orderBy,
     groupBy,
-    limit,
+    limit: limit2,
     offset,
     lockingClause,
     distinct,
@@ -37279,7 +37279,7 @@ var PgDialect = class {
     if (groupBy && groupBy.length > 0) {
       groupBySql = sql` group by ${sql.join(groupBy, sql`, `)}`;
     }
-    const limitSql = typeof limit === "object" || typeof limit === "number" && limit >= 0 ? sql` limit ${limit}` : void 0;
+    const limitSql = typeof limit2 === "object" || typeof limit2 === "number" && limit2 >= 0 ? sql` limit ${limit2}` : void 0;
     const offsetSql = offset ? sql` offset ${offset}` : void 0;
     const lockingClauseSql = sql.empty();
     if (lockingClause) {
@@ -37320,7 +37320,7 @@ var PgDialect = class {
   }
   buildSetOperationQuery({
     leftSelect,
-    setOperator: { type, isAll, rightSelect, limit, orderBy, offset }
+    setOperator: { type, isAll, rightSelect, limit: limit2, orderBy, offset }
   }) {
     const leftChunk = sql`(${leftSelect.getSQL()}) `;
     const rightChunk = sql`(${rightSelect.getSQL()})`;
@@ -37344,7 +37344,7 @@ var PgDialect = class {
       }
       orderBySql = sql` order by ${sql.join(orderByValues, sql`, `)} `;
     }
-    const limitSql = typeof limit === "object" || typeof limit === "number" && limit >= 0 ? sql` limit ${limit}` : void 0;
+    const limitSql = typeof limit2 === "object" || typeof limit2 === "number" && limit2 >= 0 ? sql` limit ${limit2}` : void 0;
     const operatorChunk = sql.raw(`${type} ${isAll ? "all " : ""}`);
     const offsetSql = offset ? sql` offset ${offset}` : void 0;
     return sql`${leftChunk}${operatorChunk}${rightChunk}${orderBySql}${limitSql}${offsetSql}`;
@@ -37924,7 +37924,7 @@ var PgDialect = class {
     joinOn
   }) {
     let selection = [];
-    let limit, offset, orderBy = [], where;
+    let limit2, offset, orderBy = [], where;
     const joins = [];
     if (config2 === true) {
       const selectionEntries = Object.entries(tableConfig.columns);
@@ -38003,7 +38003,7 @@ var PgDialect = class {
         }
         return mapColumnsInSQLToAlias(orderByValue, tableAlias);
       });
-      limit = config2.limit;
+      limit2 = config2.limit;
       offset = config2.offset;
       for (const {
         tsKey: selectedRelationTsKey,
@@ -38074,7 +38074,7 @@ var PgDialect = class {
         relationTableTsKey: tableConfig.tsName,
         selection
       }];
-      const needsSubquery = limit !== void 0 || offset !== void 0 || orderBy.length > 0;
+      const needsSubquery = limit2 !== void 0 || offset !== void 0 || orderBy.length > 0;
       if (needsSubquery) {
         result = this.buildSelectQuery({
           table: aliasedTable(table, tableAlias),
@@ -38084,13 +38084,13 @@ var PgDialect = class {
             field: sql.raw("*")
           }],
           where,
-          limit,
+          limit: limit2,
           offset,
           orderBy,
           setOperators: []
         });
         where = void 0;
-        limit = void 0;
+        limit2 = void 0;
         offset = void 0;
         orderBy = [];
       } else {
@@ -38105,7 +38105,7 @@ var PgDialect = class {
         })),
         joins,
         where,
-        limit,
+        limit: limit2,
         offset,
         orderBy,
         setOperators: []
@@ -38120,7 +38120,7 @@ var PgDialect = class {
         })),
         joins,
         where,
-        limit,
+        limit: limit2,
         offset,
         orderBy,
         setOperators: []
@@ -38805,11 +38805,11 @@ var PgSelectQueryBuilderBase = class extends TypedQueryBuilder {
    * await db.select().from(people).limit(10);
    * ```
    */
-  limit(limit) {
+  limit(limit2) {
     if (this.config.setOperators.length > 0) {
-      this.config.setOperators.at(-1).limit = limit;
+      this.config.setOperators.at(-1).limit = limit2;
     } else {
-      this.config.limit = limit;
+      this.config.limit = limit2;
     }
     return this;
   }
@@ -40634,6 +40634,8 @@ var reports = pgTable("reports", {
   startDate: date("startDate").notNull(),
   endDate: date("endDate").notNull(),
   isPublished: text("isPublished").default("draft").notNull(),
+  /** Análise IA gerada pelo z.ai no momento da criação do relatório (JSON string) */
+  aiAnalysis: text("aiAnalysis"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull()
 });
@@ -41089,6 +41091,7 @@ async function ensureTables(pool2) {
     `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "purchaseValue" numeric(12, 2) DEFAULT '0.00' NOT NULL`,
     `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "costPerPurchase" numeric(10, 2) DEFAULT '0.00' NOT NULL`,
     `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "costPerMessage" numeric(10, 2) DEFAULT '0.00' NOT NULL`,
+    `ALTER TABLE "reports" ADD COLUMN IF NOT EXISTS "aiAnalysis" text`,
     // UTM Tracking tables
     `CREATE TABLE IF NOT EXISTS "utmTracking" (
       "id" serial PRIMARY KEY NOT NULL,
@@ -41157,6 +41160,22 @@ async function ensureTables(pool2) {
       "createdAt" timestamp DEFAULT now() NOT NULL,
       "updatedAt" timestamp DEFAULT now() NOT NULL
     )`,
+    // Garante coluna de health check em webhooks já existentes
+    `ALTER TABLE "webhookConfigs" ADD COLUMN IF NOT EXISTS "lastHealthCheck" timestamp`,
+    // Log de cada chamada de webhook recebida (para status "Recebendo ✓" e debug)
+    `CREATE TABLE IF NOT EXISTS "webhookEvents" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "companyId" integer,
+      "platform" varchar(64) NOT NULL,
+      "success" boolean DEFAULT true NOT NULL,
+      "saleId" integer,
+      "trackingFound" boolean DEFAULT false NOT NULL,
+      "message" text,
+      "payloadSummary" text,
+      "createdAt" timestamp DEFAULT now() NOT NULL
+    )`,
+    `CREATE INDEX IF NOT EXISTS "idx_webhookEvents_companyId" ON "webhookEvents"("companyId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_webhookEvents_platform" ON "webhookEvents"("platform")`,
     // UTM indices for performance
     `CREATE INDEX IF NOT EXISTS "idx_utmTracking_companyId" ON "utmTracking"("companyId")`,
     `CREATE INDEX IF NOT EXISTS "idx_utmSessions_trackingId" ON "utmSessions"("trackingId")`,
@@ -41246,6 +41265,44 @@ async function getCompanyById(id) {
   const [result] = await db.select().from(companies).where(eq(companies.id, id)).limit(1);
   return result;
 }
+async function logWebhookEvent(e) {
+  const pool2 = await getRawPool();
+  if (!pool2) return;
+  try {
+    await pool2.query(
+      `INSERT INTO "webhookEvents"
+        ("companyId", "platform", "success", "saleId", "trackingFound", "message", "payloadSummary")
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        e.companyId ?? null,
+        e.platform,
+        e.success,
+        e.saleId ?? null,
+        e.trackingFound ?? false,
+        e.message ?? null,
+        e.payloadSummary ?? null
+      ]
+    );
+    if (e.companyId && e.success) {
+      await pool2.query(
+        `UPDATE "webhookConfigs" SET "lastHealthCheck" = NOW(), "updatedAt" = NOW()
+         WHERE "companyId" = $1 AND "platform" = $2`,
+        [e.companyId, e.platform]
+      );
+    }
+  } catch (err) {
+    console.error("[Webhook] logWebhookEvent falhou:", err?.message || err);
+  }
+}
+async function getRecentWebhookEvents(companyId, limit2 = 20) {
+  const pool2 = await getRawPool();
+  if (!pool2) return [];
+  const r = await pool2.query(
+    `SELECT * FROM "webhookEvents" WHERE "companyId" = $1 ORDER BY "createdAt" DESC LIMIT $2`,
+    [companyId, limit2]
+  );
+  return r.rows;
+}
 async function updateCompany(id, name, description) {
   const db = await getDb();
   const [result] = await db.update(companies).set({ name, description }).where(eq(companies.id, id)).returning();
@@ -41319,6 +41376,10 @@ async function updateReport(id, title, slug, startDate, endDate, description, is
 async function deleteReport(id) {
   const db = await getDb();
   await db.delete(reports).where(eq(reports.id, id));
+}
+async function updateReportAiAnalysis(id, aiAnalysis) {
+  const db = await getDb();
+  await db.update(reports).set({ aiAnalysis }).where(eq(reports.id, id));
 }
 async function getMetricsByReportId(reportId) {
   const db = await getDb();
@@ -42266,12 +42327,12 @@ var NEVER = Object.freeze({
 // @__NO_SIDE_EFFECTS__
 function $constructor(name, initializer3, params) {
   function init(inst, def) {
-    var _a;
+    var _a3;
     Object.defineProperty(inst, "_zod", {
       value: inst._zod ?? {},
       enumerable: false
     });
-    (_a = inst._zod).traits ?? (_a.traits = /* @__PURE__ */ new Set());
+    (_a3 = inst._zod).traits ?? (_a3.traits = /* @__PURE__ */ new Set());
     inst._zod.traits.add(name);
     initializer3(inst, def);
     for (const k in _.prototype) {
@@ -42286,10 +42347,10 @@ function $constructor(name, initializer3, params) {
   }
   Object.defineProperty(Definition, "name", { value: name });
   function _(def) {
-    var _a;
+    var _a3;
     const inst = params?.Parent ? new Definition() : this;
     init(inst, def);
-    (_a = inst._zod).deferred ?? (_a.deferred = []);
+    (_a3 = inst._zod).deferred ?? (_a3.deferred = []);
     for (const fn of inst._zod.deferred) {
       fn();
     }
@@ -42496,10 +42557,10 @@ function mergeDefs(...defs) {
 function cloneDef(schema) {
   return mergeDefs(schema._zod.def);
 }
-function getElementAtPath(obj, path) {
-  if (!path)
+function getElementAtPath(obj, path2) {
+  if (!path2)
     return obj;
-  return path.reduce((acc, key) => acc?.[key], obj);
+  return path2.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -42514,14 +42575,14 @@ function promiseAllObject(promisesObj) {
 }
 function randomString(length = 10) {
   const chars = "abcdefghijklmnopqrstuvwxyz";
-  let str = "";
+  let str2 = "";
   for (let i = 0; i < length; i++) {
-    str += chars[Math.floor(Math.random() * chars.length)];
+    str2 += chars[Math.floor(Math.random() * chars.length)];
   }
-  return str;
+  return str2;
 }
-function esc(str) {
-  return JSON.stringify(str);
+function esc(str2) {
+  return JSON.stringify(str2);
 }
 var captureStackTrace = "captureStackTrace" in Error ? Error.captureStackTrace : (..._args) => {
 };
@@ -42616,8 +42677,8 @@ var getParsedType = (data) => {
 };
 var propertyKeyTypes = /* @__PURE__ */ new Set(["string", "number", "symbol"]);
 var primitiveTypes = /* @__PURE__ */ new Set(["string", "number", "bigint", "boolean", "symbol", "undefined"]);
-function escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function escapeRegex(str2) {
+  return str2.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 function clone(inst, def, params) {
   const cl = new inst._zod.constr(def ?? inst._zod.def);
@@ -42860,11 +42921,11 @@ function aborted(x, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path, issues) {
+function prefixIssues(path2, issues) {
   return issues.map((iss) => {
-    var _a;
-    (_a = iss).path ?? (_a.path = []);
-    iss.path.unshift(path);
+    var _a3;
+    (_a3 = iss).path ?? (_a3.path = []);
+    iss.path.unshift(path2);
     return iss;
   });
 }
@@ -43026,8 +43087,8 @@ function formatError(error46, mapper = (issue2) => issue2.message) {
 }
 function treeifyError(error46, mapper = (issue2) => issue2.message) {
   const result = { errors: [] };
-  const processError = (error47, path = []) => {
-    var _a, _b;
+  const processError = (error47, path2 = []) => {
+    var _a3, _b;
     for (const issue2 of error47.issues) {
       if (issue2.code === "invalid_union" && issue2.errors.length) {
         issue2.errors.map((issues) => processError({ issues }, issue2.path));
@@ -43036,7 +43097,7 @@ function treeifyError(error46, mapper = (issue2) => issue2.message) {
       } else if (issue2.code === "invalid_element") {
         processError({ issues: issue2.issues }, issue2.path);
       } else {
-        const fullpath = [...path, ...issue2.path];
+        const fullpath = [...path2, ...issue2.path];
         if (fullpath.length === 0) {
           result.errors.push(mapper(issue2));
           continue;
@@ -43048,7 +43109,7 @@ function treeifyError(error46, mapper = (issue2) => issue2.message) {
           const terminal = i === fullpath.length - 1;
           if (typeof el === "string") {
             curr.properties ?? (curr.properties = {});
-            (_a = curr.properties)[el] ?? (_a[el] = { errors: [] });
+            (_a3 = curr.properties)[el] ?? (_a3[el] = { errors: [] });
             curr = curr.properties[el];
           } else {
             curr.items ?? (curr.items = []);
@@ -43068,8 +43129,8 @@ function treeifyError(error46, mapper = (issue2) => issue2.message) {
 }
 function toDotPath(_path) {
   const segs = [];
-  const path = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
-  for (const seg of path) {
+  const path2 = _path.map((seg) => typeof seg === "object" ? seg.key : seg);
+  for (const seg of path2) {
     if (typeof seg === "number")
       segs.push(`[${seg}]`);
     else if (typeof seg === "symbol")
@@ -43337,10 +43398,10 @@ var sha512_base64url = /* @__PURE__ */ fixedBase64url(86);
 
 // node_modules/.pnpm/zod@4.1.12/node_modules/zod/v4/core/checks.js
 var $ZodCheck = /* @__PURE__ */ $constructor("$ZodCheck", (inst, def) => {
-  var _a;
+  var _a3;
   inst._zod ?? (inst._zod = {});
   inst._zod.def = def;
-  (_a = inst._zod).onattach ?? (_a.onattach = []);
+  (_a3 = inst._zod).onattach ?? (_a3.onattach = []);
 });
 var numericOriginMap = {
   number: "number",
@@ -43406,8 +43467,8 @@ var $ZodCheckGreaterThan = /* @__PURE__ */ $constructor("$ZodCheckGreaterThan", 
 var $ZodCheckMultipleOf = /* @__PURE__ */ $constructor("$ZodCheckMultipleOf", (inst, def) => {
   $ZodCheck.init(inst, def);
   inst._zod.onattach.push((inst2) => {
-    var _a;
-    (_a = inst2._zod.bag).multipleOf ?? (_a.multipleOf = def.value);
+    var _a3;
+    (_a3 = inst2._zod.bag).multipleOf ?? (_a3.multipleOf = def.value);
   });
   inst._zod.check = (payload) => {
     if (typeof payload.value !== typeof def.value)
@@ -43534,9 +43595,9 @@ var $ZodCheckBigIntFormat = /* @__PURE__ */ $constructor("$ZodCheckBigIntFormat"
   };
 });
 var $ZodCheckMaxSize = /* @__PURE__ */ $constructor("$ZodCheckMaxSize", (inst, def) => {
-  var _a;
+  var _a3;
   $ZodCheck.init(inst, def);
-  (_a = inst._zod.def).when ?? (_a.when = (payload) => {
+  (_a3 = inst._zod.def).when ?? (_a3.when = (payload) => {
     const val = payload.value;
     return !nullish(val) && val.size !== void 0;
   });
@@ -43562,9 +43623,9 @@ var $ZodCheckMaxSize = /* @__PURE__ */ $constructor("$ZodCheckMaxSize", (inst, d
   };
 });
 var $ZodCheckMinSize = /* @__PURE__ */ $constructor("$ZodCheckMinSize", (inst, def) => {
-  var _a;
+  var _a3;
   $ZodCheck.init(inst, def);
-  (_a = inst._zod.def).when ?? (_a.when = (payload) => {
+  (_a3 = inst._zod.def).when ?? (_a3.when = (payload) => {
     const val = payload.value;
     return !nullish(val) && val.size !== void 0;
   });
@@ -43590,9 +43651,9 @@ var $ZodCheckMinSize = /* @__PURE__ */ $constructor("$ZodCheckMinSize", (inst, d
   };
 });
 var $ZodCheckSizeEquals = /* @__PURE__ */ $constructor("$ZodCheckSizeEquals", (inst, def) => {
-  var _a;
+  var _a3;
   $ZodCheck.init(inst, def);
-  (_a = inst._zod.def).when ?? (_a.when = (payload) => {
+  (_a3 = inst._zod.def).when ?? (_a3.when = (payload) => {
     const val = payload.value;
     return !nullish(val) && val.size !== void 0;
   });
@@ -43620,9 +43681,9 @@ var $ZodCheckSizeEquals = /* @__PURE__ */ $constructor("$ZodCheckSizeEquals", (i
   };
 });
 var $ZodCheckMaxLength = /* @__PURE__ */ $constructor("$ZodCheckMaxLength", (inst, def) => {
-  var _a;
+  var _a3;
   $ZodCheck.init(inst, def);
-  (_a = inst._zod.def).when ?? (_a.when = (payload) => {
+  (_a3 = inst._zod.def).when ?? (_a3.when = (payload) => {
     const val = payload.value;
     return !nullish(val) && val.length !== void 0;
   });
@@ -43649,9 +43710,9 @@ var $ZodCheckMaxLength = /* @__PURE__ */ $constructor("$ZodCheckMaxLength", (ins
   };
 });
 var $ZodCheckMinLength = /* @__PURE__ */ $constructor("$ZodCheckMinLength", (inst, def) => {
-  var _a;
+  var _a3;
   $ZodCheck.init(inst, def);
-  (_a = inst._zod.def).when ?? (_a.when = (payload) => {
+  (_a3 = inst._zod.def).when ?? (_a3.when = (payload) => {
     const val = payload.value;
     return !nullish(val) && val.length !== void 0;
   });
@@ -43678,9 +43739,9 @@ var $ZodCheckMinLength = /* @__PURE__ */ $constructor("$ZodCheckMinLength", (ins
   };
 });
 var $ZodCheckLengthEquals = /* @__PURE__ */ $constructor("$ZodCheckLengthEquals", (inst, def) => {
-  var _a;
+  var _a3;
   $ZodCheck.init(inst, def);
-  (_a = inst._zod.def).when ?? (_a.when = (payload) => {
+  (_a3 = inst._zod.def).when ?? (_a3.when = (payload) => {
     const val = payload.value;
     return !nullish(val) && val.length !== void 0;
   });
@@ -43709,7 +43770,7 @@ var $ZodCheckLengthEquals = /* @__PURE__ */ $constructor("$ZodCheckLengthEquals"
   };
 });
 var $ZodCheckStringFormat = /* @__PURE__ */ $constructor("$ZodCheckStringFormat", (inst, def) => {
-  var _a, _b;
+  var _a3, _b;
   $ZodCheck.init(inst, def);
   inst._zod.onattach.push((inst2) => {
     const bag = inst2._zod.bag;
@@ -43720,7 +43781,7 @@ var $ZodCheckStringFormat = /* @__PURE__ */ $constructor("$ZodCheckStringFormat"
     }
   });
   if (def.pattern)
-    (_a = inst._zod).check ?? (_a.check = (payload) => {
+    (_a3 = inst._zod).check ?? (_a3.check = (payload) => {
       def.pattern.lastIndex = 0;
       if (def.pattern.test(payload.value))
         return;
@@ -43922,7 +43983,7 @@ var version2 = {
 
 // node_modules/.pnpm/zod@4.1.12/node_modules/zod/v4/core/schemas.js
 var $ZodType = /* @__PURE__ */ $constructor("$ZodType", (inst, def) => {
-  var _a;
+  var _a3;
   inst ?? (inst = {});
   inst._zod.def = def;
   inst._zod.bag = inst._zod.bag || {};
@@ -43937,7 +43998,7 @@ var $ZodType = /* @__PURE__ */ $constructor("$ZodType", (inst, def) => {
     }
   }
   if (checks.length === 0) {
-    (_a = inst._zod).deferred ?? (_a.deferred = []);
+    (_a3 = inst._zod).deferred ?? (_a3.deferred = []);
     inst._zod.deferred?.push(() => {
       inst._zod.run = inst._zod.parse;
     });
@@ -52378,7 +52439,7 @@ var JSONSchemaGenerator = class {
     this.seen = /* @__PURE__ */ new Map();
   }
   process(schema, _params = { path: [], schemaPath: [] }) {
-    var _a;
+    var _a3;
     const def = schema._zod.def;
     const formatMap = {
       guid: "uuid",
@@ -52887,7 +52948,7 @@ var JSONSchemaGenerator = class {
       delete result.schema.default;
     }
     if (this.io === "input" && result.schema._prefault)
-      (_a = result.schema).default ?? (_a.default = result.schema._prefault);
+      (_a3 = result.schema).default ?? (_a3.default = result.schema._prefault);
     delete result.schema._prefault;
     const _result = this.seen.get(schema);
     return _result.schema;
@@ -54454,6 +54515,35 @@ function calculateCTR(totalClicks, totalImpressions) {
   if (totalImpressions === 0) return 0;
   return totalClicks / totalImpressions * 100;
 }
+function calculateCPC(totalSpent, totalClicks) {
+  if (totalClicks === 0) return 0;
+  return totalSpent / totalClicks;
+}
+function calculateCostPerResult(totalSpent, count) {
+  if (!count || count <= 0) return 0;
+  return totalSpent / count;
+}
+function deriveMetrics(m) {
+  const totalSpent = Number(m.totalSpent ?? 0) || 0;
+  const totalImpressions = Number(m.totalImpressions ?? 0) || 0;
+  const totalClicks = Number(m.totalClicks ?? 0) || 0;
+  const profileVisits = Number(m.instagramProfileVisits ?? 0) || 0;
+  const messages = Number(m.messagesInitiated ?? 0) || 0;
+  const purchases = Number(m.purchases ?? 0) || 0;
+  const keep = (current, derived) => {
+    const v = Number(current ?? 0) || 0;
+    return v > 0 ? v : derived;
+  };
+  return {
+    ...m,
+    cpm: keep(m.cpm, calculateCPM(totalSpent, totalImpressions)),
+    ctr: keep(m.ctr, calculateCTR(totalClicks, totalImpressions)),
+    costPerClick: keep(m.costPerClick, calculateCPC(totalSpent, totalClicks)),
+    costPerProfileVisit: keep(m.costPerProfileVisit, calculateCostPerResult(totalSpent, profileVisits)),
+    costPerMessage: keep(m.costPerMessage, calculateCostPerResult(totalSpent, messages)),
+    costPerPurchase: keep(m.costPerPurchase, calculateCostPerResult(totalSpent, purchases))
+  };
+}
 
 // server/utm.router.ts
 async function executeQuery(sql2, params = []) {
@@ -54968,7 +55058,7 @@ var webhookRouter = router({
       throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado \xE0 empresa" });
     }
     const webhookSecret = import_crypto.default.randomBytes(32).toString("hex");
-    const baseUrl = "https://sistemaderelatoriosmetaof.vercel.app";
+    const baseUrl = ENV.appBaseUrl.replace(/\/+$/, "");
     const webhookUrl = `${baseUrl}/webhook/${input.platform}?companyId=${input.companyId}`;
     const result = await executeQuery2(
       `INSERT INTO "webhookConfigs" (
@@ -55108,6 +55198,21 @@ var webhookRouter = router({
       trackedSales: parseInt(stats.tracked_sales || "0"),
       totalRevenue: parseFloat(stats.total_revenue || "0")
     };
+  }),
+  /**
+   * Eventos recentes de webhook recebidos por uma empresa.
+   * Alimenta o status "Recebendo ✓ / Última chamada há X min" na UI de Integrações.
+   */
+  recentEvents: protectedProcedure.input(external_exports.object({ companyId: external_exports.number().int().positive(), limit: external_exports.number().int().min(1).max(100).optional() })).query(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+    const events = await getRecentWebhookEvents(input.companyId, input.limit ?? 20);
+    const lastReceivedAt = events.length > 0 ? events[0].createdAt : null;
+    return { events, lastReceivedAt };
   })
 });
 
@@ -55298,17 +55403,16 @@ var campaignsRouter = router({
           c."startDate",
           c."endDate",
 
-          -- Gastos (soma de metrics por campanha)
+          -- Gastos reais do Meta
           COALESCE(SUM(CAST(am.spend AS BIGINT)), 0) as "totalSpend",
           COALESCE(SUM(am.impressions), 0) as "totalImpressions",
           COALESCE(SUM(am.clicks), 0) as "totalClicks",
 
-          -- Vendas (soma de sales por campanha)
-          COALESCE(SUM(CAST(ads."saleValue" AS NUMERIC(12,2))), 0) as "totalSales",
-          COALESCE(COUNT(DISTINCT ads.id), 0) as "totalSalesCount",
+          -- Receita de convers\xF5es (purchase value do Meta Pixel)
+          COALESCE(SUM(am."conversionValue"), 0) as "totalSales",
+          COALESCE(SUM(am."purchaseCount"), 0) as "totalSalesCount",
 
-          -- C\xE1lculos
-          COALESCE(SUM(am.impressions), 0) as impressions,
+          -- CTR e CPM
           CASE
             WHEN COALESCE(SUM(am.impressions), 0) > 0
             THEN ROUND(CAST(COALESCE(SUM(am.clicks), 0) AS NUMERIC) / COALESCE(SUM(am.impressions), 0) * 100, 2)
@@ -55322,14 +55426,13 @@ var campaignsRouter = router({
 
         FROM "metaCampaigns" c
         LEFT JOIN "metaAds" a ON a."campaignId" = c.id
-        LEFT JOIN "adMetrics" am ON am.id = a.id
-        LEFT JOIN "adSales" ads ON ads."campaignId" = c.id
+        LEFT JOIN "adMetrics" am ON am."adId" = a.id
 
         WHERE c."companyId" = $1
         ${input.status ? "AND c.status = $2" : ""}
 
         GROUP BY c.id, c."metaCampaignId", c.name, c.status, c.objective, c."dailyBudget", c."lifetimeBudget", c."startDate", c."endDate"
-        ORDER BY c."startDate" DESC
+        ORDER BY "totalSpend" DESC
         `,
       input.status ? [input.companyId, input.status] : [input.companyId]
     );
@@ -55339,15 +55442,17 @@ var campaignsRouter = router({
       name: row.name,
       status: row.status,
       objective: row.objective,
-      // Métricas
-      totalSpend: parseFloat(row.totalSpend || "0"),
+      // Métricas — spend em centavos, sales em BRL
+      totalSpend: parseFloat(row.totalSpend || "0") / 100,
+      // centavos → BRL
       totalImpressions: parseInt(row.totalImpressions || "0"),
       totalClicks: parseInt(row.totalClicks || "0"),
       totalSales: parseFloat(row.totalSales || "0"),
+      // já em BRL (Meta retorna BRL)
       totalSalesCount: parseInt(row.totalSalesCount || "0"),
-      // Calculados
-      roi: row.totalSpend > 0 ? (row.totalSales - row.totalSpend) / row.totalSpend * 100 : 0,
-      cpa: row.totalSalesCount > 0 ? row.totalSpend / row.totalSalesCount : 0,
+      // Calculados (spend e sales agora em BRL)
+      roi: row.totalSpend > 0 ? (parseFloat(row.totalSales || "0") - parseFloat(row.totalSpend || "0") / 100) / (parseFloat(row.totalSpend || "0") / 100) * 100 : 0,
+      cpa: row.totalSalesCount > 0 ? parseFloat(row.totalSpend || "0") / 100 / parseInt(row.totalSalesCount || "0") : 0,
       ctr: parseFloat(row.ctr || "0"),
       cpm: parseFloat(row.cpm || "0")
     }));
@@ -55379,24 +55484,23 @@ var campaignsRouter = router({
           ads.status,
           ads.budget,
 
-          -- Gastos e m\xE9tricas
+          -- Gastos e m\xE9tricas (spend em centavos)
           COALESCE(SUM(CAST(am.spend AS BIGINT)), 0) as "totalSpend",
           COALESCE(SUM(am.impressions), 0) as "totalImpressions",
           COALESCE(SUM(am.clicks), 0) as "totalClicks",
 
-          -- Vendas
-          COALESCE(SUM(CAST(adsales."saleValue" AS NUMERIC(12,2))), 0) as "totalSales",
-          COALESCE(COUNT(DISTINCT adsales.id), 0) as "totalSalesCount"
+          -- Receita de convers\xF5es do Meta Pixel (em BRL)
+          COALESCE(SUM(am."conversionValue"), 0) as "totalSales",
+          COALESCE(SUM(am."purchaseCount"), 0) as "totalSalesCount"
 
         FROM "metaAdsets" ads
         LEFT JOIN "metaAds" a ON a."adsetId" = ads.id
-        LEFT JOIN "adMetrics" am ON am."adsetId" = ads.id
-        LEFT JOIN "adSales" adsales ON adsales."adsetId" = ads.id
+        LEFT JOIN "adMetrics" am ON am."adId" = a.id
 
         WHERE ads."campaignId" = $1
 
         GROUP BY ads.id, ads."metaAdsetId", ads.name, ads.status, ads.budget
-        ORDER BY ads."createdAt" DESC
+        ORDER BY "totalSpend" DESC
         `,
       [input.campaignId]
     );
@@ -55411,23 +55515,22 @@ var campaignsRouter = router({
               a.status,
               a."creativeName",
 
-              -- Gastos e m\xE9tricas
+              -- Gastos e m\xE9tricas (spend em centavos)
               COALESCE(SUM(CAST(am.spend AS BIGINT)), 0) as "totalSpend",
               COALESCE(SUM(am.impressions), 0) as "totalImpressions",
               COALESCE(SUM(am.clicks), 0) as "totalClicks",
 
-              -- Vendas
-              COALESCE(SUM(CAST(adsales."saleValue" AS NUMERIC(12,2))), 0) as "totalSales",
-              COALESCE(COUNT(DISTINCT adsales.id), 0) as "totalSalesCount"
+              -- Receita de convers\xF5es do Meta Pixel (em BRL)
+              COALESCE(SUM(am."conversionValue"), 0) as "totalSales",
+              COALESCE(SUM(am."purchaseCount"), 0) as "totalSalesCount"
 
             FROM "metaAds" a
             LEFT JOIN "adMetrics" am ON am."adId" = a.id
-            LEFT JOIN "adSales" adsales ON adsales."adId" = a.id
 
             WHERE a."adsetId" = $1
 
             GROUP BY a.id, a."metaAdId", a.name, a.status, a."creativeName"
-            ORDER BY a."createdAt" DESC
+            ORDER BY "totalSpend" DESC
             `,
           [adset.id]
         );
@@ -55437,26 +55540,30 @@ var campaignsRouter = router({
           name: adset.name,
           status: adset.status,
           budget: adset.budget,
-          totalSpend: parseFloat(adset.totalSpend || "0"),
+          totalSpend: parseFloat(adset.totalSpend || "0") / 100,
+          // centavos → BRL
           totalImpressions: parseInt(adset.totalImpressions || "0"),
           totalClicks: parseInt(adset.totalClicks || "0"),
           totalSales: parseFloat(adset.totalSales || "0"),
+          // já em BRL
           totalSalesCount: parseInt(adset.totalSalesCount || "0"),
-          roi: adset.totalSpend > 0 ? (adset.totalSales - adset.totalSpend) / adset.totalSpend * 100 : 0,
-          cpa: adset.totalSalesCount > 0 ? adset.totalSpend / adset.totalSalesCount : 0,
+          roi: adset.totalSpend > 0 ? (parseFloat(adset.totalSales || "0") - parseFloat(adset.totalSpend || "0") / 100) / (parseFloat(adset.totalSpend || "0") / 100) * 100 : 0,
+          cpa: adset.totalSalesCount > 0 ? parseFloat(adset.totalSpend || "0") / 100 / parseInt(adset.totalSalesCount || "0") : 0,
           ads: adsResult.rows.map((ad) => ({
             id: ad.id,
             metaAdId: ad.metaAdId,
             name: ad.name,
             status: ad.status,
             creativeName: ad.creativeName,
-            totalSpend: parseFloat(ad.totalSpend || "0"),
+            totalSpend: parseFloat(ad.totalSpend || "0") / 100,
+            // centavos → BRL
             totalImpressions: parseInt(ad.totalImpressions || "0"),
             totalClicks: parseInt(ad.totalClicks || "0"),
             totalSales: parseFloat(ad.totalSales || "0"),
+            // já em BRL
             totalSalesCount: parseInt(ad.totalSalesCount || "0"),
-            roi: ad.totalSpend > 0 ? (ad.totalSales - ad.totalSpend) / ad.totalSpend * 100 : 0,
-            cpa: ad.totalSalesCount > 0 ? ad.totalSpend / ad.totalSalesCount : 0
+            roi: ad.totalSpend > 0 ? (parseFloat(ad.totalSales || "0") - parseFloat(ad.totalSpend || "0") / 100) / (parseFloat(ad.totalSpend || "0") / 100) * 100 : 0,
+            cpa: ad.totalSalesCount > 0 ? parseFloat(ad.totalSpend || "0") / 100 / parseInt(ad.totalSalesCount || "0") : 0
           }))
         };
       })
@@ -55801,8 +55908,7 @@ var metaSyncRouter = router({
       for (const ad of ads) {
         try {
           const url2 = new URL(`https://graph.facebook.com/v19.0/${ad.metaAdId}/insights`);
-          url2.searchParams.set("fields", "spend,impressions,clicks,actions");
-          url2.searchParams.set("action_breakdown", "action_type");
+          url2.searchParams.set("fields", "spend,impressions,clicks,actions,action_values");
           url2.searchParams.set("time_range", JSON.stringify({ since: input.startDate, until: input.endDate }));
           url2.searchParams.set("access_token", company.metaAccessToken);
           const res = await fetch(url2.toString());
@@ -55810,23 +55916,32 @@ var metaSyncRouter = router({
           if (data.data && data.data[0]) {
             const metrics = data.data[0];
             let conversions = 0;
+            let conversionValue = 0;
             if (metrics.actions) {
-              const purchase = metrics.actions.find((a) => a.action_type === "purchase");
-              if (purchase) {
-                conversions = parseInt(purchase.value || "0");
-              }
+              const purchase = metrics.actions.find(
+                (a) => a.action_type === "purchase" || a.action_type === "offsite_conversion.fb_pixel_purchase"
+              );
+              if (purchase) conversions = parseInt(purchase.value || "0");
+            }
+            if (metrics.action_values) {
+              const purchaseValue = metrics.action_values.find(
+                (a) => a.action_type === "purchase" || a.action_type === "offsite_conversion.fb_pixel_purchase"
+              );
+              if (purchaseValue) conversionValue = parseFloat(purchaseValue.value || "0");
             }
             await executeQuery5(
               `
                 INSERT INTO "adMetrics" (
                   "adId", "adsetId", "campaignId", "companyId",
-                  date, spend, impressions, clicks, conversions
-                ) VALUES ($1, $2, $3, $4, NOW()::date, $5, $6, $7, $8)
+                  date, spend, impressions, clicks, conversions, "conversionValue", "purchaseCount"
+                ) VALUES ($1, $2, $3, $4, NOW()::date, $5, $6, $7, $8, $9, $10)
                 ON CONFLICT ("adId", date) DO UPDATE SET
                   spend = EXCLUDED.spend,
                   impressions = EXCLUDED.impressions,
                   clicks = EXCLUDED.clicks,
                   conversions = EXCLUDED.conversions,
+                  "conversionValue" = EXCLUDED."conversionValue",
+                  "purchaseCount" = EXCLUDED."purchaseCount",
                   "updatedAt" = NOW()
                 `,
               [
@@ -55837,6 +55952,8 @@ var metaSyncRouter = router({
                 Math.floor(parseFloat(metrics.spend || "0") * 100),
                 parseInt(metrics.impressions || "0"),
                 parseInt(metrics.clicks || "0"),
+                conversions,
+                conversionValue,
                 conversions
               ]
             );
@@ -55859,6 +55976,9197 @@ var metaSyncRouter = router({
     }
   })
 });
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/internal/tslib.mjs
+function __classPrivateFieldSet(receiver, state, value, kind, f) {
+  if (kind === "m")
+    throw new TypeError("Private method is not writable");
+  if (kind === "a" && !f)
+    throw new TypeError("Private accessor was defined without a setter");
+  if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver))
+    throw new TypeError("Cannot write private member to an object whose class did not declare it");
+  return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value), value;
+}
+function __classPrivateFieldGet(receiver, state, kind, f) {
+  if (kind === "a" && !f)
+    throw new TypeError("Private accessor was defined without a getter");
+  if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver))
+    throw new TypeError("Cannot read private member from an object whose class did not declare it");
+  return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+}
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/internal/utils/uuid.mjs
+var uuid42 = function() {
+  const { crypto: crypto5 } = globalThis;
+  if (crypto5?.randomUUID) {
+    uuid42 = crypto5.randomUUID.bind(crypto5);
+    return crypto5.randomUUID();
+  }
+  const u8 = new Uint8Array(1);
+  const randomByte = crypto5 ? () => crypto5.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
+  return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (+c ^ randomByte() & 15 >> +c / 4).toString(16));
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/internal/errors.mjs
+function isAbortError2(err) {
+  return typeof err === "object" && err !== null && // Spec-compliant fetch implementations
+  ("name" in err && err.name === "AbortError" || // Expo fetch
+  "message" in err && String(err.message).includes("FetchRequestCanceledException"));
+}
+var castToError = (err) => {
+  if (err instanceof Error)
+    return err;
+  if (typeof err === "object" && err !== null) {
+    try {
+      if (Object.prototype.toString.call(err) === "[object Error]") {
+        const error46 = new Error(err.message, err.cause ? { cause: err.cause } : {});
+        if (err.stack)
+          error46.stack = err.stack;
+        if (err.cause && !error46.cause)
+          error46.cause = err.cause;
+        if (err.name)
+          error46.name = err.name;
+        return error46;
+      }
+    } catch {
+    }
+    try {
+      return new Error(JSON.stringify(err));
+    } catch {
+    }
+  }
+  return new Error(err);
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/core/error.mjs
+var OpenAIError = class extends Error {
+};
+var APIError = class _APIError extends OpenAIError {
+  constructor(status, error46, message2, headers) {
+    super(`${_APIError.makeMessage(status, error46, message2)}`);
+    this.status = status;
+    this.headers = headers;
+    this.requestID = headers?.get("x-request-id");
+    this.error = error46;
+    const data = error46;
+    this.code = data?.["code"];
+    this.param = data?.["param"];
+    this.type = data?.["type"];
+  }
+  static makeMessage(status, error46, message2) {
+    const msg = error46?.message ? typeof error46.message === "string" ? error46.message : JSON.stringify(error46.message) : error46 ? JSON.stringify(error46) : message2;
+    if (status && msg) {
+      return `${status} ${msg}`;
+    }
+    if (status) {
+      return `${status} status code (no body)`;
+    }
+    if (msg) {
+      return msg;
+    }
+    return "(no status code or body)";
+  }
+  static generate(status, errorResponse, message2, headers) {
+    if (!status || !headers) {
+      return new APIConnectionError({ message: message2, cause: castToError(errorResponse) });
+    }
+    const error46 = errorResponse?.["error"];
+    if (status === 400) {
+      return new BadRequestError(status, error46, message2, headers);
+    }
+    if (status === 401) {
+      return new AuthenticationError(status, error46, message2, headers);
+    }
+    if (status === 403) {
+      return new PermissionDeniedError(status, error46, message2, headers);
+    }
+    if (status === 404) {
+      return new NotFoundError(status, error46, message2, headers);
+    }
+    if (status === 409) {
+      return new ConflictError(status, error46, message2, headers);
+    }
+    if (status === 422) {
+      return new UnprocessableEntityError(status, error46, message2, headers);
+    }
+    if (status === 429) {
+      return new RateLimitError(status, error46, message2, headers);
+    }
+    if (status >= 500) {
+      return new InternalServerError(status, error46, message2, headers);
+    }
+    return new _APIError(status, error46, message2, headers);
+  }
+};
+var APIUserAbortError = class extends APIError {
+  constructor({ message: message2 } = {}) {
+    super(void 0, void 0, message2 || "Request was aborted.", void 0);
+  }
+};
+var APIConnectionError = class extends APIError {
+  constructor({ message: message2, cause }) {
+    super(void 0, void 0, message2 || "Connection error.", void 0);
+    if (cause)
+      this.cause = cause;
+  }
+};
+var APIConnectionTimeoutError = class extends APIConnectionError {
+  constructor({ message: message2 } = {}) {
+    super({ message: message2 ?? "Request timed out." });
+  }
+};
+var BadRequestError = class extends APIError {
+};
+var AuthenticationError = class extends APIError {
+};
+var PermissionDeniedError = class extends APIError {
+};
+var NotFoundError = class extends APIError {
+};
+var ConflictError = class extends APIError {
+};
+var UnprocessableEntityError = class extends APIError {
+};
+var RateLimitError = class extends APIError {
+};
+var InternalServerError = class extends APIError {
+};
+var LengthFinishReasonError = class extends OpenAIError {
+  constructor() {
+    super(`Could not parse response content as the length limit was reached`);
+  }
+};
+var ContentFilterFinishReasonError = class extends OpenAIError {
+  constructor() {
+    super(`Could not parse response content as the request was rejected by the content filter`);
+  }
+};
+var InvalidWebhookSignatureError = class extends Error {
+  constructor(message2) {
+    super(message2);
+  }
+};
+var OAuthError = class extends APIError {
+  constructor(status, error46, headers) {
+    let finalMessage = "OAuth2 authentication error";
+    let error_code = void 0;
+    if (error46 && typeof error46 === "object") {
+      const errorData = error46;
+      error_code = errorData["error"];
+      const description = errorData["error_description"];
+      if (description && typeof description === "string") {
+        finalMessage = description;
+      } else if (error_code) {
+        finalMessage = error_code;
+      }
+    }
+    super(status, error46, finalMessage, headers);
+    this.error_code = error_code;
+  }
+};
+var SubjectTokenProviderError = class extends OpenAIError {
+  constructor(message2, provider, cause) {
+    super(message2);
+    this.provider = provider;
+    this.cause = cause;
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/internal/utils/values.mjs
+var startsWithSchemeRegexp = /^[a-z][a-z0-9+.-]*:/i;
+var isAbsoluteURL = (url2) => {
+  return startsWithSchemeRegexp.test(url2);
+};
+var isArray = (val) => (isArray = Array.isArray, isArray(val));
+var isReadonlyArray = isArray;
+function maybeObj(x) {
+  if (typeof x !== "object") {
+    return {};
+  }
+  return x ?? {};
+}
+function isEmptyObj(obj) {
+  if (!obj)
+    return true;
+  for (const _k in obj)
+    return false;
+  return true;
+}
+function hasOwn(obj, key) {
+  return Object.prototype.hasOwnProperty.call(obj, key);
+}
+function isObj(obj) {
+  return obj != null && typeof obj === "object" && !Array.isArray(obj);
+}
+var validatePositiveInteger = (name, n) => {
+  if (typeof n !== "number" || !Number.isInteger(n)) {
+    throw new OpenAIError(`${name} must be an integer`);
+  }
+  if (n < 0) {
+    throw new OpenAIError(`${name} must be a positive integer`);
+  }
+  return n;
+};
+var safeJSON = (text2) => {
+  try {
+    return JSON.parse(text2);
+  } catch (err) {
+    return void 0;
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/internal/utils/sleep.mjs
+var sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/version.mjs
+var VERSION = "6.37.0";
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/internal/detect-platform.mjs
+var isRunningInBrowser = () => {
+  return (
+    // @ts-ignore
+    typeof window !== "undefined" && // @ts-ignore
+    typeof window.document !== "undefined" && // @ts-ignore
+    typeof navigator !== "undefined"
+  );
+};
+function getDetectedPlatform() {
+  if (typeof Deno !== "undefined" && Deno.build != null) {
+    return "deno";
+  }
+  if (typeof EdgeRuntime !== "undefined") {
+    return "edge";
+  }
+  if (Object.prototype.toString.call(typeof globalThis.process !== "undefined" ? globalThis.process : 0) === "[object process]") {
+    return "node";
+  }
+  return "unknown";
+}
+var getPlatformProperties = () => {
+  const detectedPlatform = getDetectedPlatform();
+  if (detectedPlatform === "deno") {
+    return {
+      "X-Stainless-Lang": "js",
+      "X-Stainless-Package-Version": VERSION,
+      "X-Stainless-OS": normalizePlatform(Deno.build.os),
+      "X-Stainless-Arch": normalizeArch(Deno.build.arch),
+      "X-Stainless-Runtime": "deno",
+      "X-Stainless-Runtime-Version": typeof Deno.version === "string" ? Deno.version : Deno.version?.deno ?? "unknown"
+    };
+  }
+  if (typeof EdgeRuntime !== "undefined") {
+    return {
+      "X-Stainless-Lang": "js",
+      "X-Stainless-Package-Version": VERSION,
+      "X-Stainless-OS": "Unknown",
+      "X-Stainless-Arch": `other:${EdgeRuntime}`,
+      "X-Stainless-Runtime": "edge",
+      "X-Stainless-Runtime-Version": globalThis.process.version
+    };
+  }
+  if (detectedPlatform === "node") {
+    return {
+      "X-Stainless-Lang": "js",
+      "X-Stainless-Package-Version": VERSION,
+      "X-Stainless-OS": normalizePlatform(globalThis.process.platform ?? "unknown"),
+      "X-Stainless-Arch": normalizeArch(globalThis.process.arch ?? "unknown"),
+      "X-Stainless-Runtime": "node",
+      "X-Stainless-Runtime-Version": globalThis.process.version ?? "unknown"
+    };
+  }
+  const browserInfo = getBrowserInfo();
+  if (browserInfo) {
+    return {
+      "X-Stainless-Lang": "js",
+      "X-Stainless-Package-Version": VERSION,
+      "X-Stainless-OS": "Unknown",
+      "X-Stainless-Arch": "unknown",
+      "X-Stainless-Runtime": `browser:${browserInfo.browser}`,
+      "X-Stainless-Runtime-Version": browserInfo.version
+    };
+  }
+  return {
+    "X-Stainless-Lang": "js",
+    "X-Stainless-Package-Version": VERSION,
+    "X-Stainless-OS": "Unknown",
+    "X-Stainless-Arch": "unknown",
+    "X-Stainless-Runtime": "unknown",
+    "X-Stainless-Runtime-Version": "unknown"
+  };
+};
+function getBrowserInfo() {
+  if (typeof navigator === "undefined" || !navigator) {
+    return null;
+  }
+  const browserPatterns = [
+    { key: "edge", pattern: /Edge(?:\W+(\d+)\.(\d+)(?:\.(\d+))?)?/ },
+    { key: "ie", pattern: /MSIE(?:\W+(\d+)\.(\d+)(?:\.(\d+))?)?/ },
+    { key: "ie", pattern: /Trident(?:.*rv\:(\d+)\.(\d+)(?:\.(\d+))?)?/ },
+    { key: "chrome", pattern: /Chrome(?:\W+(\d+)\.(\d+)(?:\.(\d+))?)?/ },
+    { key: "firefox", pattern: /Firefox(?:\W+(\d+)\.(\d+)(?:\.(\d+))?)?/ },
+    { key: "safari", pattern: /(?:Version\W+(\d+)\.(\d+)(?:\.(\d+))?)?(?:\W+Mobile\S*)?\W+Safari/ }
+  ];
+  for (const { key, pattern } of browserPatterns) {
+    const match = pattern.exec(navigator.userAgent);
+    if (match) {
+      const major = match[1] || 0;
+      const minor = match[2] || 0;
+      const patch = match[3] || 0;
+      return { browser: key, version: `${major}.${minor}.${patch}` };
+    }
+  }
+  return null;
+}
+var normalizeArch = (arch) => {
+  if (arch === "x32")
+    return "x32";
+  if (arch === "x86_64" || arch === "x64")
+    return "x64";
+  if (arch === "arm")
+    return "arm";
+  if (arch === "aarch64" || arch === "arm64")
+    return "arm64";
+  if (arch)
+    return `other:${arch}`;
+  return "unknown";
+};
+var normalizePlatform = (platform) => {
+  platform = platform.toLowerCase();
+  if (platform.includes("ios"))
+    return "iOS";
+  if (platform === "android")
+    return "Android";
+  if (platform === "darwin")
+    return "MacOS";
+  if (platform === "win32")
+    return "Windows";
+  if (platform === "freebsd")
+    return "FreeBSD";
+  if (platform === "openbsd")
+    return "OpenBSD";
+  if (platform === "linux")
+    return "Linux";
+  if (platform)
+    return `Other:${platform}`;
+  return "Unknown";
+};
+var _platformHeaders;
+var getPlatformHeaders = () => {
+  return _platformHeaders ?? (_platformHeaders = getPlatformProperties());
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/internal/shims.mjs
+function getDefaultFetch() {
+  if (typeof fetch !== "undefined") {
+    return fetch;
+  }
+  throw new Error("`fetch` is not defined as a global; Either pass `fetch` to the client, `new OpenAI({ fetch })` or polyfill the global, `globalThis.fetch = fetch`");
+}
+function makeReadableStream(...args) {
+  const ReadableStream2 = globalThis.ReadableStream;
+  if (typeof ReadableStream2 === "undefined") {
+    throw new Error("`ReadableStream` is not defined as a global; You will need to polyfill it, `globalThis.ReadableStream = ReadableStream`");
+  }
+  return new ReadableStream2(...args);
+}
+function ReadableStreamFrom(iterable) {
+  let iter = Symbol.asyncIterator in iterable ? iterable[Symbol.asyncIterator]() : iterable[Symbol.iterator]();
+  return makeReadableStream({
+    start() {
+    },
+    async pull(controller) {
+      const { done, value } = await iter.next();
+      if (done) {
+        controller.close();
+      } else {
+        controller.enqueue(value);
+      }
+    },
+    async cancel() {
+      await iter.return?.();
+    }
+  });
+}
+function ReadableStreamToAsyncIterable(stream) {
+  if (stream[Symbol.asyncIterator])
+    return stream;
+  const reader = stream.getReader();
+  return {
+    async next() {
+      try {
+        const result = await reader.read();
+        if (result?.done)
+          reader.releaseLock();
+        return result;
+      } catch (e) {
+        reader.releaseLock();
+        throw e;
+      }
+    },
+    async return() {
+      const cancelPromise = reader.cancel();
+      reader.releaseLock();
+      await cancelPromise;
+      return { done: true, value: void 0 };
+    },
+    [Symbol.asyncIterator]() {
+      return this;
+    }
+  };
+}
+async function CancelReadableStream(stream) {
+  if (stream === null || typeof stream !== "object")
+    return;
+  if (stream[Symbol.asyncIterator]) {
+    await stream[Symbol.asyncIterator]().return?.();
+    return;
+  }
+  const reader = stream.getReader();
+  const cancelPromise = reader.cancel();
+  reader.releaseLock();
+  await cancelPromise;
+}
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/internal/request-options.mjs
+var FallbackEncoder = ({ headers, body }) => {
+  return {
+    bodyHeaders: {
+      "content-type": "application/json"
+    },
+    body: JSON.stringify(body)
+  };
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/internal/qs/formats.mjs
+var default_format = "RFC3986";
+var default_formatter = (v) => String(v);
+var formatters = {
+  RFC1738: (v) => String(v).replace(/%20/g, "+"),
+  RFC3986: default_formatter
+};
+var RFC1738 = "RFC1738";
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/internal/qs/utils.mjs
+var has = (obj, key) => (has = Object.hasOwn ?? Function.prototype.call.bind(Object.prototype.hasOwnProperty), has(obj, key));
+var hex_table = /* @__PURE__ */ (() => {
+  const array2 = [];
+  for (let i = 0; i < 256; ++i) {
+    array2.push("%" + ((i < 16 ? "0" : "") + i.toString(16)).toUpperCase());
+  }
+  return array2;
+})();
+var limit = 1024;
+var encode4 = (str2, _defaultEncoder, charset, _kind, format) => {
+  if (str2.length === 0) {
+    return str2;
+  }
+  let string4 = str2;
+  if (typeof str2 === "symbol") {
+    string4 = Symbol.prototype.toString.call(str2);
+  } else if (typeof str2 !== "string") {
+    string4 = String(str2);
+  }
+  if (charset === "iso-8859-1") {
+    return escape(string4).replace(/%u[0-9a-f]{4}/gi, function($0) {
+      return "%26%23" + parseInt($0.slice(2), 16) + "%3B";
+    });
+  }
+  let out = "";
+  for (let j = 0; j < string4.length; j += limit) {
+    const segment = string4.length >= limit ? string4.slice(j, j + limit) : string4;
+    const arr = [];
+    for (let i = 0; i < segment.length; ++i) {
+      let c = segment.charCodeAt(i);
+      if (c === 45 || // -
+      c === 46 || // .
+      c === 95 || // _
+      c === 126 || // ~
+      c >= 48 && c <= 57 || // 0-9
+      c >= 65 && c <= 90 || // a-z
+      c >= 97 && c <= 122 || // A-Z
+      format === RFC1738 && (c === 40 || c === 41)) {
+        arr[arr.length] = segment.charAt(i);
+        continue;
+      }
+      if (c < 128) {
+        arr[arr.length] = hex_table[c];
+        continue;
+      }
+      if (c < 2048) {
+        arr[arr.length] = hex_table[192 | c >> 6] + hex_table[128 | c & 63];
+        continue;
+      }
+      if (c < 55296 || c >= 57344) {
+        arr[arr.length] = hex_table[224 | c >> 12] + hex_table[128 | c >> 6 & 63] + hex_table[128 | c & 63];
+        continue;
+      }
+      i += 1;
+      c = 65536 + ((c & 1023) << 10 | segment.charCodeAt(i) & 1023);
+      arr[arr.length] = hex_table[240 | c >> 18] + hex_table[128 | c >> 12 & 63] + hex_table[128 | c >> 6 & 63] + hex_table[128 | c & 63];
+    }
+    out += arr.join("");
+  }
+  return out;
+};
+function is_buffer(obj) {
+  if (!obj || typeof obj !== "object") {
+    return false;
+  }
+  return !!(obj.constructor && obj.constructor.isBuffer && obj.constructor.isBuffer(obj));
+}
+function maybe_map(val, fn) {
+  if (isArray(val)) {
+    const mapped = [];
+    for (let i = 0; i < val.length; i += 1) {
+      mapped.push(fn(val[i]));
+    }
+    return mapped;
+  }
+  return fn(val);
+}
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/internal/qs/stringify.mjs
+var array_prefix_generators = {
+  brackets(prefix) {
+    return String(prefix) + "[]";
+  },
+  comma: "comma",
+  indices(prefix, key) {
+    return String(prefix) + "[" + key + "]";
+  },
+  repeat(prefix) {
+    return String(prefix);
+  }
+};
+var push_to_array = function(arr, value_or_array) {
+  Array.prototype.push.apply(arr, isArray(value_or_array) ? value_or_array : [value_or_array]);
+};
+var toISOString;
+var defaults2 = {
+  addQueryPrefix: false,
+  allowDots: false,
+  allowEmptyArrays: false,
+  arrayFormat: "indices",
+  charset: "utf-8",
+  charsetSentinel: false,
+  delimiter: "&",
+  encode: true,
+  encodeDotInKeys: false,
+  encoder: encode4,
+  encodeValuesOnly: false,
+  format: default_format,
+  formatter: default_formatter,
+  /** @deprecated */
+  indices: false,
+  serializeDate(date6) {
+    return (toISOString ?? (toISOString = Function.prototype.call.bind(Date.prototype.toISOString)))(date6);
+  },
+  skipNulls: false,
+  strictNullHandling: false
+};
+function is_non_nullish_primitive(v) {
+  return typeof v === "string" || typeof v === "number" || typeof v === "boolean" || typeof v === "symbol" || typeof v === "bigint";
+}
+var sentinel = {};
+function inner_stringify(object2, prefix, generateArrayPrefix, commaRoundTrip, allowEmptyArrays, strictNullHandling, skipNulls, encodeDotInKeys, encoder2, filter, sort, allowDots, serializeDate, format, formatter, encodeValuesOnly, charset, sideChannel) {
+  let obj = object2;
+  let tmp_sc = sideChannel;
+  let step = 0;
+  let find_flag = false;
+  while ((tmp_sc = tmp_sc.get(sentinel)) !== void 0 && !find_flag) {
+    const pos = tmp_sc.get(object2);
+    step += 1;
+    if (typeof pos !== "undefined") {
+      if (pos === step) {
+        throw new RangeError("Cyclic object value");
+      } else {
+        find_flag = true;
+      }
+    }
+    if (typeof tmp_sc.get(sentinel) === "undefined") {
+      step = 0;
+    }
+  }
+  if (typeof filter === "function") {
+    obj = filter(prefix, obj);
+  } else if (obj instanceof Date) {
+    obj = serializeDate?.(obj);
+  } else if (generateArrayPrefix === "comma" && isArray(obj)) {
+    obj = maybe_map(obj, function(value) {
+      if (value instanceof Date) {
+        return serializeDate?.(value);
+      }
+      return value;
+    });
+  }
+  if (obj === null) {
+    if (strictNullHandling) {
+      return encoder2 && !encodeValuesOnly ? (
+        // @ts-expect-error
+        encoder2(prefix, defaults2.encoder, charset, "key", format)
+      ) : prefix;
+    }
+    obj = "";
+  }
+  if (is_non_nullish_primitive(obj) || is_buffer(obj)) {
+    if (encoder2) {
+      const key_value = encodeValuesOnly ? prefix : encoder2(prefix, defaults2.encoder, charset, "key", format);
+      return [
+        formatter?.(key_value) + "=" + // @ts-expect-error
+        formatter?.(encoder2(obj, defaults2.encoder, charset, "value", format))
+      ];
+    }
+    return [formatter?.(prefix) + "=" + formatter?.(String(obj))];
+  }
+  const values = [];
+  if (typeof obj === "undefined") {
+    return values;
+  }
+  let obj_keys;
+  if (generateArrayPrefix === "comma" && isArray(obj)) {
+    if (encodeValuesOnly && encoder2) {
+      obj = maybe_map(obj, encoder2);
+    }
+    obj_keys = [{ value: obj.length > 0 ? obj.join(",") || null : void 0 }];
+  } else if (isArray(filter)) {
+    obj_keys = filter;
+  } else {
+    const keys = Object.keys(obj);
+    obj_keys = sort ? keys.sort(sort) : keys;
+  }
+  const encoded_prefix = encodeDotInKeys ? String(prefix).replace(/\./g, "%2E") : String(prefix);
+  const adjusted_prefix = commaRoundTrip && isArray(obj) && obj.length === 1 ? encoded_prefix + "[]" : encoded_prefix;
+  if (allowEmptyArrays && isArray(obj) && obj.length === 0) {
+    return adjusted_prefix + "[]";
+  }
+  for (let j = 0; j < obj_keys.length; ++j) {
+    const key = obj_keys[j];
+    const value = (
+      // @ts-ignore
+      typeof key === "object" && typeof key.value !== "undefined" ? key.value : obj[key]
+    );
+    if (skipNulls && value === null) {
+      continue;
+    }
+    const encoded_key = allowDots && encodeDotInKeys ? key.replace(/\./g, "%2E") : key;
+    const key_prefix = isArray(obj) ? typeof generateArrayPrefix === "function" ? generateArrayPrefix(adjusted_prefix, encoded_key) : adjusted_prefix : adjusted_prefix + (allowDots ? "." + encoded_key : "[" + encoded_key + "]");
+    sideChannel.set(object2, step);
+    const valueSideChannel = /* @__PURE__ */ new WeakMap();
+    valueSideChannel.set(sentinel, sideChannel);
+    push_to_array(values, inner_stringify(
+      value,
+      key_prefix,
+      generateArrayPrefix,
+      commaRoundTrip,
+      allowEmptyArrays,
+      strictNullHandling,
+      skipNulls,
+      encodeDotInKeys,
+      // @ts-ignore
+      generateArrayPrefix === "comma" && encodeValuesOnly && isArray(obj) ? null : encoder2,
+      filter,
+      sort,
+      allowDots,
+      serializeDate,
+      format,
+      formatter,
+      encodeValuesOnly,
+      charset,
+      valueSideChannel
+    ));
+  }
+  return values;
+}
+function normalize_stringify_options(opts = defaults2) {
+  if (typeof opts.allowEmptyArrays !== "undefined" && typeof opts.allowEmptyArrays !== "boolean") {
+    throw new TypeError("`allowEmptyArrays` option can only be `true` or `false`, when provided");
+  }
+  if (typeof opts.encodeDotInKeys !== "undefined" && typeof opts.encodeDotInKeys !== "boolean") {
+    throw new TypeError("`encodeDotInKeys` option can only be `true` or `false`, when provided");
+  }
+  if (opts.encoder !== null && typeof opts.encoder !== "undefined" && typeof opts.encoder !== "function") {
+    throw new TypeError("Encoder has to be a function.");
+  }
+  const charset = opts.charset || defaults2.charset;
+  if (typeof opts.charset !== "undefined" && opts.charset !== "utf-8" && opts.charset !== "iso-8859-1") {
+    throw new TypeError("The charset option must be either utf-8, iso-8859-1, or undefined");
+  }
+  let format = default_format;
+  if (typeof opts.format !== "undefined") {
+    if (!has(formatters, opts.format)) {
+      throw new TypeError("Unknown format option provided.");
+    }
+    format = opts.format;
+  }
+  const formatter = formatters[format];
+  let filter = defaults2.filter;
+  if (typeof opts.filter === "function" || isArray(opts.filter)) {
+    filter = opts.filter;
+  }
+  let arrayFormat;
+  if (opts.arrayFormat && opts.arrayFormat in array_prefix_generators) {
+    arrayFormat = opts.arrayFormat;
+  } else if ("indices" in opts) {
+    arrayFormat = opts.indices ? "indices" : "repeat";
+  } else {
+    arrayFormat = defaults2.arrayFormat;
+  }
+  if ("commaRoundTrip" in opts && typeof opts.commaRoundTrip !== "boolean") {
+    throw new TypeError("`commaRoundTrip` must be a boolean, or absent");
+  }
+  const allowDots = typeof opts.allowDots === "undefined" ? !!opts.encodeDotInKeys === true ? true : defaults2.allowDots : !!opts.allowDots;
+  return {
+    addQueryPrefix: typeof opts.addQueryPrefix === "boolean" ? opts.addQueryPrefix : defaults2.addQueryPrefix,
+    // @ts-ignore
+    allowDots,
+    allowEmptyArrays: typeof opts.allowEmptyArrays === "boolean" ? !!opts.allowEmptyArrays : defaults2.allowEmptyArrays,
+    arrayFormat,
+    charset,
+    charsetSentinel: typeof opts.charsetSentinel === "boolean" ? opts.charsetSentinel : defaults2.charsetSentinel,
+    commaRoundTrip: !!opts.commaRoundTrip,
+    delimiter: typeof opts.delimiter === "undefined" ? defaults2.delimiter : opts.delimiter,
+    encode: typeof opts.encode === "boolean" ? opts.encode : defaults2.encode,
+    encodeDotInKeys: typeof opts.encodeDotInKeys === "boolean" ? opts.encodeDotInKeys : defaults2.encodeDotInKeys,
+    encoder: typeof opts.encoder === "function" ? opts.encoder : defaults2.encoder,
+    encodeValuesOnly: typeof opts.encodeValuesOnly === "boolean" ? opts.encodeValuesOnly : defaults2.encodeValuesOnly,
+    filter,
+    format,
+    formatter,
+    serializeDate: typeof opts.serializeDate === "function" ? opts.serializeDate : defaults2.serializeDate,
+    skipNulls: typeof opts.skipNulls === "boolean" ? opts.skipNulls : defaults2.skipNulls,
+    // @ts-ignore
+    sort: typeof opts.sort === "function" ? opts.sort : null,
+    strictNullHandling: typeof opts.strictNullHandling === "boolean" ? opts.strictNullHandling : defaults2.strictNullHandling
+  };
+}
+function stringify(object2, opts = {}) {
+  let obj = object2;
+  const options = normalize_stringify_options(opts);
+  let obj_keys;
+  let filter;
+  if (typeof options.filter === "function") {
+    filter = options.filter;
+    obj = filter("", obj);
+  } else if (isArray(options.filter)) {
+    filter = options.filter;
+    obj_keys = filter;
+  }
+  const keys = [];
+  if (typeof obj !== "object" || obj === null) {
+    return "";
+  }
+  const generateArrayPrefix = array_prefix_generators[options.arrayFormat];
+  const commaRoundTrip = generateArrayPrefix === "comma" && options.commaRoundTrip;
+  if (!obj_keys) {
+    obj_keys = Object.keys(obj);
+  }
+  if (options.sort) {
+    obj_keys.sort(options.sort);
+  }
+  const sideChannel = /* @__PURE__ */ new WeakMap();
+  for (let i = 0; i < obj_keys.length; ++i) {
+    const key = obj_keys[i];
+    if (options.skipNulls && obj[key] === null) {
+      continue;
+    }
+    push_to_array(keys, inner_stringify(
+      obj[key],
+      key,
+      // @ts-expect-error
+      generateArrayPrefix,
+      commaRoundTrip,
+      options.allowEmptyArrays,
+      options.strictNullHandling,
+      options.skipNulls,
+      options.encodeDotInKeys,
+      options.encode ? options.encoder : null,
+      options.filter,
+      options.sort,
+      options.allowDots,
+      options.serializeDate,
+      options.format,
+      options.formatter,
+      options.encodeValuesOnly,
+      options.charset,
+      sideChannel
+    ));
+  }
+  const joined = keys.join(options.delimiter);
+  let prefix = options.addQueryPrefix === true ? "?" : "";
+  if (options.charsetSentinel) {
+    if (options.charset === "iso-8859-1") {
+      prefix += "utf8=%26%2310003%3B&";
+    } else {
+      prefix += "utf8=%E2%9C%93&";
+    }
+  }
+  return joined.length > 0 ? prefix + joined : "";
+}
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/internal/utils/query.mjs
+function stringifyQuery(query) {
+  return stringify(query, { arrayFormat: "brackets" });
+}
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/internal/utils/bytes.mjs
+function concatBytes(buffers) {
+  let length = 0;
+  for (const buffer of buffers) {
+    length += buffer.length;
+  }
+  const output = new Uint8Array(length);
+  let index = 0;
+  for (const buffer of buffers) {
+    output.set(buffer, index);
+    index += buffer.length;
+  }
+  return output;
+}
+var encodeUTF8_;
+function encodeUTF8(str2) {
+  let encoder2;
+  return (encodeUTF8_ ?? (encoder2 = new globalThis.TextEncoder(), encodeUTF8_ = encoder2.encode.bind(encoder2)))(str2);
+}
+var decodeUTF8_;
+function decodeUTF8(bytes) {
+  let decoder2;
+  return (decodeUTF8_ ?? (decoder2 = new globalThis.TextDecoder(), decodeUTF8_ = decoder2.decode.bind(decoder2)))(bytes);
+}
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/internal/decoders/line.mjs
+var _LineDecoder_buffer;
+var _LineDecoder_carriageReturnIndex;
+var LineDecoder = class {
+  constructor() {
+    _LineDecoder_buffer.set(this, void 0);
+    _LineDecoder_carriageReturnIndex.set(this, void 0);
+    __classPrivateFieldSet(this, _LineDecoder_buffer, new Uint8Array(), "f");
+    __classPrivateFieldSet(this, _LineDecoder_carriageReturnIndex, null, "f");
+  }
+  decode(chunk) {
+    if (chunk == null) {
+      return [];
+    }
+    const binaryChunk = chunk instanceof ArrayBuffer ? new Uint8Array(chunk) : typeof chunk === "string" ? encodeUTF8(chunk) : chunk;
+    __classPrivateFieldSet(this, _LineDecoder_buffer, concatBytes([__classPrivateFieldGet(this, _LineDecoder_buffer, "f"), binaryChunk]), "f");
+    const lines = [];
+    let patternIndex;
+    while ((patternIndex = findNewlineIndex(__classPrivateFieldGet(this, _LineDecoder_buffer, "f"), __classPrivateFieldGet(this, _LineDecoder_carriageReturnIndex, "f"))) != null) {
+      if (patternIndex.carriage && __classPrivateFieldGet(this, _LineDecoder_carriageReturnIndex, "f") == null) {
+        __classPrivateFieldSet(this, _LineDecoder_carriageReturnIndex, patternIndex.index, "f");
+        continue;
+      }
+      if (__classPrivateFieldGet(this, _LineDecoder_carriageReturnIndex, "f") != null && (patternIndex.index !== __classPrivateFieldGet(this, _LineDecoder_carriageReturnIndex, "f") + 1 || patternIndex.carriage)) {
+        lines.push(decodeUTF8(__classPrivateFieldGet(this, _LineDecoder_buffer, "f").subarray(0, __classPrivateFieldGet(this, _LineDecoder_carriageReturnIndex, "f") - 1)));
+        __classPrivateFieldSet(this, _LineDecoder_buffer, __classPrivateFieldGet(this, _LineDecoder_buffer, "f").subarray(__classPrivateFieldGet(this, _LineDecoder_carriageReturnIndex, "f")), "f");
+        __classPrivateFieldSet(this, _LineDecoder_carriageReturnIndex, null, "f");
+        continue;
+      }
+      const endIndex = __classPrivateFieldGet(this, _LineDecoder_carriageReturnIndex, "f") !== null ? patternIndex.preceding - 1 : patternIndex.preceding;
+      const line2 = decodeUTF8(__classPrivateFieldGet(this, _LineDecoder_buffer, "f").subarray(0, endIndex));
+      lines.push(line2);
+      __classPrivateFieldSet(this, _LineDecoder_buffer, __classPrivateFieldGet(this, _LineDecoder_buffer, "f").subarray(patternIndex.index), "f");
+      __classPrivateFieldSet(this, _LineDecoder_carriageReturnIndex, null, "f");
+    }
+    return lines;
+  }
+  flush() {
+    if (!__classPrivateFieldGet(this, _LineDecoder_buffer, "f").length) {
+      return [];
+    }
+    return this.decode("\n");
+  }
+};
+_LineDecoder_buffer = /* @__PURE__ */ new WeakMap(), _LineDecoder_carriageReturnIndex = /* @__PURE__ */ new WeakMap();
+LineDecoder.NEWLINE_CHARS = /* @__PURE__ */ new Set(["\n", "\r"]);
+LineDecoder.NEWLINE_REGEXP = /\r\n|[\n\r]/g;
+function findNewlineIndex(buffer, startIndex) {
+  const newline = 10;
+  const carriage = 13;
+  for (let i = startIndex ?? 0; i < buffer.length; i++) {
+    if (buffer[i] === newline) {
+      return { preceding: i, index: i + 1, carriage: false };
+    }
+    if (buffer[i] === carriage) {
+      return { preceding: i, index: i + 1, carriage: true };
+    }
+  }
+  return null;
+}
+function findDoubleNewlineIndex(buffer) {
+  const newline = 10;
+  const carriage = 13;
+  for (let i = 0; i < buffer.length - 1; i++) {
+    if (buffer[i] === newline && buffer[i + 1] === newline) {
+      return i + 2;
+    }
+    if (buffer[i] === carriage && buffer[i + 1] === carriage) {
+      return i + 2;
+    }
+    if (buffer[i] === carriage && buffer[i + 1] === newline && i + 3 < buffer.length && buffer[i + 2] === carriage && buffer[i + 3] === newline) {
+      return i + 4;
+    }
+  }
+  return -1;
+}
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/internal/utils/log.mjs
+var levelNumbers = {
+  off: 0,
+  error: 200,
+  warn: 300,
+  info: 400,
+  debug: 500
+};
+var parseLogLevel = (maybeLevel, sourceName, client) => {
+  if (!maybeLevel) {
+    return void 0;
+  }
+  if (hasOwn(levelNumbers, maybeLevel)) {
+    return maybeLevel;
+  }
+  loggerFor(client).warn(`${sourceName} was set to ${JSON.stringify(maybeLevel)}, expected one of ${JSON.stringify(Object.keys(levelNumbers))}`);
+  return void 0;
+};
+function noop2() {
+}
+function makeLogFn(fnLevel, logger, logLevel) {
+  if (!logger || levelNumbers[fnLevel] > levelNumbers[logLevel]) {
+    return noop2;
+  } else {
+    return logger[fnLevel].bind(logger);
+  }
+}
+var noopLogger = {
+  error: noop2,
+  warn: noop2,
+  info: noop2,
+  debug: noop2
+};
+var cachedLoggers = /* @__PURE__ */ new WeakMap();
+function loggerFor(client) {
+  const logger = client.logger;
+  const logLevel = client.logLevel ?? "off";
+  if (!logger) {
+    return noopLogger;
+  }
+  const cachedLogger = cachedLoggers.get(logger);
+  if (cachedLogger && cachedLogger[0] === logLevel) {
+    return cachedLogger[1];
+  }
+  const levelLogger = {
+    error: makeLogFn("error", logger, logLevel),
+    warn: makeLogFn("warn", logger, logLevel),
+    info: makeLogFn("info", logger, logLevel),
+    debug: makeLogFn("debug", logger, logLevel)
+  };
+  cachedLoggers.set(logger, [logLevel, levelLogger]);
+  return levelLogger;
+}
+var formatRequestDetails = (details) => {
+  if (details.options) {
+    details.options = { ...details.options };
+    delete details.options["headers"];
+  }
+  if (details.headers) {
+    details.headers = Object.fromEntries((details.headers instanceof Headers ? [...details.headers] : Object.entries(details.headers)).map(([name, value]) => [
+      name,
+      name.toLowerCase() === "authorization" || name.toLowerCase() === "api-key" || name.toLowerCase() === "x-api-key" || name.toLowerCase() === "cookie" || name.toLowerCase() === "set-cookie" ? "***" : value
+    ]));
+  }
+  if ("retryOfRequestLogID" in details) {
+    if (details.retryOfRequestLogID) {
+      details.retryOf = details.retryOfRequestLogID;
+    }
+    delete details.retryOfRequestLogID;
+  }
+  return details;
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/core/streaming.mjs
+var _Stream_client;
+var Stream = class _Stream {
+  constructor(iterator, controller, client) {
+    this.iterator = iterator;
+    _Stream_client.set(this, void 0);
+    this.controller = controller;
+    __classPrivateFieldSet(this, _Stream_client, client, "f");
+  }
+  static fromSSEResponse(response, controller, client, synthesizeEventData) {
+    let consumed = false;
+    const logger = client ? loggerFor(client) : console;
+    async function* iterator() {
+      if (consumed) {
+        throw new OpenAIError("Cannot iterate over a consumed stream, use `.tee()` to split the stream.");
+      }
+      consumed = true;
+      let done = false;
+      try {
+        for await (const sse2 of _iterSSEMessages(response, controller)) {
+          if (done)
+            continue;
+          if (sse2.data.startsWith("[DONE]")) {
+            done = true;
+            continue;
+          }
+          if (sse2.event === null || !sse2.event.startsWith("thread.")) {
+            let data;
+            try {
+              data = JSON.parse(sse2.data);
+            } catch (e) {
+              logger.error(`Could not parse message into JSON:`, sse2.data);
+              logger.error(`From chunk:`, sse2.raw);
+              throw e;
+            }
+            if (data && data.error) {
+              throw new APIError(void 0, data.error, void 0, response.headers);
+            }
+            yield synthesizeEventData ? { event: sse2.event, data } : data;
+          } else {
+            let data;
+            try {
+              data = JSON.parse(sse2.data);
+            } catch (e) {
+              console.error(`Could not parse message into JSON:`, sse2.data);
+              console.error(`From chunk:`, sse2.raw);
+              throw e;
+            }
+            if (sse2.event == "error") {
+              throw new APIError(void 0, data.error, data.message, void 0);
+            }
+            yield { event: sse2.event, data };
+          }
+        }
+        done = true;
+      } catch (e) {
+        if (isAbortError2(e))
+          return;
+        throw e;
+      } finally {
+        if (!done)
+          controller.abort();
+      }
+    }
+    return new _Stream(iterator, controller, client);
+  }
+  /**
+   * Generates a Stream from a newline-separated ReadableStream
+   * where each item is a JSON value.
+   */
+  static fromReadableStream(readableStream, controller, client) {
+    let consumed = false;
+    async function* iterLines() {
+      const lineDecoder = new LineDecoder();
+      const iter = ReadableStreamToAsyncIterable(readableStream);
+      for await (const chunk of iter) {
+        for (const line2 of lineDecoder.decode(chunk)) {
+          yield line2;
+        }
+      }
+      for (const line2 of lineDecoder.flush()) {
+        yield line2;
+      }
+    }
+    async function* iterator() {
+      if (consumed) {
+        throw new OpenAIError("Cannot iterate over a consumed stream, use `.tee()` to split the stream.");
+      }
+      consumed = true;
+      let done = false;
+      try {
+        for await (const line2 of iterLines()) {
+          if (done)
+            continue;
+          if (line2)
+            yield JSON.parse(line2);
+        }
+        done = true;
+      } catch (e) {
+        if (isAbortError2(e))
+          return;
+        throw e;
+      } finally {
+        if (!done)
+          controller.abort();
+      }
+    }
+    return new _Stream(iterator, controller, client);
+  }
+  [(_Stream_client = /* @__PURE__ */ new WeakMap(), Symbol.asyncIterator)]() {
+    return this.iterator();
+  }
+  /**
+   * Splits the stream into two streams which can be
+   * independently read from at different speeds.
+   */
+  tee() {
+    const left = [];
+    const right = [];
+    const iterator = this.iterator();
+    const teeIterator = (queue) => {
+      return {
+        next: () => {
+          if (queue.length === 0) {
+            const result = iterator.next();
+            left.push(result);
+            right.push(result);
+          }
+          return queue.shift();
+        }
+      };
+    };
+    return [
+      new _Stream(() => teeIterator(left), this.controller, __classPrivateFieldGet(this, _Stream_client, "f")),
+      new _Stream(() => teeIterator(right), this.controller, __classPrivateFieldGet(this, _Stream_client, "f"))
+    ];
+  }
+  /**
+   * Converts this stream to a newline-separated ReadableStream of
+   * JSON stringified values in the stream
+   * which can be turned back into a Stream with `Stream.fromReadableStream()`.
+   */
+  toReadableStream() {
+    const self = this;
+    let iter;
+    return makeReadableStream({
+      async start() {
+        iter = self[Symbol.asyncIterator]();
+      },
+      async pull(ctrl) {
+        try {
+          const { value, done } = await iter.next();
+          if (done)
+            return ctrl.close();
+          const bytes = encodeUTF8(JSON.stringify(value) + "\n");
+          ctrl.enqueue(bytes);
+        } catch (err) {
+          ctrl.error(err);
+        }
+      },
+      async cancel() {
+        await iter.return?.();
+      }
+    });
+  }
+};
+async function* _iterSSEMessages(response, controller) {
+  if (!response.body) {
+    controller.abort();
+    if (typeof globalThis.navigator !== "undefined" && globalThis.navigator.product === "ReactNative") {
+      throw new OpenAIError(`The default react-native fetch implementation does not support streaming. Please use expo/fetch: https://docs.expo.dev/versions/latest/sdk/expo/#expofetch-api`);
+    }
+    throw new OpenAIError(`Attempted to iterate over a response with no body`);
+  }
+  const sseDecoder = new SSEDecoder();
+  const lineDecoder = new LineDecoder();
+  const iter = ReadableStreamToAsyncIterable(response.body);
+  for await (const sseChunk of iterSSEChunks(iter)) {
+    for (const line2 of lineDecoder.decode(sseChunk)) {
+      const sse2 = sseDecoder.decode(line2);
+      if (sse2)
+        yield sse2;
+    }
+  }
+  for (const line2 of lineDecoder.flush()) {
+    const sse2 = sseDecoder.decode(line2);
+    if (sse2)
+      yield sse2;
+  }
+}
+async function* iterSSEChunks(iterator) {
+  let data = new Uint8Array();
+  for await (const chunk of iterator) {
+    if (chunk == null) {
+      continue;
+    }
+    const binaryChunk = chunk instanceof ArrayBuffer ? new Uint8Array(chunk) : typeof chunk === "string" ? encodeUTF8(chunk) : chunk;
+    let newData = new Uint8Array(data.length + binaryChunk.length);
+    newData.set(data);
+    newData.set(binaryChunk, data.length);
+    data = newData;
+    let patternIndex;
+    while ((patternIndex = findDoubleNewlineIndex(data)) !== -1) {
+      yield data.slice(0, patternIndex);
+      data = data.slice(patternIndex);
+    }
+  }
+  if (data.length > 0) {
+    yield data;
+  }
+}
+var SSEDecoder = class {
+  constructor() {
+    this.event = null;
+    this.data = [];
+    this.chunks = [];
+  }
+  decode(line2) {
+    if (line2.endsWith("\r")) {
+      line2 = line2.substring(0, line2.length - 1);
+    }
+    if (!line2) {
+      if (!this.event && !this.data.length)
+        return null;
+      const sse2 = {
+        event: this.event,
+        data: this.data.join("\n"),
+        raw: this.chunks
+      };
+      this.event = null;
+      this.data = [];
+      this.chunks = [];
+      return sse2;
+    }
+    this.chunks.push(line2);
+    if (line2.startsWith(":")) {
+      return null;
+    }
+    let [fieldname, _, value] = partition(line2, ":");
+    if (value.startsWith(" ")) {
+      value = value.substring(1);
+    }
+    if (fieldname === "event") {
+      this.event = value;
+    } else if (fieldname === "data") {
+      this.data.push(value);
+    }
+    return null;
+  }
+};
+function partition(str2, delimiter) {
+  const index = str2.indexOf(delimiter);
+  if (index !== -1) {
+    return [str2.substring(0, index), delimiter, str2.substring(index + delimiter.length)];
+  }
+  return [str2, "", ""];
+}
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/internal/parse.mjs
+async function defaultParseResponse(client, props) {
+  const { response, requestLogID, retryOfRequestLogID, startTime } = props;
+  const body = await (async () => {
+    if (props.options.stream) {
+      loggerFor(client).debug("response", response.status, response.url, response.headers, response.body);
+      if (props.options.__streamClass) {
+        return props.options.__streamClass.fromSSEResponse(response, props.controller, client, props.options.__synthesizeEventData);
+      }
+      return Stream.fromSSEResponse(response, props.controller, client, props.options.__synthesizeEventData);
+    }
+    if (response.status === 204) {
+      return null;
+    }
+    if (props.options.__binaryResponse) {
+      return response;
+    }
+    const contentType = response.headers.get("content-type");
+    const mediaType = contentType?.split(";")[0]?.trim();
+    const isJSON = mediaType?.includes("application/json") || mediaType?.endsWith("+json");
+    if (isJSON) {
+      const contentLength = response.headers.get("content-length");
+      if (contentLength === "0") {
+        return void 0;
+      }
+      const json3 = await response.json();
+      return addRequestID(json3, response);
+    }
+    const text2 = await response.text();
+    return text2;
+  })();
+  loggerFor(client).debug(`[${requestLogID}] response parsed`, formatRequestDetails({
+    retryOfRequestLogID,
+    url: response.url,
+    status: response.status,
+    body,
+    durationMs: Date.now() - startTime
+  }));
+  return body;
+}
+function addRequestID(value, response) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return value;
+  }
+  return Object.defineProperty(value, "_request_id", {
+    value: response.headers.get("x-request-id"),
+    enumerable: false
+  });
+}
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/core/api-promise.mjs
+var _APIPromise_client;
+var APIPromise = class _APIPromise extends Promise {
+  constructor(client, responsePromise, parseResponse2 = defaultParseResponse) {
+    super((resolve) => {
+      resolve(null);
+    });
+    this.responsePromise = responsePromise;
+    this.parseResponse = parseResponse2;
+    _APIPromise_client.set(this, void 0);
+    __classPrivateFieldSet(this, _APIPromise_client, client, "f");
+  }
+  _thenUnwrap(transform2) {
+    return new _APIPromise(__classPrivateFieldGet(this, _APIPromise_client, "f"), this.responsePromise, async (client, props) => addRequestID(transform2(await this.parseResponse(client, props), props), props.response));
+  }
+  /**
+   * Gets the raw `Response` instance instead of parsing the response
+   * data.
+   *
+   * If you want to parse the response body but still get the `Response`
+   * instance, you can use {@link withResponse()}.
+   *
+   * 👋 Getting the wrong TypeScript type for `Response`?
+   * Try setting `"moduleResolution": "NodeNext"` or add `"lib": ["DOM"]`
+   * to your `tsconfig.json`.
+   */
+  asResponse() {
+    return this.responsePromise.then((p) => p.response);
+  }
+  /**
+   * Gets the parsed response data, the raw `Response` instance and the ID of the request,
+   * returned via the X-Request-ID header which is useful for debugging requests and reporting
+   * issues to OpenAI.
+   *
+   * If you just want to get the raw `Response` instance without parsing it,
+   * you can use {@link asResponse()}.
+   *
+   * 👋 Getting the wrong TypeScript type for `Response`?
+   * Try setting `"moduleResolution": "NodeNext"` or add `"lib": ["DOM"]`
+   * to your `tsconfig.json`.
+   */
+  async withResponse() {
+    const [data, response] = await Promise.all([this.parse(), this.asResponse()]);
+    return { data, response, request_id: response.headers.get("x-request-id") };
+  }
+  parse() {
+    if (!this.parsedPromise) {
+      this.parsedPromise = this.responsePromise.then((data) => this.parseResponse(__classPrivateFieldGet(this, _APIPromise_client, "f"), data));
+    }
+    return this.parsedPromise;
+  }
+  then(onfulfilled, onrejected) {
+    return this.parse().then(onfulfilled, onrejected);
+  }
+  catch(onrejected) {
+    return this.parse().catch(onrejected);
+  }
+  finally(onfinally) {
+    return this.parse().finally(onfinally);
+  }
+};
+_APIPromise_client = /* @__PURE__ */ new WeakMap();
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/core/pagination.mjs
+var _AbstractPage_client;
+var AbstractPage = class {
+  constructor(client, response, body, options) {
+    _AbstractPage_client.set(this, void 0);
+    __classPrivateFieldSet(this, _AbstractPage_client, client, "f");
+    this.options = options;
+    this.response = response;
+    this.body = body;
+  }
+  hasNextPage() {
+    const items = this.getPaginatedItems();
+    if (!items.length)
+      return false;
+    return this.nextPageRequestOptions() != null;
+  }
+  async getNextPage() {
+    const nextOptions = this.nextPageRequestOptions();
+    if (!nextOptions) {
+      throw new OpenAIError("No next page expected; please check `.hasNextPage()` before calling `.getNextPage()`.");
+    }
+    return await __classPrivateFieldGet(this, _AbstractPage_client, "f").requestAPIList(this.constructor, nextOptions);
+  }
+  async *iterPages() {
+    let page = this;
+    yield page;
+    while (page.hasNextPage()) {
+      page = await page.getNextPage();
+      yield page;
+    }
+  }
+  async *[(_AbstractPage_client = /* @__PURE__ */ new WeakMap(), Symbol.asyncIterator)]() {
+    for await (const page of this.iterPages()) {
+      for (const item of page.getPaginatedItems()) {
+        yield item;
+      }
+    }
+  }
+};
+var PagePromise = class extends APIPromise {
+  constructor(client, request, Page2) {
+    super(client, request, async (client2, props) => new Page2(client2, props.response, await defaultParseResponse(client2, props), props.options));
+  }
+  /**
+   * Allow auto-paginating iteration on an unawaited list call, eg:
+   *
+   *    for await (const item of client.items.list()) {
+   *      console.log(item)
+   *    }
+   */
+  async *[Symbol.asyncIterator]() {
+    const page = await this;
+    for await (const item of page) {
+      yield item;
+    }
+  }
+};
+var Page = class extends AbstractPage {
+  constructor(client, response, body, options) {
+    super(client, response, body, options);
+    this.data = body.data || [];
+    this.object = body.object;
+  }
+  getPaginatedItems() {
+    return this.data ?? [];
+  }
+  nextPageRequestOptions() {
+    return null;
+  }
+};
+var CursorPage = class extends AbstractPage {
+  constructor(client, response, body, options) {
+    super(client, response, body, options);
+    this.data = body.data || [];
+    this.has_more = body.has_more || false;
+  }
+  getPaginatedItems() {
+    return this.data ?? [];
+  }
+  hasNextPage() {
+    if (this.has_more === false) {
+      return false;
+    }
+    return super.hasNextPage();
+  }
+  nextPageRequestOptions() {
+    const data = this.getPaginatedItems();
+    const id = data[data.length - 1]?.id;
+    if (!id) {
+      return null;
+    }
+    return {
+      ...this.options,
+      query: {
+        ...maybeObj(this.options.query),
+        after: id
+      }
+    };
+  }
+};
+var ConversationCursorPage = class extends AbstractPage {
+  constructor(client, response, body, options) {
+    super(client, response, body, options);
+    this.data = body.data || [];
+    this.has_more = body.has_more || false;
+    this.last_id = body.last_id || "";
+  }
+  getPaginatedItems() {
+    return this.data ?? [];
+  }
+  hasNextPage() {
+    if (this.has_more === false) {
+      return false;
+    }
+    return super.hasNextPage();
+  }
+  nextPageRequestOptions() {
+    const cursor = this.last_id;
+    if (!cursor) {
+      return null;
+    }
+    return {
+      ...this.options,
+      query: {
+        ...maybeObj(this.options.query),
+        after: cursor
+      }
+    };
+  }
+};
+var NextCursorPage = class extends AbstractPage {
+  constructor(client, response, body, options) {
+    super(client, response, body, options);
+    this.data = body.data || [];
+    this.has_more = body.has_more || false;
+    this.next = body.next || null;
+  }
+  getPaginatedItems() {
+    return this.data ?? [];
+  }
+  hasNextPage() {
+    if (this.has_more === false) {
+      return false;
+    }
+    return super.hasNextPage();
+  }
+  nextPageRequestOptions() {
+    const cursor = this.next;
+    if (!cursor) {
+      return null;
+    }
+    return {
+      ...this.options,
+      query: {
+        ...maybeObj(this.options.query),
+        after: cursor
+      }
+    };
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/auth/workload-identity-auth.mjs
+var SUBJECT_TOKEN_TYPES = {
+  jwt: "urn:ietf:params:oauth:token-type:jwt",
+  id: "urn:ietf:params:oauth:token-type:id_token"
+};
+var TOKEN_EXCHANGE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange";
+var WorkloadIdentityAuth = class {
+  constructor(config2, fetch2) {
+    this.cachedToken = null;
+    this.refreshPromise = null;
+    this.tokenExchangeUrl = "https://auth.openai.com/oauth/token";
+    this.config = config2;
+    this.fetch = fetch2 ?? getDefaultFetch();
+  }
+  async getToken() {
+    if (!this.cachedToken || this.isTokenExpired(this.cachedToken)) {
+      if (this.refreshPromise) {
+        return await this.refreshPromise;
+      }
+      this.refreshPromise = this.refreshToken();
+      try {
+        const token = await this.refreshPromise;
+        return token;
+      } finally {
+        this.refreshPromise = null;
+      }
+    }
+    if (this.needsRefresh(this.cachedToken) && !this.refreshPromise) {
+      this.refreshPromise = this.refreshToken().finally(() => {
+        this.refreshPromise = null;
+      });
+    }
+    return this.cachedToken.token;
+  }
+  async refreshToken() {
+    const subjectToken = await this.config.provider.getToken();
+    const response = await this.fetch(this.tokenExchangeUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        grant_type: TOKEN_EXCHANGE_GRANT_TYPE,
+        client_id: this.config.clientId,
+        subject_token: subjectToken,
+        subject_token_type: SUBJECT_TOKEN_TYPES[this.config.provider.tokenType],
+        identity_provider_id: this.config.identityProviderId,
+        service_account_id: this.config.serviceAccountId
+      })
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      let body = void 0;
+      try {
+        body = JSON.parse(errorText);
+      } catch {
+      }
+      if (response.status === 400 || response.status === 401 || response.status === 403) {
+        throw new OAuthError(response.status, body, response.headers);
+      }
+      throw APIError.generate(response.status, body, `Token exchange failed with status ${response.status}`, response.headers);
+    }
+    const tokenResponse = await response.json();
+    const expiresIn = tokenResponse.expires_in || 3600;
+    const expiresAt = Date.now() + expiresIn * 1e3;
+    this.cachedToken = {
+      token: tokenResponse.access_token,
+      expiresAt
+    };
+    return tokenResponse.access_token;
+  }
+  isTokenExpired(cachedToken) {
+    return Date.now() >= cachedToken.expiresAt;
+  }
+  needsRefresh(cachedToken) {
+    const bufferSeconds = this.config.refreshBufferSeconds ?? 1200;
+    const bufferMs = bufferSeconds * 1e3;
+    return Date.now() >= cachedToken.expiresAt - bufferMs;
+  }
+  invalidateToken() {
+    this.cachedToken = null;
+    this.refreshPromise = null;
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/internal/uploads.mjs
+var checkFileSupport = () => {
+  if (typeof File === "undefined") {
+    const { process: process2 } = globalThis;
+    const isOldNode = typeof process2?.versions?.node === "string" && parseInt(process2.versions.node.split(".")) < 20;
+    throw new Error("`File` is not defined as a global, which is required for file uploads." + (isOldNode ? " Update to Node 20 LTS or newer, or set `globalThis.File` to `import('node:buffer').File`." : ""));
+  }
+};
+function makeFile(fileBits, fileName, options) {
+  checkFileSupport();
+  return new File(fileBits, fileName ?? "unknown_file", options);
+}
+function getName(value) {
+  return (typeof value === "object" && value !== null && ("name" in value && value.name && String(value.name) || "url" in value && value.url && String(value.url) || "filename" in value && value.filename && String(value.filename) || "path" in value && value.path && String(value.path)) || "").split(/[\\/]/).pop() || void 0;
+}
+var isAsyncIterable2 = (value) => value != null && typeof value === "object" && typeof value[Symbol.asyncIterator] === "function";
+var maybeMultipartFormRequestOptions = async (opts, fetch2) => {
+  if (!hasUploadableValue(opts.body))
+    return opts;
+  return { ...opts, body: await createForm(opts.body, fetch2) };
+};
+var multipartFormRequestOptions = async (opts, fetch2) => {
+  return { ...opts, body: await createForm(opts.body, fetch2) };
+};
+var supportsFormDataMap = /* @__PURE__ */ new WeakMap();
+function supportsFormData(fetchObject) {
+  const fetch2 = typeof fetchObject === "function" ? fetchObject : fetchObject.fetch;
+  const cached2 = supportsFormDataMap.get(fetch2);
+  if (cached2)
+    return cached2;
+  const promise2 = (async () => {
+    try {
+      const FetchResponse = "Response" in fetch2 ? fetch2.Response : (await fetch2("data:,")).constructor;
+      const data = new FormData();
+      if (data.toString() === await new FetchResponse(data).text()) {
+        return false;
+      }
+      return true;
+    } catch {
+      return true;
+    }
+  })();
+  supportsFormDataMap.set(fetch2, promise2);
+  return promise2;
+}
+var createForm = async (body, fetch2) => {
+  if (!await supportsFormData(fetch2)) {
+    throw new TypeError("The provided fetch function does not support file uploads with the current global FormData class.");
+  }
+  const form = new FormData();
+  await Promise.all(Object.entries(body || {}).map(([key, value]) => addFormValue(form, key, value)));
+  return form;
+};
+var isNamedBlob = (value) => value instanceof Blob && "name" in value;
+var isUploadable = (value) => typeof value === "object" && value !== null && (value instanceof Response || isAsyncIterable2(value) || isNamedBlob(value));
+var hasUploadableValue = (value) => {
+  if (isUploadable(value))
+    return true;
+  if (Array.isArray(value))
+    return value.some(hasUploadableValue);
+  if (value && typeof value === "object") {
+    for (const k in value) {
+      if (hasUploadableValue(value[k]))
+        return true;
+    }
+  }
+  return false;
+};
+var addFormValue = async (form, key, value) => {
+  if (value === void 0)
+    return;
+  if (value == null) {
+    throw new TypeError(`Received null for "${key}"; to pass null in FormData, you must use the string 'null'`);
+  }
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    form.append(key, String(value));
+  } else if (value instanceof Response) {
+    form.append(key, makeFile([await value.blob()], getName(value)));
+  } else if (isAsyncIterable2(value)) {
+    form.append(key, makeFile([await new Response(ReadableStreamFrom(value)).blob()], getName(value)));
+  } else if (isNamedBlob(value)) {
+    form.append(key, value, getName(value));
+  } else if (Array.isArray(value)) {
+    await Promise.all(value.map((entry) => addFormValue(form, key + "[]", entry)));
+  } else if (typeof value === "object") {
+    await Promise.all(Object.entries(value).map(([name, prop]) => addFormValue(form, `${key}[${name}]`, prop)));
+  } else {
+    throw new TypeError(`Invalid value given to form, expected a string, number, boolean, object, Array, File or Blob but got ${value} instead`);
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/internal/to-file.mjs
+var isBlobLike = (value) => value != null && typeof value === "object" && typeof value.size === "number" && typeof value.type === "string" && typeof value.text === "function" && typeof value.slice === "function" && typeof value.arrayBuffer === "function";
+var isFileLike = (value) => value != null && typeof value === "object" && typeof value.name === "string" && typeof value.lastModified === "number" && isBlobLike(value);
+var isResponseLike = (value) => value != null && typeof value === "object" && typeof value.url === "string" && typeof value.blob === "function";
+async function toFile(value, name, options) {
+  checkFileSupport();
+  value = await value;
+  if (isFileLike(value)) {
+    if (value instanceof File) {
+      return value;
+    }
+    return makeFile([await value.arrayBuffer()], value.name);
+  }
+  if (isResponseLike(value)) {
+    const blob = await value.blob();
+    name || (name = new URL(value.url).pathname.split(/[\\/]/).pop());
+    return makeFile(await getBytes(blob), name, options);
+  }
+  const parts = await getBytes(value);
+  name || (name = getName(value));
+  if (!options?.type) {
+    const type = parts.find((part) => typeof part === "object" && "type" in part && part.type);
+    if (typeof type === "string") {
+      options = { ...options, type };
+    }
+  }
+  return makeFile(parts, name, options);
+}
+async function getBytes(value) {
+  let parts = [];
+  if (typeof value === "string" || ArrayBuffer.isView(value) || // includes Uint8Array, Buffer, etc.
+  value instanceof ArrayBuffer) {
+    parts.push(value);
+  } else if (isBlobLike(value)) {
+    parts.push(value instanceof Blob ? value : await value.arrayBuffer());
+  } else if (isAsyncIterable2(value)) {
+    for await (const chunk of value) {
+      parts.push(...await getBytes(chunk));
+    }
+  } else {
+    const constructor = value?.constructor?.name;
+    throw new Error(`Unexpected data type: ${typeof value}${constructor ? `; constructor: ${constructor}` : ""}${propsForError(value)}`);
+  }
+  return parts;
+}
+function propsForError(value) {
+  if (typeof value !== "object" || value === null)
+    return "";
+  const props = Object.getOwnPropertyNames(value);
+  return `; props: [${props.map((p) => `"${p}"`).join(", ")}]`;
+}
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/core/resource.mjs
+var APIResource = class {
+  constructor(client) {
+    this._client = client;
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/internal/utils/path.mjs
+function encodeURIPath(str2) {
+  return str2.replace(/[^A-Za-z0-9\-._~!$&'()*+,;=:@]+/g, encodeURIComponent);
+}
+var EMPTY = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.create(null));
+var createPathTagFunction = (pathEncoder = encodeURIPath) => function path2(statics, ...params) {
+  if (statics.length === 1)
+    return statics[0];
+  let postPath = false;
+  const invalidSegments = [];
+  const path3 = statics.reduce((previousValue, currentValue, index) => {
+    if (/[?#]/.test(currentValue)) {
+      postPath = true;
+    }
+    const value = params[index];
+    let encoded = (postPath ? encodeURIComponent : pathEncoder)("" + value);
+    if (index !== params.length && (value == null || typeof value === "object" && // handle values from other realms
+    value.toString === Object.getPrototypeOf(Object.getPrototypeOf(value.hasOwnProperty ?? EMPTY) ?? EMPTY)?.toString)) {
+      encoded = value + "";
+      invalidSegments.push({
+        start: previousValue.length + currentValue.length,
+        length: encoded.length,
+        error: `Value of type ${Object.prototype.toString.call(value).slice(8, -1)} is not a valid path parameter`
+      });
+    }
+    return previousValue + currentValue + (index === params.length ? "" : encoded);
+  }, "");
+  const pathOnly = path3.split(/[?#]/, 1)[0];
+  const invalidSegmentPattern = /(?<=^|\/)(?:\.|%2e){1,2}(?=\/|$)/gi;
+  let match;
+  while ((match = invalidSegmentPattern.exec(pathOnly)) !== null) {
+    invalidSegments.push({
+      start: match.index,
+      length: match[0].length,
+      error: `Value "${match[0]}" can't be safely passed as a path parameter`
+    });
+  }
+  invalidSegments.sort((a, b) => a.start - b.start);
+  if (invalidSegments.length > 0) {
+    let lastEnd = 0;
+    const underline = invalidSegments.reduce((acc, segment) => {
+      const spaces = " ".repeat(segment.start - lastEnd);
+      const arrows = "^".repeat(segment.length);
+      lastEnd = segment.start + segment.length;
+      return acc + spaces + arrows;
+    }, "");
+    throw new OpenAIError(`Path parameters result in path with invalid segments:
+${invalidSegments.map((e) => e.error).join("\n")}
+${path3}
+${underline}`);
+  }
+  return path3;
+};
+var path = /* @__PURE__ */ createPathTagFunction(encodeURIPath);
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/chat/completions/messages.mjs
+var Messages = class extends APIResource {
+  /**
+   * Get the messages in a stored chat completion. Only Chat Completions that have
+   * been created with the `store` parameter set to `true` will be returned.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const chatCompletionStoreMessage of client.chat.completions.messages.list(
+   *   'completion_id',
+   * )) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(completionID, query = {}, options) {
+    return this._client.getAPIList(path`/chat/completions/${completionID}/messages`, CursorPage, { query, ...options, __security: { bearerAuth: true } });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/lib/parser.mjs
+function isChatCompletionFunctionTool(tool) {
+  return tool !== void 0 && "function" in tool && tool.function !== void 0;
+}
+function isAutoParsableResponseFormat(response_format) {
+  return response_format?.["$brand"] === "auto-parseable-response-format";
+}
+function isAutoParsableTool(tool) {
+  return tool?.["$brand"] === "auto-parseable-tool";
+}
+function maybeParseChatCompletion(completion, params) {
+  if (!params || !hasAutoParseableInput(params)) {
+    return {
+      ...completion,
+      choices: completion.choices.map((choice) => {
+        assertToolCallsAreChatCompletionFunctionToolCalls(choice.message.tool_calls);
+        return {
+          ...choice,
+          message: {
+            ...choice.message,
+            parsed: null,
+            ...choice.message.tool_calls ? {
+              tool_calls: choice.message.tool_calls
+            } : void 0
+          }
+        };
+      })
+    };
+  }
+  return parseChatCompletion(completion, params);
+}
+function parseChatCompletion(completion, params) {
+  const choices = completion.choices.map((choice) => {
+    if (choice.finish_reason === "length") {
+      throw new LengthFinishReasonError();
+    }
+    if (choice.finish_reason === "content_filter") {
+      throw new ContentFilterFinishReasonError();
+    }
+    assertToolCallsAreChatCompletionFunctionToolCalls(choice.message.tool_calls);
+    return {
+      ...choice,
+      message: {
+        ...choice.message,
+        ...choice.message.tool_calls ? {
+          tool_calls: choice.message.tool_calls?.map((toolCall) => parseToolCall(params, toolCall)) ?? void 0
+        } : void 0,
+        parsed: choice.message.content && !choice.message.refusal ? parseResponseFormat(params, choice.message.content) : null
+      }
+    };
+  });
+  return { ...completion, choices };
+}
+function parseResponseFormat(params, content) {
+  if (params.response_format?.type !== "json_schema") {
+    return null;
+  }
+  if (params.response_format?.type === "json_schema") {
+    if ("$parseRaw" in params.response_format) {
+      const response_format = params.response_format;
+      return response_format.$parseRaw(content);
+    }
+    return JSON.parse(content);
+  }
+  return null;
+}
+function parseToolCall(params, toolCall) {
+  const inputTool = params.tools?.find((inputTool2) => isChatCompletionFunctionTool(inputTool2) && inputTool2.function?.name === toolCall.function.name);
+  return {
+    ...toolCall,
+    function: {
+      ...toolCall.function,
+      parsed_arguments: isAutoParsableTool(inputTool) ? inputTool.$parseRaw(toolCall.function.arguments) : inputTool?.function.strict ? JSON.parse(toolCall.function.arguments) : null
+    }
+  };
+}
+function shouldParseToolCall(params, toolCall) {
+  if (!params || !("tools" in params) || !params.tools) {
+    return false;
+  }
+  const inputTool = params.tools?.find((inputTool2) => isChatCompletionFunctionTool(inputTool2) && inputTool2.function?.name === toolCall.function.name);
+  return isChatCompletionFunctionTool(inputTool) && (isAutoParsableTool(inputTool) || inputTool?.function.strict || false);
+}
+function hasAutoParseableInput(params) {
+  if (isAutoParsableResponseFormat(params.response_format)) {
+    return true;
+  }
+  return params.tools?.some((t2) => isAutoParsableTool(t2) || t2.type === "function" && t2.function.strict === true) ?? false;
+}
+function assertToolCallsAreChatCompletionFunctionToolCalls(toolCalls) {
+  for (const toolCall of toolCalls || []) {
+    if (toolCall.type !== "function") {
+      throw new OpenAIError(`Currently only \`function\` tool calls are supported; Received \`${toolCall.type}\``);
+    }
+  }
+}
+function validateInputTools(tools) {
+  for (const tool of tools ?? []) {
+    if (tool.type !== "function") {
+      throw new OpenAIError(`Currently only \`function\` tool types support auto-parsing; Received \`${tool.type}\``);
+    }
+    if (tool.function.strict !== true) {
+      throw new OpenAIError(`The \`${tool.function.name}\` tool is not marked with \`strict: true\`. Only strict function tools can be auto-parsed`);
+    }
+  }
+}
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/lib/chatCompletionUtils.mjs
+var isAssistantMessage = (message2) => {
+  return message2?.role === "assistant";
+};
+var isToolMessage = (message2) => {
+  return message2?.role === "tool";
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/lib/EventStream.mjs
+var _EventStream_instances;
+var _EventStream_connectedPromise;
+var _EventStream_resolveConnectedPromise;
+var _EventStream_rejectConnectedPromise;
+var _EventStream_endPromise;
+var _EventStream_resolveEndPromise;
+var _EventStream_rejectEndPromise;
+var _EventStream_listeners;
+var _EventStream_ended;
+var _EventStream_errored;
+var _EventStream_aborted;
+var _EventStream_catchingPromiseCreated;
+var _EventStream_handleError;
+var EventStream = class {
+  constructor() {
+    _EventStream_instances.add(this);
+    this.controller = new AbortController();
+    _EventStream_connectedPromise.set(this, void 0);
+    _EventStream_resolveConnectedPromise.set(this, () => {
+    });
+    _EventStream_rejectConnectedPromise.set(this, () => {
+    });
+    _EventStream_endPromise.set(this, void 0);
+    _EventStream_resolveEndPromise.set(this, () => {
+    });
+    _EventStream_rejectEndPromise.set(this, () => {
+    });
+    _EventStream_listeners.set(this, {});
+    _EventStream_ended.set(this, false);
+    _EventStream_errored.set(this, false);
+    _EventStream_aborted.set(this, false);
+    _EventStream_catchingPromiseCreated.set(this, false);
+    __classPrivateFieldSet(this, _EventStream_connectedPromise, new Promise((resolve, reject) => {
+      __classPrivateFieldSet(this, _EventStream_resolveConnectedPromise, resolve, "f");
+      __classPrivateFieldSet(this, _EventStream_rejectConnectedPromise, reject, "f");
+    }), "f");
+    __classPrivateFieldSet(this, _EventStream_endPromise, new Promise((resolve, reject) => {
+      __classPrivateFieldSet(this, _EventStream_resolveEndPromise, resolve, "f");
+      __classPrivateFieldSet(this, _EventStream_rejectEndPromise, reject, "f");
+    }), "f");
+    __classPrivateFieldGet(this, _EventStream_connectedPromise, "f").catch(() => {
+    });
+    __classPrivateFieldGet(this, _EventStream_endPromise, "f").catch(() => {
+    });
+  }
+  _run(executor) {
+    setTimeout(() => {
+      executor().then(() => {
+        this._emitFinal();
+        this._emit("end");
+      }, __classPrivateFieldGet(this, _EventStream_instances, "m", _EventStream_handleError).bind(this));
+    }, 0);
+  }
+  _connected() {
+    if (this.ended)
+      return;
+    __classPrivateFieldGet(this, _EventStream_resolveConnectedPromise, "f").call(this);
+    this._emit("connect");
+  }
+  get ended() {
+    return __classPrivateFieldGet(this, _EventStream_ended, "f");
+  }
+  get errored() {
+    return __classPrivateFieldGet(this, _EventStream_errored, "f");
+  }
+  get aborted() {
+    return __classPrivateFieldGet(this, _EventStream_aborted, "f");
+  }
+  abort() {
+    this.controller.abort();
+  }
+  /**
+   * Adds the listener function to the end of the listeners array for the event.
+   * No checks are made to see if the listener has already been added. Multiple calls passing
+   * the same combination of event and listener will result in the listener being added, and
+   * called, multiple times.
+   * @returns this ChatCompletionStream, so that calls can be chained
+   */
+  on(event, listener) {
+    const listeners = __classPrivateFieldGet(this, _EventStream_listeners, "f")[event] || (__classPrivateFieldGet(this, _EventStream_listeners, "f")[event] = []);
+    listeners.push({ listener });
+    return this;
+  }
+  /**
+   * Removes the specified listener from the listener array for the event.
+   * off() will remove, at most, one instance of a listener from the listener array. If any single
+   * listener has been added multiple times to the listener array for the specified event, then
+   * off() must be called multiple times to remove each instance.
+   * @returns this ChatCompletionStream, so that calls can be chained
+   */
+  off(event, listener) {
+    const listeners = __classPrivateFieldGet(this, _EventStream_listeners, "f")[event];
+    if (!listeners)
+      return this;
+    const index = listeners.findIndex((l) => l.listener === listener);
+    if (index >= 0)
+      listeners.splice(index, 1);
+    return this;
+  }
+  /**
+   * Adds a one-time listener function for the event. The next time the event is triggered,
+   * this listener is removed and then invoked.
+   * @returns this ChatCompletionStream, so that calls can be chained
+   */
+  once(event, listener) {
+    const listeners = __classPrivateFieldGet(this, _EventStream_listeners, "f")[event] || (__classPrivateFieldGet(this, _EventStream_listeners, "f")[event] = []);
+    listeners.push({ listener, once: true });
+    return this;
+  }
+  /**
+   * This is similar to `.once()`, but returns a Promise that resolves the next time
+   * the event is triggered, instead of calling a listener callback.
+   * @returns a Promise that resolves the next time given event is triggered,
+   * or rejects if an error is emitted.  (If you request the 'error' event,
+   * returns a promise that resolves with the error).
+   *
+   * Example:
+   *
+   *   const message = await stream.emitted('message') // rejects if the stream errors
+   */
+  emitted(event) {
+    return new Promise((resolve, reject) => {
+      __classPrivateFieldSet(this, _EventStream_catchingPromiseCreated, true, "f");
+      if (event !== "error")
+        this.once("error", reject);
+      this.once(event, resolve);
+    });
+  }
+  async done() {
+    __classPrivateFieldSet(this, _EventStream_catchingPromiseCreated, true, "f");
+    await __classPrivateFieldGet(this, _EventStream_endPromise, "f");
+  }
+  _emit(event, ...args) {
+    if (__classPrivateFieldGet(this, _EventStream_ended, "f")) {
+      return;
+    }
+    if (event === "end") {
+      __classPrivateFieldSet(this, _EventStream_ended, true, "f");
+      __classPrivateFieldGet(this, _EventStream_resolveEndPromise, "f").call(this);
+    }
+    const listeners = __classPrivateFieldGet(this, _EventStream_listeners, "f")[event];
+    if (listeners) {
+      __classPrivateFieldGet(this, _EventStream_listeners, "f")[event] = listeners.filter((l) => !l.once);
+      listeners.forEach(({ listener }) => listener(...args));
+    }
+    if (event === "abort") {
+      const error46 = args[0];
+      if (!__classPrivateFieldGet(this, _EventStream_catchingPromiseCreated, "f") && !listeners?.length) {
+        Promise.reject(error46);
+      }
+      __classPrivateFieldGet(this, _EventStream_rejectConnectedPromise, "f").call(this, error46);
+      __classPrivateFieldGet(this, _EventStream_rejectEndPromise, "f").call(this, error46);
+      this._emit("end");
+      return;
+    }
+    if (event === "error") {
+      const error46 = args[0];
+      if (!__classPrivateFieldGet(this, _EventStream_catchingPromiseCreated, "f") && !listeners?.length) {
+        Promise.reject(error46);
+      }
+      __classPrivateFieldGet(this, _EventStream_rejectConnectedPromise, "f").call(this, error46);
+      __classPrivateFieldGet(this, _EventStream_rejectEndPromise, "f").call(this, error46);
+      this._emit("end");
+    }
+  }
+  _emitFinal() {
+  }
+};
+_EventStream_connectedPromise = /* @__PURE__ */ new WeakMap(), _EventStream_resolveConnectedPromise = /* @__PURE__ */ new WeakMap(), _EventStream_rejectConnectedPromise = /* @__PURE__ */ new WeakMap(), _EventStream_endPromise = /* @__PURE__ */ new WeakMap(), _EventStream_resolveEndPromise = /* @__PURE__ */ new WeakMap(), _EventStream_rejectEndPromise = /* @__PURE__ */ new WeakMap(), _EventStream_listeners = /* @__PURE__ */ new WeakMap(), _EventStream_ended = /* @__PURE__ */ new WeakMap(), _EventStream_errored = /* @__PURE__ */ new WeakMap(), _EventStream_aborted = /* @__PURE__ */ new WeakMap(), _EventStream_catchingPromiseCreated = /* @__PURE__ */ new WeakMap(), _EventStream_instances = /* @__PURE__ */ new WeakSet(), _EventStream_handleError = function _EventStream_handleError2(error46) {
+  __classPrivateFieldSet(this, _EventStream_errored, true, "f");
+  if (error46 instanceof Error && error46.name === "AbortError") {
+    error46 = new APIUserAbortError();
+  }
+  if (error46 instanceof APIUserAbortError) {
+    __classPrivateFieldSet(this, _EventStream_aborted, true, "f");
+    return this._emit("abort", error46);
+  }
+  if (error46 instanceof OpenAIError) {
+    return this._emit("error", error46);
+  }
+  if (error46 instanceof Error) {
+    const openAIError = new OpenAIError(error46.message);
+    openAIError.cause = error46;
+    return this._emit("error", openAIError);
+  }
+  return this._emit("error", new OpenAIError(String(error46)));
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/lib/RunnableFunction.mjs
+function isRunnableFunctionWithParse(fn) {
+  return typeof fn.parse === "function";
+}
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/lib/AbstractChatCompletionRunner.mjs
+var _AbstractChatCompletionRunner_instances;
+var _AbstractChatCompletionRunner_getFinalContent;
+var _AbstractChatCompletionRunner_getFinalMessage;
+var _AbstractChatCompletionRunner_getFinalFunctionToolCall;
+var _AbstractChatCompletionRunner_getFinalFunctionToolCallResult;
+var _AbstractChatCompletionRunner_calculateTotalUsage;
+var _AbstractChatCompletionRunner_validateParams;
+var _AbstractChatCompletionRunner_stringifyFunctionCallResult;
+var DEFAULT_MAX_CHAT_COMPLETIONS = 10;
+var AbstractChatCompletionRunner = class extends EventStream {
+  constructor() {
+    super(...arguments);
+    _AbstractChatCompletionRunner_instances.add(this);
+    this._chatCompletions = [];
+    this.messages = [];
+  }
+  _addChatCompletion(chatCompletion) {
+    this._chatCompletions.push(chatCompletion);
+    this._emit("chatCompletion", chatCompletion);
+    const message2 = chatCompletion.choices[0]?.message;
+    if (message2)
+      this._addMessage(message2);
+    return chatCompletion;
+  }
+  _addMessage(message2, emit = true) {
+    if (!("content" in message2))
+      message2.content = null;
+    this.messages.push(message2);
+    if (emit) {
+      this._emit("message", message2);
+      if (isToolMessage(message2) && message2.content) {
+        this._emit("functionToolCallResult", message2.content);
+      } else if (isAssistantMessage(message2) && message2.tool_calls) {
+        for (const tool_call of message2.tool_calls) {
+          if (tool_call.type === "function") {
+            this._emit("functionToolCall", tool_call.function);
+          }
+        }
+      }
+    }
+  }
+  /**
+   * @returns a promise that resolves with the final ChatCompletion, or rejects
+   * if an error occurred or the stream ended prematurely without producing a ChatCompletion.
+   */
+  async finalChatCompletion() {
+    await this.done();
+    const completion = this._chatCompletions[this._chatCompletions.length - 1];
+    if (!completion)
+      throw new OpenAIError("stream ended without producing a ChatCompletion");
+    return completion;
+  }
+  /**
+   * @returns a promise that resolves with the content of the final ChatCompletionMessage, or rejects
+   * if an error occurred or the stream ended prematurely without producing a ChatCompletionMessage.
+   */
+  async finalContent() {
+    await this.done();
+    return __classPrivateFieldGet(this, _AbstractChatCompletionRunner_instances, "m", _AbstractChatCompletionRunner_getFinalContent).call(this);
+  }
+  /**
+   * @returns a promise that resolves with the the final assistant ChatCompletionMessage response,
+   * or rejects if an error occurred or the stream ended prematurely without producing a ChatCompletionMessage.
+   */
+  async finalMessage() {
+    await this.done();
+    return __classPrivateFieldGet(this, _AbstractChatCompletionRunner_instances, "m", _AbstractChatCompletionRunner_getFinalMessage).call(this);
+  }
+  /**
+   * @returns a promise that resolves with the content of the final FunctionCall, or rejects
+   * if an error occurred or the stream ended prematurely without producing a ChatCompletionMessage.
+   */
+  async finalFunctionToolCall() {
+    await this.done();
+    return __classPrivateFieldGet(this, _AbstractChatCompletionRunner_instances, "m", _AbstractChatCompletionRunner_getFinalFunctionToolCall).call(this);
+  }
+  async finalFunctionToolCallResult() {
+    await this.done();
+    return __classPrivateFieldGet(this, _AbstractChatCompletionRunner_instances, "m", _AbstractChatCompletionRunner_getFinalFunctionToolCallResult).call(this);
+  }
+  async totalUsage() {
+    await this.done();
+    return __classPrivateFieldGet(this, _AbstractChatCompletionRunner_instances, "m", _AbstractChatCompletionRunner_calculateTotalUsage).call(this);
+  }
+  allChatCompletions() {
+    return [...this._chatCompletions];
+  }
+  _emitFinal() {
+    const completion = this._chatCompletions[this._chatCompletions.length - 1];
+    if (completion)
+      this._emit("finalChatCompletion", completion);
+    const finalMessage = __classPrivateFieldGet(this, _AbstractChatCompletionRunner_instances, "m", _AbstractChatCompletionRunner_getFinalMessage).call(this);
+    if (finalMessage)
+      this._emit("finalMessage", finalMessage);
+    const finalContent = __classPrivateFieldGet(this, _AbstractChatCompletionRunner_instances, "m", _AbstractChatCompletionRunner_getFinalContent).call(this);
+    if (finalContent)
+      this._emit("finalContent", finalContent);
+    const finalFunctionCall = __classPrivateFieldGet(this, _AbstractChatCompletionRunner_instances, "m", _AbstractChatCompletionRunner_getFinalFunctionToolCall).call(this);
+    if (finalFunctionCall)
+      this._emit("finalFunctionToolCall", finalFunctionCall);
+    const finalFunctionCallResult = __classPrivateFieldGet(this, _AbstractChatCompletionRunner_instances, "m", _AbstractChatCompletionRunner_getFinalFunctionToolCallResult).call(this);
+    if (finalFunctionCallResult != null)
+      this._emit("finalFunctionToolCallResult", finalFunctionCallResult);
+    if (this._chatCompletions.some((c) => c.usage)) {
+      this._emit("totalUsage", __classPrivateFieldGet(this, _AbstractChatCompletionRunner_instances, "m", _AbstractChatCompletionRunner_calculateTotalUsage).call(this));
+    }
+  }
+  async _createChatCompletion(client, params, options) {
+    const signal = options?.signal;
+    if (signal) {
+      if (signal.aborted)
+        this.controller.abort();
+      signal.addEventListener("abort", () => this.controller.abort());
+    }
+    __classPrivateFieldGet(this, _AbstractChatCompletionRunner_instances, "m", _AbstractChatCompletionRunner_validateParams).call(this, params);
+    const chatCompletion = await client.chat.completions.create({ ...params, stream: false }, { ...options, signal: this.controller.signal });
+    this._connected();
+    return this._addChatCompletion(parseChatCompletion(chatCompletion, params));
+  }
+  async _runChatCompletion(client, params, options) {
+    for (const message2 of params.messages) {
+      this._addMessage(message2, false);
+    }
+    return await this._createChatCompletion(client, params, options);
+  }
+  async _runTools(client, params, options) {
+    const role = "tool";
+    const { tool_choice = "auto", stream, ...restParams } = params;
+    const singleFunctionToCall = typeof tool_choice !== "string" && tool_choice.type === "function" && tool_choice?.function?.name;
+    const { maxChatCompletions = DEFAULT_MAX_CHAT_COMPLETIONS } = options || {};
+    const inputTools = params.tools.map((tool) => {
+      if (isAutoParsableTool(tool)) {
+        if (!tool.$callback) {
+          throw new OpenAIError("Tool given to `.runTools()` that does not have an associated function");
+        }
+        return {
+          type: "function",
+          function: {
+            function: tool.$callback,
+            name: tool.function.name,
+            description: tool.function.description || "",
+            parameters: tool.function.parameters,
+            parse: tool.$parseRaw,
+            strict: true
+          }
+        };
+      }
+      return tool;
+    });
+    const functionsByName = {};
+    for (const f of inputTools) {
+      if (f.type === "function") {
+        functionsByName[f.function.name || f.function.function.name] = f.function;
+      }
+    }
+    const tools = "tools" in params ? inputTools.map((t2) => t2.type === "function" ? {
+      type: "function",
+      function: {
+        name: t2.function.name || t2.function.function.name,
+        parameters: t2.function.parameters,
+        description: t2.function.description,
+        strict: t2.function.strict
+      }
+    } : t2) : void 0;
+    for (const message2 of params.messages) {
+      this._addMessage(message2, false);
+    }
+    for (let i = 0; i < maxChatCompletions; ++i) {
+      const chatCompletion = await this._createChatCompletion(client, {
+        ...restParams,
+        tool_choice,
+        tools,
+        messages: [...this.messages]
+      }, options);
+      const message2 = chatCompletion.choices[0]?.message;
+      if (!message2) {
+        throw new OpenAIError(`missing message in ChatCompletion response`);
+      }
+      if (!message2.tool_calls?.length) {
+        return;
+      }
+      for (const tool_call of message2.tool_calls) {
+        if (tool_call.type !== "function")
+          continue;
+        const tool_call_id = tool_call.id;
+        const { name, arguments: args } = tool_call.function;
+        const fn = functionsByName[name];
+        if (!fn) {
+          const content2 = `Invalid tool_call: ${JSON.stringify(name)}. Available options are: ${Object.keys(functionsByName).map((name2) => JSON.stringify(name2)).join(", ")}. Please try again`;
+          this._addMessage({ role, tool_call_id, content: content2 });
+          continue;
+        } else if (singleFunctionToCall && singleFunctionToCall !== name) {
+          const content2 = `Invalid tool_call: ${JSON.stringify(name)}. ${JSON.stringify(singleFunctionToCall)} requested. Please try again`;
+          this._addMessage({ role, tool_call_id, content: content2 });
+          continue;
+        }
+        let parsed;
+        try {
+          parsed = isRunnableFunctionWithParse(fn) ? await fn.parse(args) : args;
+        } catch (error46) {
+          const content2 = error46 instanceof Error ? error46.message : String(error46);
+          this._addMessage({ role, tool_call_id, content: content2 });
+          continue;
+        }
+        const rawContent = await fn.function(parsed, this);
+        const content = __classPrivateFieldGet(this, _AbstractChatCompletionRunner_instances, "m", _AbstractChatCompletionRunner_stringifyFunctionCallResult).call(this, rawContent);
+        this._addMessage({ role, tool_call_id, content });
+        if (singleFunctionToCall) {
+          return;
+        }
+      }
+    }
+    return;
+  }
+};
+_AbstractChatCompletionRunner_instances = /* @__PURE__ */ new WeakSet(), _AbstractChatCompletionRunner_getFinalContent = function _AbstractChatCompletionRunner_getFinalContent2() {
+  return __classPrivateFieldGet(this, _AbstractChatCompletionRunner_instances, "m", _AbstractChatCompletionRunner_getFinalMessage).call(this).content ?? null;
+}, _AbstractChatCompletionRunner_getFinalMessage = function _AbstractChatCompletionRunner_getFinalMessage2() {
+  let i = this.messages.length;
+  while (i-- > 0) {
+    const message2 = this.messages[i];
+    if (isAssistantMessage(message2)) {
+      const ret = {
+        ...message2,
+        content: message2.content ?? null,
+        refusal: message2.refusal ?? null
+      };
+      return ret;
+    }
+  }
+  throw new OpenAIError("stream ended without producing a ChatCompletionMessage with role=assistant");
+}, _AbstractChatCompletionRunner_getFinalFunctionToolCall = function _AbstractChatCompletionRunner_getFinalFunctionToolCall2() {
+  for (let i = this.messages.length - 1; i >= 0; i--) {
+    const message2 = this.messages[i];
+    if (isAssistantMessage(message2) && message2?.tool_calls?.length) {
+      return message2.tool_calls.filter((x) => x.type === "function").at(-1)?.function;
+    }
+  }
+  return;
+}, _AbstractChatCompletionRunner_getFinalFunctionToolCallResult = function _AbstractChatCompletionRunner_getFinalFunctionToolCallResult2() {
+  for (let i = this.messages.length - 1; i >= 0; i--) {
+    const message2 = this.messages[i];
+    if (isToolMessage(message2) && message2.content != null && typeof message2.content === "string" && this.messages.some((x) => x.role === "assistant" && x.tool_calls?.some((y) => y.type === "function" && y.id === message2.tool_call_id))) {
+      return message2.content;
+    }
+  }
+  return;
+}, _AbstractChatCompletionRunner_calculateTotalUsage = function _AbstractChatCompletionRunner_calculateTotalUsage2() {
+  const total = {
+    completion_tokens: 0,
+    prompt_tokens: 0,
+    total_tokens: 0
+  };
+  for (const { usage } of this._chatCompletions) {
+    if (usage) {
+      total.completion_tokens += usage.completion_tokens;
+      total.prompt_tokens += usage.prompt_tokens;
+      total.total_tokens += usage.total_tokens;
+    }
+  }
+  return total;
+}, _AbstractChatCompletionRunner_validateParams = function _AbstractChatCompletionRunner_validateParams2(params) {
+  if (params.n != null && params.n > 1) {
+    throw new OpenAIError("ChatCompletion convenience helpers only support n=1 at this time. To use n>1, please use chat.completions.create() directly.");
+  }
+}, _AbstractChatCompletionRunner_stringifyFunctionCallResult = function _AbstractChatCompletionRunner_stringifyFunctionCallResult2(rawContent) {
+  return typeof rawContent === "string" ? rawContent : rawContent === void 0 ? "undefined" : JSON.stringify(rawContent);
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/lib/ChatCompletionRunner.mjs
+var ChatCompletionRunner = class _ChatCompletionRunner extends AbstractChatCompletionRunner {
+  static runTools(client, params, options) {
+    const runner = new _ChatCompletionRunner();
+    const opts = {
+      ...options,
+      headers: { ...options?.headers, "X-Stainless-Helper-Method": "runTools" }
+    };
+    runner._run(() => runner._runTools(client, params, opts));
+    return runner;
+  }
+  _addMessage(message2, emit = true) {
+    super._addMessage(message2, emit);
+    if (isAssistantMessage(message2) && message2.content) {
+      this._emit("content", message2.content);
+    }
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/_vendor/partial-json-parser/parser.mjs
+var STR = 1;
+var NUM = 2;
+var ARR = 4;
+var OBJ = 8;
+var NULL = 16;
+var BOOL = 32;
+var NAN = 64;
+var INFINITY = 128;
+var MINUS_INFINITY = 256;
+var INF = INFINITY | MINUS_INFINITY;
+var SPECIAL = NULL | BOOL | INF | NAN;
+var ATOM = STR | NUM | SPECIAL;
+var COLLECTION = ARR | OBJ;
+var ALL = ATOM | COLLECTION;
+var Allow = {
+  STR,
+  NUM,
+  ARR,
+  OBJ,
+  NULL,
+  BOOL,
+  NAN,
+  INFINITY,
+  MINUS_INFINITY,
+  INF,
+  SPECIAL,
+  ATOM,
+  COLLECTION,
+  ALL
+};
+var PartialJSON = class extends Error {
+};
+var MalformedJSON = class extends Error {
+};
+function parseJSON(jsonString, allowPartial = Allow.ALL) {
+  if (typeof jsonString !== "string") {
+    throw new TypeError(`expecting str, got ${typeof jsonString}`);
+  }
+  if (!jsonString.trim()) {
+    throw new Error(`${jsonString} is empty`);
+  }
+  return _parseJSON(jsonString.trim(), allowPartial);
+}
+var _parseJSON = (jsonString, allow) => {
+  const length = jsonString.length;
+  let index = 0;
+  const markPartialJSON = (msg) => {
+    throw new PartialJSON(`${msg} at position ${index}`);
+  };
+  const throwMalformedError = (msg) => {
+    throw new MalformedJSON(`${msg} at position ${index}`);
+  };
+  const parseAny = () => {
+    skipBlank();
+    if (index >= length)
+      markPartialJSON("Unexpected end of input");
+    if (jsonString[index] === '"')
+      return parseStr();
+    if (jsonString[index] === "{")
+      return parseObj();
+    if (jsonString[index] === "[")
+      return parseArr();
+    if (jsonString.substring(index, index + 4) === "null" || Allow.NULL & allow && length - index < 4 && "null".startsWith(jsonString.substring(index))) {
+      index += 4;
+      return null;
+    }
+    if (jsonString.substring(index, index + 4) === "true" || Allow.BOOL & allow && length - index < 4 && "true".startsWith(jsonString.substring(index))) {
+      index += 4;
+      return true;
+    }
+    if (jsonString.substring(index, index + 5) === "false" || Allow.BOOL & allow && length - index < 5 && "false".startsWith(jsonString.substring(index))) {
+      index += 5;
+      return false;
+    }
+    if (jsonString.substring(index, index + 8) === "Infinity" || Allow.INFINITY & allow && length - index < 8 && "Infinity".startsWith(jsonString.substring(index))) {
+      index += 8;
+      return Infinity;
+    }
+    if (jsonString.substring(index, index + 9) === "-Infinity" || Allow.MINUS_INFINITY & allow && 1 < length - index && length - index < 9 && "-Infinity".startsWith(jsonString.substring(index))) {
+      index += 9;
+      return -Infinity;
+    }
+    if (jsonString.substring(index, index + 3) === "NaN" || Allow.NAN & allow && length - index < 3 && "NaN".startsWith(jsonString.substring(index))) {
+      index += 3;
+      return NaN;
+    }
+    return parseNum();
+  };
+  const parseStr = () => {
+    const start = index;
+    let escape2 = false;
+    index++;
+    while (index < length && (jsonString[index] !== '"' || escape2 && jsonString[index - 1] === "\\")) {
+      escape2 = jsonString[index] === "\\" ? !escape2 : false;
+      index++;
+    }
+    if (jsonString.charAt(index) == '"') {
+      try {
+        return JSON.parse(jsonString.substring(start, ++index - Number(escape2)));
+      } catch (e) {
+        throwMalformedError(String(e));
+      }
+    } else if (Allow.STR & allow) {
+      try {
+        return JSON.parse(jsonString.substring(start, index - Number(escape2)) + '"');
+      } catch (e) {
+        return JSON.parse(jsonString.substring(start, jsonString.lastIndexOf("\\")) + '"');
+      }
+    }
+    markPartialJSON("Unterminated string literal");
+  };
+  const parseObj = () => {
+    index++;
+    skipBlank();
+    const obj = {};
+    try {
+      while (jsonString[index] !== "}") {
+        skipBlank();
+        if (index >= length && Allow.OBJ & allow)
+          return obj;
+        const key = parseStr();
+        skipBlank();
+        index++;
+        try {
+          const value = parseAny();
+          Object.defineProperty(obj, key, { value, writable: true, enumerable: true, configurable: true });
+        } catch (e) {
+          if (Allow.OBJ & allow)
+            return obj;
+          else
+            throw e;
+        }
+        skipBlank();
+        if (jsonString[index] === ",")
+          index++;
+      }
+    } catch (e) {
+      if (Allow.OBJ & allow)
+        return obj;
+      else
+        markPartialJSON("Expected '}' at end of object");
+    }
+    index++;
+    return obj;
+  };
+  const parseArr = () => {
+    index++;
+    const arr = [];
+    try {
+      while (jsonString[index] !== "]") {
+        arr.push(parseAny());
+        skipBlank();
+        if (jsonString[index] === ",") {
+          index++;
+        }
+      }
+    } catch (e) {
+      if (Allow.ARR & allow) {
+        return arr;
+      }
+      markPartialJSON("Expected ']' at end of array");
+    }
+    index++;
+    return arr;
+  };
+  const parseNum = () => {
+    if (index === 0) {
+      if (jsonString === "-" && Allow.NUM & allow)
+        markPartialJSON("Not sure what '-' is");
+      try {
+        return JSON.parse(jsonString);
+      } catch (e) {
+        if (Allow.NUM & allow) {
+          try {
+            if ("." === jsonString[jsonString.length - 1])
+              return JSON.parse(jsonString.substring(0, jsonString.lastIndexOf(".")));
+            return JSON.parse(jsonString.substring(0, jsonString.lastIndexOf("e")));
+          } catch (e2) {
+          }
+        }
+        throwMalformedError(String(e));
+      }
+    }
+    const start = index;
+    if (jsonString[index] === "-")
+      index++;
+    while (jsonString[index] && !",]}".includes(jsonString[index]))
+      index++;
+    if (index == length && !(Allow.NUM & allow))
+      markPartialJSON("Unterminated number literal");
+    try {
+      return JSON.parse(jsonString.substring(start, index));
+    } catch (e) {
+      if (jsonString.substring(start, index) === "-" && Allow.NUM & allow)
+        markPartialJSON("Not sure what '-' is");
+      try {
+        return JSON.parse(jsonString.substring(start, jsonString.lastIndexOf("e")));
+      } catch (e2) {
+        throwMalformedError(String(e2));
+      }
+    }
+  };
+  const skipBlank = () => {
+    while (index < length && " \n\r	".includes(jsonString[index])) {
+      index++;
+    }
+  };
+  return parseAny();
+};
+var partialParse = (input) => parseJSON(input, Allow.ALL ^ Allow.NUM);
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/lib/ChatCompletionStream.mjs
+var _ChatCompletionStream_instances;
+var _ChatCompletionStream_params;
+var _ChatCompletionStream_choiceEventStates;
+var _ChatCompletionStream_currentChatCompletionSnapshot;
+var _ChatCompletionStream_beginRequest;
+var _ChatCompletionStream_getChoiceEventState;
+var _ChatCompletionStream_addChunk;
+var _ChatCompletionStream_emitToolCallDoneEvent;
+var _ChatCompletionStream_emitContentDoneEvents;
+var _ChatCompletionStream_endRequest;
+var _ChatCompletionStream_getAutoParseableResponseFormat;
+var _ChatCompletionStream_accumulateChatCompletion;
+var ChatCompletionStream = class _ChatCompletionStream extends AbstractChatCompletionRunner {
+  constructor(params) {
+    super();
+    _ChatCompletionStream_instances.add(this);
+    _ChatCompletionStream_params.set(this, void 0);
+    _ChatCompletionStream_choiceEventStates.set(this, void 0);
+    _ChatCompletionStream_currentChatCompletionSnapshot.set(this, void 0);
+    __classPrivateFieldSet(this, _ChatCompletionStream_params, params, "f");
+    __classPrivateFieldSet(this, _ChatCompletionStream_choiceEventStates, [], "f");
+  }
+  get currentChatCompletionSnapshot() {
+    return __classPrivateFieldGet(this, _ChatCompletionStream_currentChatCompletionSnapshot, "f");
+  }
+  /**
+   * Intended for use on the frontend, consuming a stream produced with
+   * `.toReadableStream()` on the backend.
+   *
+   * Note that messages sent to the model do not appear in `.on('message')`
+   * in this context.
+   */
+  static fromReadableStream(stream) {
+    const runner = new _ChatCompletionStream(null);
+    runner._run(() => runner._fromReadableStream(stream));
+    return runner;
+  }
+  static createChatCompletion(client, params, options) {
+    const runner = new _ChatCompletionStream(params);
+    runner._run(() => runner._runChatCompletion(client, { ...params, stream: true }, { ...options, headers: { ...options?.headers, "X-Stainless-Helper-Method": "stream" } }));
+    return runner;
+  }
+  async _createChatCompletion(client, params, options) {
+    super._createChatCompletion;
+    const signal = options?.signal;
+    if (signal) {
+      if (signal.aborted)
+        this.controller.abort();
+      signal.addEventListener("abort", () => this.controller.abort());
+    }
+    __classPrivateFieldGet(this, _ChatCompletionStream_instances, "m", _ChatCompletionStream_beginRequest).call(this);
+    const stream = await client.chat.completions.create({ ...params, stream: true }, { ...options, signal: this.controller.signal });
+    this._connected();
+    for await (const chunk of stream) {
+      __classPrivateFieldGet(this, _ChatCompletionStream_instances, "m", _ChatCompletionStream_addChunk).call(this, chunk);
+    }
+    if (stream.controller.signal?.aborted) {
+      throw new APIUserAbortError();
+    }
+    return this._addChatCompletion(__classPrivateFieldGet(this, _ChatCompletionStream_instances, "m", _ChatCompletionStream_endRequest).call(this));
+  }
+  async _fromReadableStream(readableStream, options) {
+    const signal = options?.signal;
+    if (signal) {
+      if (signal.aborted)
+        this.controller.abort();
+      signal.addEventListener("abort", () => this.controller.abort());
+    }
+    __classPrivateFieldGet(this, _ChatCompletionStream_instances, "m", _ChatCompletionStream_beginRequest).call(this);
+    this._connected();
+    const stream = Stream.fromReadableStream(readableStream, this.controller);
+    let chatId;
+    for await (const chunk of stream) {
+      if (chatId && chatId !== chunk.id) {
+        this._addChatCompletion(__classPrivateFieldGet(this, _ChatCompletionStream_instances, "m", _ChatCompletionStream_endRequest).call(this));
+      }
+      __classPrivateFieldGet(this, _ChatCompletionStream_instances, "m", _ChatCompletionStream_addChunk).call(this, chunk);
+      chatId = chunk.id;
+    }
+    if (stream.controller.signal?.aborted) {
+      throw new APIUserAbortError();
+    }
+    return this._addChatCompletion(__classPrivateFieldGet(this, _ChatCompletionStream_instances, "m", _ChatCompletionStream_endRequest).call(this));
+  }
+  [(_ChatCompletionStream_params = /* @__PURE__ */ new WeakMap(), _ChatCompletionStream_choiceEventStates = /* @__PURE__ */ new WeakMap(), _ChatCompletionStream_currentChatCompletionSnapshot = /* @__PURE__ */ new WeakMap(), _ChatCompletionStream_instances = /* @__PURE__ */ new WeakSet(), _ChatCompletionStream_beginRequest = function _ChatCompletionStream_beginRequest2() {
+    if (this.ended)
+      return;
+    __classPrivateFieldSet(this, _ChatCompletionStream_currentChatCompletionSnapshot, void 0, "f");
+  }, _ChatCompletionStream_getChoiceEventState = function _ChatCompletionStream_getChoiceEventState2(choice) {
+    let state = __classPrivateFieldGet(this, _ChatCompletionStream_choiceEventStates, "f")[choice.index];
+    if (state) {
+      return state;
+    }
+    state = {
+      content_done: false,
+      refusal_done: false,
+      logprobs_content_done: false,
+      logprobs_refusal_done: false,
+      done_tool_calls: /* @__PURE__ */ new Set(),
+      current_tool_call_index: null
+    };
+    __classPrivateFieldGet(this, _ChatCompletionStream_choiceEventStates, "f")[choice.index] = state;
+    return state;
+  }, _ChatCompletionStream_addChunk = function _ChatCompletionStream_addChunk2(chunk) {
+    if (this.ended)
+      return;
+    const completion = __classPrivateFieldGet(this, _ChatCompletionStream_instances, "m", _ChatCompletionStream_accumulateChatCompletion).call(this, chunk);
+    this._emit("chunk", chunk, completion);
+    for (const choice of chunk.choices) {
+      const choiceSnapshot = completion.choices[choice.index];
+      if (choice.delta.content != null && choiceSnapshot.message?.role === "assistant" && choiceSnapshot.message?.content) {
+        this._emit("content", choice.delta.content, choiceSnapshot.message.content);
+        this._emit("content.delta", {
+          delta: choice.delta.content,
+          snapshot: choiceSnapshot.message.content,
+          parsed: choiceSnapshot.message.parsed
+        });
+      }
+      if (choice.delta.refusal != null && choiceSnapshot.message?.role === "assistant" && choiceSnapshot.message?.refusal) {
+        this._emit("refusal.delta", {
+          delta: choice.delta.refusal,
+          snapshot: choiceSnapshot.message.refusal
+        });
+      }
+      if (choice.logprobs?.content != null && choiceSnapshot.message?.role === "assistant") {
+        this._emit("logprobs.content.delta", {
+          content: choice.logprobs?.content,
+          snapshot: choiceSnapshot.logprobs?.content ?? []
+        });
+      }
+      if (choice.logprobs?.refusal != null && choiceSnapshot.message?.role === "assistant") {
+        this._emit("logprobs.refusal.delta", {
+          refusal: choice.logprobs?.refusal,
+          snapshot: choiceSnapshot.logprobs?.refusal ?? []
+        });
+      }
+      const state = __classPrivateFieldGet(this, _ChatCompletionStream_instances, "m", _ChatCompletionStream_getChoiceEventState).call(this, choiceSnapshot);
+      if (choiceSnapshot.finish_reason) {
+        __classPrivateFieldGet(this, _ChatCompletionStream_instances, "m", _ChatCompletionStream_emitContentDoneEvents).call(this, choiceSnapshot);
+        if (state.current_tool_call_index != null) {
+          __classPrivateFieldGet(this, _ChatCompletionStream_instances, "m", _ChatCompletionStream_emitToolCallDoneEvent).call(this, choiceSnapshot, state.current_tool_call_index);
+        }
+      }
+      for (const toolCall of choice.delta.tool_calls ?? []) {
+        if (state.current_tool_call_index !== toolCall.index) {
+          __classPrivateFieldGet(this, _ChatCompletionStream_instances, "m", _ChatCompletionStream_emitContentDoneEvents).call(this, choiceSnapshot);
+          if (state.current_tool_call_index != null) {
+            __classPrivateFieldGet(this, _ChatCompletionStream_instances, "m", _ChatCompletionStream_emitToolCallDoneEvent).call(this, choiceSnapshot, state.current_tool_call_index);
+          }
+        }
+        state.current_tool_call_index = toolCall.index;
+      }
+      for (const toolCallDelta of choice.delta.tool_calls ?? []) {
+        const toolCallSnapshot = choiceSnapshot.message.tool_calls?.[toolCallDelta.index];
+        if (!toolCallSnapshot?.type) {
+          continue;
+        }
+        if (toolCallSnapshot?.type === "function") {
+          this._emit("tool_calls.function.arguments.delta", {
+            name: toolCallSnapshot.function?.name,
+            index: toolCallDelta.index,
+            arguments: toolCallSnapshot.function.arguments,
+            parsed_arguments: toolCallSnapshot.function.parsed_arguments,
+            arguments_delta: toolCallDelta.function?.arguments ?? ""
+          });
+        } else {
+          assertNever2(toolCallSnapshot?.type);
+        }
+      }
+    }
+  }, _ChatCompletionStream_emitToolCallDoneEvent = function _ChatCompletionStream_emitToolCallDoneEvent2(choiceSnapshot, toolCallIndex) {
+    const state = __classPrivateFieldGet(this, _ChatCompletionStream_instances, "m", _ChatCompletionStream_getChoiceEventState).call(this, choiceSnapshot);
+    if (state.done_tool_calls.has(toolCallIndex)) {
+      return;
+    }
+    const toolCallSnapshot = choiceSnapshot.message.tool_calls?.[toolCallIndex];
+    if (!toolCallSnapshot) {
+      throw new Error("no tool call snapshot");
+    }
+    if (!toolCallSnapshot.type) {
+      throw new Error("tool call snapshot missing `type`");
+    }
+    if (toolCallSnapshot.type === "function") {
+      const inputTool = __classPrivateFieldGet(this, _ChatCompletionStream_params, "f")?.tools?.find((tool) => isChatCompletionFunctionTool(tool) && tool.function.name === toolCallSnapshot.function.name);
+      this._emit("tool_calls.function.arguments.done", {
+        name: toolCallSnapshot.function.name,
+        index: toolCallIndex,
+        arguments: toolCallSnapshot.function.arguments,
+        parsed_arguments: isAutoParsableTool(inputTool) ? inputTool.$parseRaw(toolCallSnapshot.function.arguments) : inputTool?.function.strict ? JSON.parse(toolCallSnapshot.function.arguments) : null
+      });
+    } else {
+      assertNever2(toolCallSnapshot.type);
+    }
+  }, _ChatCompletionStream_emitContentDoneEvents = function _ChatCompletionStream_emitContentDoneEvents2(choiceSnapshot) {
+    const state = __classPrivateFieldGet(this, _ChatCompletionStream_instances, "m", _ChatCompletionStream_getChoiceEventState).call(this, choiceSnapshot);
+    if (choiceSnapshot.message.content && !state.content_done) {
+      state.content_done = true;
+      const responseFormat = __classPrivateFieldGet(this, _ChatCompletionStream_instances, "m", _ChatCompletionStream_getAutoParseableResponseFormat).call(this);
+      this._emit("content.done", {
+        content: choiceSnapshot.message.content,
+        parsed: responseFormat ? responseFormat.$parseRaw(choiceSnapshot.message.content) : null
+      });
+    }
+    if (choiceSnapshot.message.refusal && !state.refusal_done) {
+      state.refusal_done = true;
+      this._emit("refusal.done", { refusal: choiceSnapshot.message.refusal });
+    }
+    if (choiceSnapshot.logprobs?.content && !state.logprobs_content_done) {
+      state.logprobs_content_done = true;
+      this._emit("logprobs.content.done", { content: choiceSnapshot.logprobs.content });
+    }
+    if (choiceSnapshot.logprobs?.refusal && !state.logprobs_refusal_done) {
+      state.logprobs_refusal_done = true;
+      this._emit("logprobs.refusal.done", { refusal: choiceSnapshot.logprobs.refusal });
+    }
+  }, _ChatCompletionStream_endRequest = function _ChatCompletionStream_endRequest2() {
+    if (this.ended) {
+      throw new OpenAIError(`stream has ended, this shouldn't happen`);
+    }
+    const snapshot = __classPrivateFieldGet(this, _ChatCompletionStream_currentChatCompletionSnapshot, "f");
+    if (!snapshot) {
+      throw new OpenAIError(`request ended without sending any chunks`);
+    }
+    __classPrivateFieldSet(this, _ChatCompletionStream_currentChatCompletionSnapshot, void 0, "f");
+    __classPrivateFieldSet(this, _ChatCompletionStream_choiceEventStates, [], "f");
+    return finalizeChatCompletion(snapshot, __classPrivateFieldGet(this, _ChatCompletionStream_params, "f"));
+  }, _ChatCompletionStream_getAutoParseableResponseFormat = function _ChatCompletionStream_getAutoParseableResponseFormat2() {
+    const responseFormat = __classPrivateFieldGet(this, _ChatCompletionStream_params, "f")?.response_format;
+    if (isAutoParsableResponseFormat(responseFormat)) {
+      return responseFormat;
+    }
+    return null;
+  }, _ChatCompletionStream_accumulateChatCompletion = function _ChatCompletionStream_accumulateChatCompletion2(chunk) {
+    var _a3, _b, _c, _d;
+    let snapshot = __classPrivateFieldGet(this, _ChatCompletionStream_currentChatCompletionSnapshot, "f");
+    const { choices, ...rest } = chunk;
+    if (!snapshot) {
+      snapshot = __classPrivateFieldSet(this, _ChatCompletionStream_currentChatCompletionSnapshot, {
+        ...rest,
+        choices: []
+      }, "f");
+    } else {
+      Object.assign(snapshot, rest);
+    }
+    for (const { delta, finish_reason, index, logprobs = null, ...other } of chunk.choices) {
+      let choice = snapshot.choices[index];
+      if (!choice) {
+        choice = snapshot.choices[index] = { finish_reason, index, message: {}, logprobs, ...other };
+      }
+      if (logprobs) {
+        if (!choice.logprobs) {
+          choice.logprobs = Object.assign({}, logprobs);
+        } else {
+          const { content: content2, refusal: refusal2, ...rest3 } = logprobs;
+          assertIsEmpty(rest3);
+          Object.assign(choice.logprobs, rest3);
+          if (content2) {
+            (_a3 = choice.logprobs).content ?? (_a3.content = []);
+            choice.logprobs.content.push(...content2);
+          }
+          if (refusal2) {
+            (_b = choice.logprobs).refusal ?? (_b.refusal = []);
+            choice.logprobs.refusal.push(...refusal2);
+          }
+        }
+      }
+      if (finish_reason) {
+        choice.finish_reason = finish_reason;
+        if (__classPrivateFieldGet(this, _ChatCompletionStream_params, "f") && hasAutoParseableInput(__classPrivateFieldGet(this, _ChatCompletionStream_params, "f"))) {
+          if (finish_reason === "length") {
+            throw new LengthFinishReasonError();
+          }
+          if (finish_reason === "content_filter") {
+            throw new ContentFilterFinishReasonError();
+          }
+        }
+      }
+      Object.assign(choice, other);
+      if (!delta)
+        continue;
+      const { content, refusal, function_call, role, tool_calls, ...rest2 } = delta;
+      assertIsEmpty(rest2);
+      Object.assign(choice.message, rest2);
+      if (refusal) {
+        choice.message.refusal = (choice.message.refusal || "") + refusal;
+      }
+      if (role)
+        choice.message.role = role;
+      if (function_call) {
+        if (!choice.message.function_call) {
+          choice.message.function_call = function_call;
+        } else {
+          if (function_call.name)
+            choice.message.function_call.name = function_call.name;
+          if (function_call.arguments) {
+            (_c = choice.message.function_call).arguments ?? (_c.arguments = "");
+            choice.message.function_call.arguments += function_call.arguments;
+          }
+        }
+      }
+      if (content) {
+        choice.message.content = (choice.message.content || "") + content;
+        if (!choice.message.refusal && __classPrivateFieldGet(this, _ChatCompletionStream_instances, "m", _ChatCompletionStream_getAutoParseableResponseFormat).call(this)) {
+          choice.message.parsed = partialParse(choice.message.content);
+        }
+      }
+      if (tool_calls) {
+        if (!choice.message.tool_calls)
+          choice.message.tool_calls = [];
+        for (const { index: index2, id, type, function: fn, ...rest3 } of tool_calls) {
+          const tool_call = (_d = choice.message.tool_calls)[index2] ?? (_d[index2] = {});
+          Object.assign(tool_call, rest3);
+          if (id)
+            tool_call.id = id;
+          if (type)
+            tool_call.type = type;
+          if (fn)
+            tool_call.function ?? (tool_call.function = { name: fn.name ?? "", arguments: "" });
+          if (fn?.name)
+            tool_call.function.name = fn.name;
+          if (fn?.arguments) {
+            tool_call.function.arguments += fn.arguments;
+            if (shouldParseToolCall(__classPrivateFieldGet(this, _ChatCompletionStream_params, "f"), tool_call)) {
+              tool_call.function.parsed_arguments = partialParse(tool_call.function.arguments);
+            }
+          }
+        }
+      }
+    }
+    return snapshot;
+  }, Symbol.asyncIterator)]() {
+    const pushQueue = [];
+    const readQueue = [];
+    let done = false;
+    this.on("chunk", (chunk) => {
+      const reader = readQueue.shift();
+      if (reader) {
+        reader.resolve(chunk);
+      } else {
+        pushQueue.push(chunk);
+      }
+    });
+    this.on("end", () => {
+      done = true;
+      for (const reader of readQueue) {
+        reader.resolve(void 0);
+      }
+      readQueue.length = 0;
+    });
+    this.on("abort", (err) => {
+      done = true;
+      for (const reader of readQueue) {
+        reader.reject(err);
+      }
+      readQueue.length = 0;
+    });
+    this.on("error", (err) => {
+      done = true;
+      for (const reader of readQueue) {
+        reader.reject(err);
+      }
+      readQueue.length = 0;
+    });
+    return {
+      next: async () => {
+        if (!pushQueue.length) {
+          if (done) {
+            return { value: void 0, done: true };
+          }
+          return new Promise((resolve, reject) => readQueue.push({ resolve, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
+        }
+        const chunk = pushQueue.shift();
+        return { value: chunk, done: false };
+      },
+      return: async () => {
+        this.abort();
+        return { value: void 0, done: true };
+      }
+    };
+  }
+  toReadableStream() {
+    const stream = new Stream(this[Symbol.asyncIterator].bind(this), this.controller);
+    return stream.toReadableStream();
+  }
+};
+function finalizeChatCompletion(snapshot, params) {
+  const { id, choices, created, model, system_fingerprint, ...rest } = snapshot;
+  const completion = {
+    ...rest,
+    id,
+    choices: choices.map(({ message: message2, finish_reason, index, logprobs, ...choiceRest }) => {
+      if (!finish_reason) {
+        throw new OpenAIError(`missing finish_reason for choice ${index}`);
+      }
+      const { content = null, function_call, tool_calls, ...messageRest } = message2;
+      const role = message2.role;
+      if (!role) {
+        throw new OpenAIError(`missing role for choice ${index}`);
+      }
+      if (function_call) {
+        const { arguments: args, name } = function_call;
+        if (args == null) {
+          throw new OpenAIError(`missing function_call.arguments for choice ${index}`);
+        }
+        if (!name) {
+          throw new OpenAIError(`missing function_call.name for choice ${index}`);
+        }
+        return {
+          ...choiceRest,
+          message: {
+            content,
+            function_call: { arguments: args, name },
+            role,
+            refusal: message2.refusal ?? null
+          },
+          finish_reason,
+          index,
+          logprobs
+        };
+      }
+      if (tool_calls) {
+        return {
+          ...choiceRest,
+          index,
+          finish_reason,
+          logprobs,
+          message: {
+            ...messageRest,
+            role,
+            content,
+            refusal: message2.refusal ?? null,
+            tool_calls: tool_calls.map((tool_call, i) => {
+              const { function: fn, type, id: id2, ...toolRest } = tool_call;
+              const { arguments: args, name, ...fnRest } = fn || {};
+              if (id2 == null) {
+                throw new OpenAIError(`missing choices[${index}].tool_calls[${i}].id
+${str(snapshot)}`);
+              }
+              if (type == null) {
+                throw new OpenAIError(`missing choices[${index}].tool_calls[${i}].type
+${str(snapshot)}`);
+              }
+              if (name == null) {
+                throw new OpenAIError(`missing choices[${index}].tool_calls[${i}].function.name
+${str(snapshot)}`);
+              }
+              if (args == null) {
+                throw new OpenAIError(`missing choices[${index}].tool_calls[${i}].function.arguments
+${str(snapshot)}`);
+              }
+              return { ...toolRest, id: id2, type, function: { ...fnRest, name, arguments: args } };
+            })
+          }
+        };
+      }
+      return {
+        ...choiceRest,
+        message: { ...messageRest, content, role, refusal: message2.refusal ?? null },
+        finish_reason,
+        index,
+        logprobs
+      };
+    }),
+    created,
+    model,
+    object: "chat.completion",
+    ...system_fingerprint ? { system_fingerprint } : {}
+  };
+  return maybeParseChatCompletion(completion, params);
+}
+function str(x) {
+  return JSON.stringify(x);
+}
+function assertIsEmpty(obj) {
+  return;
+}
+function assertNever2(_x) {
+}
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/lib/ChatCompletionStreamingRunner.mjs
+var ChatCompletionStreamingRunner = class _ChatCompletionStreamingRunner extends ChatCompletionStream {
+  static fromReadableStream(stream) {
+    const runner = new _ChatCompletionStreamingRunner(null);
+    runner._run(() => runner._fromReadableStream(stream));
+    return runner;
+  }
+  static runTools(client, params, options) {
+    const runner = new _ChatCompletionStreamingRunner(
+      // @ts-expect-error TODO these types are incompatible
+      params
+    );
+    const opts = {
+      ...options,
+      headers: { ...options?.headers, "X-Stainless-Helper-Method": "runTools" }
+    };
+    runner._run(() => runner._runTools(client, params, opts));
+    return runner;
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/chat/completions/completions.mjs
+var Completions = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.messages = new Messages(this._client);
+  }
+  create(body, options) {
+    return this._client.post("/chat/completions", {
+      body,
+      ...options,
+      stream: body.stream ?? false,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Get a stored chat completion. Only Chat Completions that have been created with
+   * the `store` parameter set to `true` will be returned.
+   *
+   * @example
+   * ```ts
+   * const chatCompletion =
+   *   await client.chat.completions.retrieve('completion_id');
+   * ```
+   */
+  retrieve(completionID, options) {
+    return this._client.get(path`/chat/completions/${completionID}`, {
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Modify a stored chat completion. Only Chat Completions that have been created
+   * with the `store` parameter set to `true` can be modified. Currently, the only
+   * supported modification is to update the `metadata` field.
+   *
+   * @example
+   * ```ts
+   * const chatCompletion = await client.chat.completions.update(
+   *   'completion_id',
+   *   { metadata: { foo: 'string' } },
+   * );
+   * ```
+   */
+  update(completionID, body, options) {
+    return this._client.post(path`/chat/completions/${completionID}`, {
+      body,
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * List stored Chat Completions. Only Chat Completions that have been stored with
+   * the `store` parameter set to `true` will be returned.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const chatCompletion of client.chat.completions.list()) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(query = {}, options) {
+    return this._client.getAPIList("/chat/completions", CursorPage, {
+      query,
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Delete a stored chat completion. Only Chat Completions that have been created
+   * with the `store` parameter set to `true` can be deleted.
+   *
+   * @example
+   * ```ts
+   * const chatCompletionDeleted =
+   *   await client.chat.completions.delete('completion_id');
+   * ```
+   */
+  delete(completionID, options) {
+    return this._client.delete(path`/chat/completions/${completionID}`, {
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  parse(body, options) {
+    validateInputTools(body.tools);
+    return this._client.chat.completions.create(body, {
+      ...options,
+      headers: {
+        ...options?.headers,
+        "X-Stainless-Helper-Method": "chat.completions.parse"
+      }
+    })._thenUnwrap((completion) => parseChatCompletion(completion, body));
+  }
+  runTools(body, options) {
+    if (body.stream) {
+      return ChatCompletionStreamingRunner.runTools(this._client, body, options);
+    }
+    return ChatCompletionRunner.runTools(this._client, body, options);
+  }
+  /**
+   * Creates a chat completion stream
+   */
+  stream(body, options) {
+    return ChatCompletionStream.createChatCompletion(this._client, body, options);
+  }
+};
+Completions.Messages = Messages;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/chat/chat.mjs
+var Chat = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.completions = new Completions(this._client);
+  }
+};
+Chat.Completions = Completions;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/admin/organization/admin-api-keys.mjs
+var AdminAPIKeys = class extends APIResource {
+  /**
+   * Create an organization admin API key
+   *
+   * @example
+   * ```ts
+   * const adminAPIKey =
+   *   await client.admin.organization.adminAPIKeys.create({
+   *     name: 'New Admin Key',
+   *   });
+   * ```
+   */
+  create(body, options) {
+    return this._client.post("/organization/admin_api_keys", {
+      body,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Retrieve a single organization API key
+   *
+   * @example
+   * ```ts
+   * const adminAPIKey =
+   *   await client.admin.organization.adminAPIKeys.retrieve(
+   *     'key_id',
+   *   );
+   * ```
+   */
+  retrieve(keyID, options) {
+    return this._client.get(path`/organization/admin_api_keys/${keyID}`, {
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * List organization API keys
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const adminAPIKey of client.admin.organization.adminAPIKeys.list()) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(query = {}, options) {
+    return this._client.getAPIList("/organization/admin_api_keys", CursorPage, {
+      query,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Delete an organization admin API key
+   *
+   * @example
+   * ```ts
+   * const adminAPIKey =
+   *   await client.admin.organization.adminAPIKeys.delete(
+   *     'key_id',
+   *   );
+   * ```
+   */
+  delete(keyID, options) {
+    return this._client.delete(path`/organization/admin_api_keys/${keyID}`, {
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/admin/organization/audit-logs.mjs
+var AuditLogs = class extends APIResource {
+  /**
+   * List user actions and configuration changes within this organization.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const auditLogListResponse of client.admin.organization.auditLogs.list()) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(query = {}, options) {
+    return this._client.getAPIList("/organization/audit_logs", ConversationCursorPage, {
+      query,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/admin/organization/certificates.mjs
+var Certificates = class extends APIResource {
+  /**
+   * Upload a certificate to the organization. This does **not** automatically
+   * activate the certificate.
+   *
+   * Organizations can upload up to 50 certificates.
+   *
+   * @example
+   * ```ts
+   * const certificate =
+   *   await client.admin.organization.certificates.create({
+   *     certificate: 'certificate',
+   *   });
+   * ```
+   */
+  create(body, options) {
+    return this._client.post("/organization/certificates", {
+      body,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Get a certificate that has been uploaded to the organization.
+   *
+   * You can get a certificate regardless of whether it is active or not.
+   *
+   * @example
+   * ```ts
+   * const certificate =
+   *   await client.admin.organization.certificates.retrieve(
+   *     'certificate_id',
+   *   );
+   * ```
+   */
+  retrieve(certificateID, query = {}, options) {
+    return this._client.get(path`/organization/certificates/${certificateID}`, {
+      query,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Modify a certificate. Note that only the name can be modified.
+   *
+   * @example
+   * ```ts
+   * const certificate =
+   *   await client.admin.organization.certificates.update(
+   *     'certificate_id',
+   *   );
+   * ```
+   */
+  update(certificateID, body, options) {
+    return this._client.post(path`/organization/certificates/${certificateID}`, {
+      body,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * List uploaded certificates for this organization.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const certificateListResponse of client.admin.organization.certificates.list()) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(query = {}, options) {
+    return this._client.getAPIList("/organization/certificates", ConversationCursorPage, { query, ...options, __security: { adminAPIKeyAuth: true } });
+  }
+  /**
+   * Delete a certificate from the organization.
+   *
+   * The certificate must be inactive for the organization and all projects.
+   *
+   * @example
+   * ```ts
+   * const certificate =
+   *   await client.admin.organization.certificates.delete(
+   *     'certificate_id',
+   *   );
+   * ```
+   */
+  delete(certificateID, options) {
+    return this._client.delete(path`/organization/certificates/${certificateID}`, {
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Activate certificates at the organization level.
+   *
+   * You can atomically and idempotently activate up to 10 certificates at a time.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const certificateActivateResponse of client.admin.organization.certificates.activate(
+   *   { certificate_ids: ['cert_abc'] },
+   * )) {
+   *   // ...
+   * }
+   * ```
+   */
+  activate(body, options) {
+    return this._client.getAPIList("/organization/certificates/activate", Page, {
+      body,
+      method: "post",
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Deactivate certificates at the organization level.
+   *
+   * You can atomically and idempotently deactivate up to 10 certificates at a time.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const certificateDeactivateResponse of client.admin.organization.certificates.deactivate(
+   *   { certificate_ids: ['cert_abc'] },
+   * )) {
+   *   // ...
+   * }
+   * ```
+   */
+  deactivate(body, options) {
+    return this._client.getAPIList("/organization/certificates/deactivate", Page, { body, method: "post", ...options, __security: { adminAPIKeyAuth: true } });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/admin/organization/invites.mjs
+var Invites = class extends APIResource {
+  /**
+   * Create an invite for a user to the organization. The invite must be accepted by
+   * the user before they have access to the organization.
+   *
+   * @example
+   * ```ts
+   * const invite =
+   *   await client.admin.organization.invites.create({
+   *     email: 'email',
+   *     role: 'reader',
+   *   });
+   * ```
+   */
+  create(body, options) {
+    return this._client.post("/organization/invites", {
+      body,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Retrieves an invite.
+   *
+   * @example
+   * ```ts
+   * const invite =
+   *   await client.admin.organization.invites.retrieve(
+   *     'invite_id',
+   *   );
+   * ```
+   */
+  retrieve(inviteID, options) {
+    return this._client.get(path`/organization/invites/${inviteID}`, {
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Returns a list of invites in the organization.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const invite of client.admin.organization.invites.list()) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(query = {}, options) {
+    return this._client.getAPIList("/organization/invites", ConversationCursorPage, {
+      query,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Delete an invite. If the invite has already been accepted, it cannot be deleted.
+   *
+   * @example
+   * ```ts
+   * const invite =
+   *   await client.admin.organization.invites.delete(
+   *     'invite_id',
+   *   );
+   * ```
+   */
+  delete(inviteID, options) {
+    return this._client.delete(path`/organization/invites/${inviteID}`, {
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/admin/organization/roles.mjs
+var Roles = class extends APIResource {
+  /**
+   * Creates a custom role for the organization.
+   *
+   * @example
+   * ```ts
+   * const role = await client.admin.organization.roles.create({
+   *   permissions: ['string'],
+   *   role_name: 'role_name',
+   * });
+   * ```
+   */
+  create(body, options) {
+    return this._client.post("/organization/roles", {
+      body,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Updates an existing organization role.
+   *
+   * @example
+   * ```ts
+   * const role = await client.admin.organization.roles.update(
+   *   'role_id',
+   * );
+   * ```
+   */
+  update(roleID, body, options) {
+    return this._client.post(path`/organization/roles/${roleID}`, {
+      body,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Lists the roles configured for the organization.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const role of client.admin.organization.roles.list()) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(query = {}, options) {
+    return this._client.getAPIList("/organization/roles", NextCursorPage, {
+      query,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Deletes a custom role from the organization.
+   *
+   * @example
+   * ```ts
+   * const role = await client.admin.organization.roles.delete(
+   *   'role_id',
+   * );
+   * ```
+   */
+  delete(roleID, options) {
+    return this._client.delete(path`/organization/roles/${roleID}`, {
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/admin/organization/usage.mjs
+var Usage = class extends APIResource {
+  /**
+   * Get audio speeches usage details for the organization.
+   *
+   * @example
+   * ```ts
+   * const response =
+   *   await client.admin.organization.usage.audioSpeeches({
+   *     start_time: 0,
+   *   });
+   * ```
+   */
+  audioSpeeches(query, options) {
+    return this._client.get("/organization/usage/audio_speeches", {
+      query,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Get audio transcriptions usage details for the organization.
+   *
+   * @example
+   * ```ts
+   * const response =
+   *   await client.admin.organization.usage.audioTranscriptions(
+   *     { start_time: 0 },
+   *   );
+   * ```
+   */
+  audioTranscriptions(query, options) {
+    return this._client.get("/organization/usage/audio_transcriptions", {
+      query,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Get code interpreter sessions usage details for the organization.
+   *
+   * @example
+   * ```ts
+   * const response =
+   *   await client.admin.organization.usage.codeInterpreterSessions(
+   *     { start_time: 0 },
+   *   );
+   * ```
+   */
+  codeInterpreterSessions(query, options) {
+    return this._client.get("/organization/usage/code_interpreter_sessions", {
+      query,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Get completions usage details for the organization.
+   *
+   * @example
+   * ```ts
+   * const response =
+   *   await client.admin.organization.usage.completions({
+   *     start_time: 0,
+   *   });
+   * ```
+   */
+  completions(query, options) {
+    return this._client.get("/organization/usage/completions", {
+      query,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Get costs details for the organization.
+   *
+   * @example
+   * ```ts
+   * const response =
+   *   await client.admin.organization.usage.costs({
+   *     start_time: 0,
+   *   });
+   * ```
+   */
+  costs(query, options) {
+    return this._client.get("/organization/costs", {
+      query,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Get embeddings usage details for the organization.
+   *
+   * @example
+   * ```ts
+   * const response =
+   *   await client.admin.organization.usage.embeddings({
+   *     start_time: 0,
+   *   });
+   * ```
+   */
+  embeddings(query, options) {
+    return this._client.get("/organization/usage/embeddings", {
+      query,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Get images usage details for the organization.
+   *
+   * @example
+   * ```ts
+   * const response =
+   *   await client.admin.organization.usage.images({
+   *     start_time: 0,
+   *   });
+   * ```
+   */
+  images(query, options) {
+    return this._client.get("/organization/usage/images", {
+      query,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Get moderations usage details for the organization.
+   *
+   * @example
+   * ```ts
+   * const response =
+   *   await client.admin.organization.usage.moderations({
+   *     start_time: 0,
+   *   });
+   * ```
+   */
+  moderations(query, options) {
+    return this._client.get("/organization/usage/moderations", {
+      query,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Get vector stores usage details for the organization.
+   *
+   * @example
+   * ```ts
+   * const response =
+   *   await client.admin.organization.usage.vectorStores({
+   *     start_time: 0,
+   *   });
+   * ```
+   */
+  vectorStores(query, options) {
+    return this._client.get("/organization/usage/vector_stores", {
+      query,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/admin/organization/groups/roles.mjs
+var Roles2 = class extends APIResource {
+  /**
+   * Assigns an organization role to a group within the organization.
+   *
+   * @example
+   * ```ts
+   * const role =
+   *   await client.admin.organization.groups.roles.create(
+   *     'group_id',
+   *     { role_id: 'role_id' },
+   *   );
+   * ```
+   */
+  create(groupID, body, options) {
+    return this._client.post(path`/organization/groups/${groupID}/roles`, {
+      body,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Lists the organization roles assigned to a group within the organization.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const roleListResponse of client.admin.organization.groups.roles.list(
+   *   'group_id',
+   * )) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(groupID, query = {}, options) {
+    return this._client.getAPIList(path`/organization/groups/${groupID}/roles`, NextCursorPage, { query, ...options, __security: { adminAPIKeyAuth: true } });
+  }
+  /**
+   * Unassigns an organization role from a group within the organization.
+   *
+   * @example
+   * ```ts
+   * const role =
+   *   await client.admin.organization.groups.roles.delete(
+   *     'role_id',
+   *     { group_id: 'group_id' },
+   *   );
+   * ```
+   */
+  delete(roleID, params, options) {
+    const { group_id } = params;
+    return this._client.delete(path`/organization/groups/${group_id}/roles/${roleID}`, {
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/admin/organization/groups/users.mjs
+var Users = class extends APIResource {
+  /**
+   * Adds a user to a group.
+   *
+   * @example
+   * ```ts
+   * const user =
+   *   await client.admin.organization.groups.users.create(
+   *     'group_id',
+   *     { user_id: 'user_id' },
+   *   );
+   * ```
+   */
+  create(groupID, body, options) {
+    return this._client.post(path`/organization/groups/${groupID}/users`, {
+      body,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Lists the users assigned to a group.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const organizationGroupUser of client.admin.organization.groups.users.list(
+   *   'group_id',
+   * )) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(groupID, query = {}, options) {
+    return this._client.getAPIList(path`/organization/groups/${groupID}/users`, NextCursorPage, { query, ...options, __security: { adminAPIKeyAuth: true } });
+  }
+  /**
+   * Removes a user from a group.
+   *
+   * @example
+   * ```ts
+   * const user =
+   *   await client.admin.organization.groups.users.delete(
+   *     'user_id',
+   *     { group_id: 'group_id' },
+   *   );
+   * ```
+   */
+  delete(userID, params, options) {
+    const { group_id } = params;
+    return this._client.delete(path`/organization/groups/${group_id}/users/${userID}`, {
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/admin/organization/groups/groups.mjs
+var Groups = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.users = new Users(this._client);
+    this.roles = new Roles2(this._client);
+  }
+  /**
+   * Creates a new group in the organization.
+   *
+   * @example
+   * ```ts
+   * const group = await client.admin.organization.groups.create(
+   *   { name: 'x' },
+   * );
+   * ```
+   */
+  create(body, options) {
+    return this._client.post("/organization/groups", {
+      body,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Updates a group's information.
+   *
+   * @example
+   * ```ts
+   * const group = await client.admin.organization.groups.update(
+   *   'group_id',
+   *   { name: 'x' },
+   * );
+   * ```
+   */
+  update(groupID, body, options) {
+    return this._client.post(path`/organization/groups/${groupID}`, {
+      body,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Lists all groups in the organization.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const group of client.admin.organization.groups.list()) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(query = {}, options) {
+    return this._client.getAPIList("/organization/groups", NextCursorPage, {
+      query,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Deletes a group from the organization.
+   *
+   * @example
+   * ```ts
+   * const group = await client.admin.organization.groups.delete(
+   *   'group_id',
+   * );
+   * ```
+   */
+  delete(groupID, options) {
+    return this._client.delete(path`/organization/groups/${groupID}`, {
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+};
+Groups.Users = Users;
+Groups.Roles = Roles2;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/admin/organization/projects/api-keys.mjs
+var APIKeys = class extends APIResource {
+  /**
+   * Retrieves an API key in the project.
+   *
+   * @example
+   * ```ts
+   * const projectAPIKey =
+   *   await client.admin.organization.projects.apiKeys.retrieve(
+   *     'api_key_id',
+   *     { project_id: 'project_id' },
+   *   );
+   * ```
+   */
+  retrieve(apiKeyID, params, options) {
+    const { project_id } = params;
+    return this._client.get(path`/organization/projects/${project_id}/api_keys/${apiKeyID}`, {
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Returns a list of API keys in the project.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const projectAPIKey of client.admin.organization.projects.apiKeys.list(
+   *   'project_id',
+   * )) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(projectID, query = {}, options) {
+    return this._client.getAPIList(path`/organization/projects/${projectID}/api_keys`, ConversationCursorPage, { query, ...options, __security: { adminAPIKeyAuth: true } });
+  }
+  /**
+   * Deletes an API key from the project.
+   *
+   * Returns confirmation of the key deletion, or an error if the key belonged to a
+   * service account.
+   *
+   * @example
+   * ```ts
+   * const apiKey =
+   *   await client.admin.organization.projects.apiKeys.delete(
+   *     'api_key_id',
+   *     { project_id: 'project_id' },
+   *   );
+   * ```
+   */
+  delete(apiKeyID, params, options) {
+    const { project_id } = params;
+    return this._client.delete(path`/organization/projects/${project_id}/api_keys/${apiKeyID}`, {
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/admin/organization/projects/certificates.mjs
+var Certificates2 = class extends APIResource {
+  /**
+   * List certificates for this project.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const certificateListResponse of client.admin.organization.projects.certificates.list(
+   *   'project_id',
+   * )) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(projectID, query = {}, options) {
+    return this._client.getAPIList(path`/organization/projects/${projectID}/certificates`, ConversationCursorPage, { query, ...options, __security: { adminAPIKeyAuth: true } });
+  }
+  /**
+   * Activate certificates at the project level.
+   *
+   * You can atomically and idempotently activate up to 10 certificates at a time.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const certificateActivateResponse of client.admin.organization.projects.certificates.activate(
+   *   'project_id',
+   *   { certificate_ids: ['cert_abc'] },
+   * )) {
+   *   // ...
+   * }
+   * ```
+   */
+  activate(projectID, body, options) {
+    return this._client.getAPIList(path`/organization/projects/${projectID}/certificates/activate`, Page, { body, method: "post", ...options, __security: { adminAPIKeyAuth: true } });
+  }
+  /**
+   * Deactivate certificates at the project level. You can atomically and
+   * idempotently deactivate up to 10 certificates at a time.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const certificateDeactivateResponse of client.admin.organization.projects.certificates.deactivate(
+   *   'project_id',
+   *   { certificate_ids: ['cert_abc'] },
+   * )) {
+   *   // ...
+   * }
+   * ```
+   */
+  deactivate(projectID, body, options) {
+    return this._client.getAPIList(path`/organization/projects/${projectID}/certificates/deactivate`, Page, { body, method: "post", ...options, __security: { adminAPIKeyAuth: true } });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/admin/organization/projects/rate-limits.mjs
+var RateLimits = class extends APIResource {
+  /**
+   * Returns the rate limits per model for a project.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const projectRateLimit of client.admin.organization.projects.rateLimits.listRateLimits(
+   *   'project_id',
+   * )) {
+   *   // ...
+   * }
+   * ```
+   */
+  listRateLimits(projectID, query = {}, options) {
+    return this._client.getAPIList(path`/organization/projects/${projectID}/rate_limits`, ConversationCursorPage, { query, ...options, __security: { adminAPIKeyAuth: true } });
+  }
+  /**
+   * Updates a project rate limit.
+   *
+   * @example
+   * ```ts
+   * const projectRateLimit =
+   *   await client.admin.organization.projects.rateLimits.updateRateLimit(
+   *     'rate_limit_id',
+   *     { project_id: 'project_id' },
+   *   );
+   * ```
+   */
+  updateRateLimit(rateLimitID, params, options) {
+    const { project_id, ...body } = params;
+    return this._client.post(path`/organization/projects/${project_id}/rate_limits/${rateLimitID}`, {
+      body,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/admin/organization/projects/roles.mjs
+var Roles3 = class extends APIResource {
+  /**
+   * Creates a custom role for a project.
+   *
+   * @example
+   * ```ts
+   * const role =
+   *   await client.admin.organization.projects.roles.create(
+   *     'project_id',
+   *     { permissions: ['string'], role_name: 'role_name' },
+   *   );
+   * ```
+   */
+  create(projectID, body, options) {
+    return this._client.post(path`/projects/${projectID}/roles`, {
+      body,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Updates an existing project role.
+   *
+   * @example
+   * ```ts
+   * const role =
+   *   await client.admin.organization.projects.roles.update(
+   *     'role_id',
+   *     { project_id: 'project_id' },
+   *   );
+   * ```
+   */
+  update(roleID, params, options) {
+    const { project_id, ...body } = params;
+    return this._client.post(path`/projects/${project_id}/roles/${roleID}`, {
+      body,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Lists the roles configured for a project.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const role of client.admin.organization.projects.roles.list(
+   *   'project_id',
+   * )) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(projectID, query = {}, options) {
+    return this._client.getAPIList(path`/projects/${projectID}/roles`, NextCursorPage, {
+      query,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Deletes a custom role from a project.
+   *
+   * @example
+   * ```ts
+   * const role =
+   *   await client.admin.organization.projects.roles.delete(
+   *     'role_id',
+   *     { project_id: 'project_id' },
+   *   );
+   * ```
+   */
+  delete(roleID, params, options) {
+    const { project_id } = params;
+    return this._client.delete(path`/projects/${project_id}/roles/${roleID}`, {
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/admin/organization/projects/service-accounts.mjs
+var ServiceAccounts = class extends APIResource {
+  /**
+   * Creates a new service account in the project. This also returns an unredacted
+   * API key for the service account.
+   *
+   * @example
+   * ```ts
+   * const serviceAccount =
+   *   await client.admin.organization.projects.serviceAccounts.create(
+   *     'project_id',
+   *     { name: 'name' },
+   *   );
+   * ```
+   */
+  create(projectID, body, options) {
+    return this._client.post(path`/organization/projects/${projectID}/service_accounts`, {
+      body,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Retrieves a service account in the project.
+   *
+   * @example
+   * ```ts
+   * const projectServiceAccount =
+   *   await client.admin.organization.projects.serviceAccounts.retrieve(
+   *     'service_account_id',
+   *     { project_id: 'project_id' },
+   *   );
+   * ```
+   */
+  retrieve(serviceAccountID, params, options) {
+    const { project_id } = params;
+    return this._client.get(path`/organization/projects/${project_id}/service_accounts/${serviceAccountID}`, {
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Returns a list of service accounts in the project.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const projectServiceAccount of client.admin.organization.projects.serviceAccounts.list(
+   *   'project_id',
+   * )) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(projectID, query = {}, options) {
+    return this._client.getAPIList(path`/organization/projects/${projectID}/service_accounts`, ConversationCursorPage, { query, ...options, __security: { adminAPIKeyAuth: true } });
+  }
+  /**
+   * Deletes a service account from the project.
+   *
+   * Returns confirmation of service account deletion, or an error if the project is
+   * archived (archived projects have no service accounts).
+   *
+   * @example
+   * ```ts
+   * const serviceAccount =
+   *   await client.admin.organization.projects.serviceAccounts.delete(
+   *     'service_account_id',
+   *     { project_id: 'project_id' },
+   *   );
+   * ```
+   */
+  delete(serviceAccountID, params, options) {
+    const { project_id } = params;
+    return this._client.delete(path`/organization/projects/${project_id}/service_accounts/${serviceAccountID}`, { ...options, __security: { adminAPIKeyAuth: true } });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/admin/organization/projects/groups/roles.mjs
+var Roles4 = class extends APIResource {
+  /**
+   * Assigns a project role to a group within a project.
+   *
+   * @example
+   * ```ts
+   * const role =
+   *   await client.admin.organization.projects.groups.roles.create(
+   *     'group_id',
+   *     { project_id: 'project_id', role_id: 'role_id' },
+   *   );
+   * ```
+   */
+  create(groupID, params, options) {
+    const { project_id, ...body } = params;
+    return this._client.post(path`/projects/${project_id}/groups/${groupID}/roles`, {
+      body,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Lists the project roles assigned to a group within a project.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const roleListResponse of client.admin.organization.projects.groups.roles.list(
+   *   'group_id',
+   *   { project_id: 'project_id' },
+   * )) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(groupID, params, options) {
+    const { project_id, ...query } = params;
+    return this._client.getAPIList(path`/projects/${project_id}/groups/${groupID}/roles`, NextCursorPage, { query, ...options, __security: { adminAPIKeyAuth: true } });
+  }
+  /**
+   * Unassigns a project role from a group within a project.
+   *
+   * @example
+   * ```ts
+   * const role =
+   *   await client.admin.organization.projects.groups.roles.delete(
+   *     'role_id',
+   *     { project_id: 'project_id', group_id: 'group_id' },
+   *   );
+   * ```
+   */
+  delete(roleID, params, options) {
+    const { project_id, group_id } = params;
+    return this._client.delete(path`/projects/${project_id}/groups/${group_id}/roles/${roleID}`, {
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/admin/organization/projects/groups/groups.mjs
+var Groups2 = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.roles = new Roles4(this._client);
+  }
+  /**
+   * Grants a group access to a project.
+   *
+   * @example
+   * ```ts
+   * const projectGroup =
+   *   await client.admin.organization.projects.groups.create(
+   *     'project_id',
+   *     { group_id: 'group_id', role: 'role' },
+   *   );
+   * ```
+   */
+  create(projectID, body, options) {
+    return this._client.post(path`/organization/projects/${projectID}/groups`, {
+      body,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Lists the groups that have access to a project.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const projectGroup of client.admin.organization.projects.groups.list(
+   *   'project_id',
+   * )) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(projectID, query = {}, options) {
+    return this._client.getAPIList(path`/organization/projects/${projectID}/groups`, NextCursorPage, { query, ...options, __security: { adminAPIKeyAuth: true } });
+  }
+  /**
+   * Revokes a group's access to a project.
+   *
+   * @example
+   * ```ts
+   * const group =
+   *   await client.admin.organization.projects.groups.delete(
+   *     'group_id',
+   *     { project_id: 'project_id' },
+   *   );
+   * ```
+   */
+  delete(groupID, params, options) {
+    const { project_id } = params;
+    return this._client.delete(path`/organization/projects/${project_id}/groups/${groupID}`, {
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+};
+Groups2.Roles = Roles4;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/admin/organization/projects/users/roles.mjs
+var Roles5 = class extends APIResource {
+  /**
+   * Assigns a project role to a user within a project.
+   *
+   * @example
+   * ```ts
+   * const role =
+   *   await client.admin.organization.projects.users.roles.create(
+   *     'user_id',
+   *     { project_id: 'project_id', role_id: 'role_id' },
+   *   );
+   * ```
+   */
+  create(userID, params, options) {
+    const { project_id, ...body } = params;
+    return this._client.post(path`/projects/${project_id}/users/${userID}/roles`, {
+      body,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Lists the project roles assigned to a user within a project.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const roleListResponse of client.admin.organization.projects.users.roles.list(
+   *   'user_id',
+   *   { project_id: 'project_id' },
+   * )) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(userID, params, options) {
+    const { project_id, ...query } = params;
+    return this._client.getAPIList(path`/projects/${project_id}/users/${userID}/roles`, NextCursorPage, { query, ...options, __security: { adminAPIKeyAuth: true } });
+  }
+  /**
+   * Unassigns a project role from a user within a project.
+   *
+   * @example
+   * ```ts
+   * const role =
+   *   await client.admin.organization.projects.users.roles.delete(
+   *     'role_id',
+   *     { project_id: 'project_id', user_id: 'user_id' },
+   *   );
+   * ```
+   */
+  delete(roleID, params, options) {
+    const { project_id, user_id } = params;
+    return this._client.delete(path`/projects/${project_id}/users/${user_id}/roles/${roleID}`, {
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/admin/organization/projects/users/users.mjs
+var Users2 = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.roles = new Roles5(this._client);
+  }
+  /**
+   * Adds a user to the project. Users must already be members of the organization to
+   * be added to a project.
+   *
+   * @example
+   * ```ts
+   * const projectUser =
+   *   await client.admin.organization.projects.users.create(
+   *     'project_id',
+   *     { role: 'role' },
+   *   );
+   * ```
+   */
+  create(projectID, body, options) {
+    return this._client.post(path`/organization/projects/${projectID}/users`, {
+      body,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Retrieves a user in the project.
+   *
+   * @example
+   * ```ts
+   * const projectUser =
+   *   await client.admin.organization.projects.users.retrieve(
+   *     'user_id',
+   *     { project_id: 'project_id' },
+   *   );
+   * ```
+   */
+  retrieve(userID, params, options) {
+    const { project_id } = params;
+    return this._client.get(path`/organization/projects/${project_id}/users/${userID}`, {
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Modifies a user's role in the project.
+   *
+   * @example
+   * ```ts
+   * const projectUser =
+   *   await client.admin.organization.projects.users.update(
+   *     'user_id',
+   *     { project_id: 'project_id' },
+   *   );
+   * ```
+   */
+  update(userID, params, options) {
+    const { project_id, ...body } = params;
+    return this._client.post(path`/organization/projects/${project_id}/users/${userID}`, {
+      body,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Returns a list of users in the project.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const projectUser of client.admin.organization.projects.users.list(
+   *   'project_id',
+   * )) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(projectID, query = {}, options) {
+    return this._client.getAPIList(path`/organization/projects/${projectID}/users`, ConversationCursorPage, { query, ...options, __security: { adminAPIKeyAuth: true } });
+  }
+  /**
+   * Deletes a user from the project.
+   *
+   * Returns confirmation of project user deletion, or an error if the project is
+   * archived (archived projects have no users).
+   *
+   * @example
+   * ```ts
+   * const user =
+   *   await client.admin.organization.projects.users.delete(
+   *     'user_id',
+   *     { project_id: 'project_id' },
+   *   );
+   * ```
+   */
+  delete(userID, params, options) {
+    const { project_id } = params;
+    return this._client.delete(path`/organization/projects/${project_id}/users/${userID}`, {
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+};
+Users2.Roles = Roles5;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/admin/organization/projects/projects.mjs
+var Projects = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.users = new Users2(this._client);
+    this.serviceAccounts = new ServiceAccounts(this._client);
+    this.apiKeys = new APIKeys(this._client);
+    this.rateLimits = new RateLimits(this._client);
+    this.groups = new Groups2(this._client);
+    this.roles = new Roles3(this._client);
+    this.certificates = new Certificates2(this._client);
+  }
+  /**
+   * Create a new project in the organization. Projects can be created and archived,
+   * but cannot be deleted.
+   *
+   * @example
+   * ```ts
+   * const project =
+   *   await client.admin.organization.projects.create({
+   *     name: 'name',
+   *   });
+   * ```
+   */
+  create(body, options) {
+    return this._client.post("/organization/projects", {
+      body,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Retrieves a project.
+   *
+   * @example
+   * ```ts
+   * const project =
+   *   await client.admin.organization.projects.retrieve(
+   *     'project_id',
+   *   );
+   * ```
+   */
+  retrieve(projectID, options) {
+    return this._client.get(path`/organization/projects/${projectID}`, {
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Modifies a project in the organization.
+   *
+   * @example
+   * ```ts
+   * const project =
+   *   await client.admin.organization.projects.update(
+   *     'project_id',
+   *   );
+   * ```
+   */
+  update(projectID, body, options) {
+    return this._client.post(path`/organization/projects/${projectID}`, {
+      body,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Returns a list of projects.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const project of client.admin.organization.projects.list()) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(query = {}, options) {
+    return this._client.getAPIList("/organization/projects", ConversationCursorPage, {
+      query,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Archives a project in the organization. Archived projects cannot be used or
+   * updated.
+   *
+   * @example
+   * ```ts
+   * const project =
+   *   await client.admin.organization.projects.archive(
+   *     'project_id',
+   *   );
+   * ```
+   */
+  archive(projectID, options) {
+    return this._client.post(path`/organization/projects/${projectID}/archive`, {
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+};
+Projects.Users = Users2;
+Projects.ServiceAccounts = ServiceAccounts;
+Projects.APIKeys = APIKeys;
+Projects.RateLimits = RateLimits;
+Projects.Groups = Groups2;
+Projects.Roles = Roles3;
+Projects.Certificates = Certificates2;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/admin/organization/users/roles.mjs
+var Roles6 = class extends APIResource {
+  /**
+   * Assigns an organization role to a user within the organization.
+   *
+   * @example
+   * ```ts
+   * const role =
+   *   await client.admin.organization.users.roles.create(
+   *     'user_id',
+   *     { role_id: 'role_id' },
+   *   );
+   * ```
+   */
+  create(userID, body, options) {
+    return this._client.post(path`/organization/users/${userID}/roles`, {
+      body,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Lists the organization roles assigned to a user within the organization.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const roleListResponse of client.admin.organization.users.roles.list(
+   *   'user_id',
+   * )) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(userID, query = {}, options) {
+    return this._client.getAPIList(path`/organization/users/${userID}/roles`, NextCursorPage, { query, ...options, __security: { adminAPIKeyAuth: true } });
+  }
+  /**
+   * Unassigns an organization role from a user within the organization.
+   *
+   * @example
+   * ```ts
+   * const role =
+   *   await client.admin.organization.users.roles.delete(
+   *     'role_id',
+   *     { user_id: 'user_id' },
+   *   );
+   * ```
+   */
+  delete(roleID, params, options) {
+    const { user_id } = params;
+    return this._client.delete(path`/organization/users/${user_id}/roles/${roleID}`, {
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/admin/organization/users/users.mjs
+var Users3 = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.roles = new Roles6(this._client);
+  }
+  /**
+   * Retrieves a user by their identifier.
+   *
+   * @example
+   * ```ts
+   * const organizationUser =
+   *   await client.admin.organization.users.retrieve('user_id');
+   * ```
+   */
+  retrieve(userID, options) {
+    return this._client.get(path`/organization/users/${userID}`, {
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Modifies a user's role in the organization.
+   *
+   * @example
+   * ```ts
+   * const organizationUser =
+   *   await client.admin.organization.users.update('user_id');
+   * ```
+   */
+  update(userID, body, options) {
+    return this._client.post(path`/organization/users/${userID}`, {
+      body,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Lists all of the users in the organization.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const organizationUser of client.admin.organization.users.list()) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(query = {}, options) {
+    return this._client.getAPIList("/organization/users", ConversationCursorPage, {
+      query,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * Deletes a user from the organization.
+   *
+   * @example
+   * ```ts
+   * const user = await client.admin.organization.users.delete(
+   *   'user_id',
+   * );
+   * ```
+   */
+  delete(userID, options) {
+    return this._client.delete(path`/organization/users/${userID}`, {
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+};
+Users3.Roles = Roles6;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/admin/organization/organization.mjs
+var Organization = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.auditLogs = new AuditLogs(this._client);
+    this.adminAPIKeys = new AdminAPIKeys(this._client);
+    this.usage = new Usage(this._client);
+    this.invites = new Invites(this._client);
+    this.users = new Users3(this._client);
+    this.groups = new Groups(this._client);
+    this.roles = new Roles(this._client);
+    this.certificates = new Certificates(this._client);
+    this.projects = new Projects(this._client);
+  }
+};
+Organization.AuditLogs = AuditLogs;
+Organization.AdminAPIKeys = AdminAPIKeys;
+Organization.Usage = Usage;
+Organization.Invites = Invites;
+Organization.Users = Users3;
+Organization.Groups = Groups;
+Organization.Roles = Roles;
+Organization.Certificates = Certificates;
+Organization.Projects = Projects;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/admin/admin.mjs
+var Admin = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.organization = new Organization(this._client);
+  }
+};
+Admin.Organization = Organization;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/internal/headers.mjs
+var brand_privateNullableHeaders = /* @__PURE__ */ Symbol("brand.privateNullableHeaders");
+function* iterateHeaders(headers) {
+  if (!headers)
+    return;
+  if (brand_privateNullableHeaders in headers) {
+    const { values, nulls } = headers;
+    yield* values.entries();
+    for (const name of nulls) {
+      yield [name, null];
+    }
+    return;
+  }
+  let shouldClear = false;
+  let iter;
+  if (headers instanceof Headers) {
+    iter = headers.entries();
+  } else if (isReadonlyArray(headers)) {
+    iter = headers;
+  } else {
+    shouldClear = true;
+    iter = Object.entries(headers ?? {});
+  }
+  for (let row of iter) {
+    const name = row[0];
+    if (typeof name !== "string")
+      throw new TypeError("expected header name to be a string");
+    const values = isReadonlyArray(row[1]) ? row[1] : [row[1]];
+    let didClear = false;
+    for (const value of values) {
+      if (value === void 0)
+        continue;
+      if (shouldClear && !didClear) {
+        didClear = true;
+        yield [name, null];
+      }
+      yield [name, value];
+    }
+  }
+}
+var buildHeaders = (newHeaders) => {
+  const targetHeaders = new Headers();
+  const nullHeaders = /* @__PURE__ */ new Set();
+  for (const headers of newHeaders) {
+    const seenHeaders = /* @__PURE__ */ new Set();
+    for (const [name, value] of iterateHeaders(headers)) {
+      const lowerName = name.toLowerCase();
+      if (!seenHeaders.has(lowerName)) {
+        targetHeaders.delete(name);
+        seenHeaders.add(lowerName);
+      }
+      if (value === null) {
+        targetHeaders.delete(name);
+        nullHeaders.add(lowerName);
+      } else {
+        targetHeaders.append(name, value);
+        nullHeaders.delete(lowerName);
+      }
+    }
+  }
+  return { [brand_privateNullableHeaders]: true, values: targetHeaders, nulls: nullHeaders };
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/audio/speech.mjs
+var Speech = class extends APIResource {
+  /**
+   * Generates audio from the input text.
+   *
+   * Returns the audio file content, or a stream of audio events.
+   *
+   * @example
+   * ```ts
+   * const speech = await client.audio.speech.create({
+   *   input: 'input',
+   *   model: 'tts-1',
+   *   voice: 'alloy',
+   * });
+   *
+   * const content = await speech.blob();
+   * console.log(content);
+   * ```
+   */
+  create(body, options) {
+    return this._client.post("/audio/speech", {
+      body,
+      ...options,
+      headers: buildHeaders([{ Accept: "application/octet-stream" }, options?.headers]),
+      __security: { bearerAuth: true },
+      __binaryResponse: true
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/audio/transcriptions.mjs
+var Transcriptions = class extends APIResource {
+  create(body, options) {
+    return this._client.post("/audio/transcriptions", multipartFormRequestOptions({
+      body,
+      ...options,
+      stream: body.stream ?? false,
+      __metadata: { model: body.model },
+      __security: { bearerAuth: true }
+    }, this._client));
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/audio/translations.mjs
+var Translations = class extends APIResource {
+  create(body, options) {
+    return this._client.post("/audio/translations", multipartFormRequestOptions({ body, ...options, __metadata: { model: body.model }, __security: { bearerAuth: true } }, this._client));
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/audio/audio.mjs
+var Audio = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.transcriptions = new Transcriptions(this._client);
+    this.translations = new Translations(this._client);
+    this.speech = new Speech(this._client);
+  }
+};
+Audio.Transcriptions = Transcriptions;
+Audio.Translations = Translations;
+Audio.Speech = Speech;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/batches.mjs
+var Batches = class extends APIResource {
+  /**
+   * Creates and executes a batch from an uploaded file of requests
+   */
+  create(body, options) {
+    return this._client.post("/batches", { body, ...options, __security: { bearerAuth: true } });
+  }
+  /**
+   * Retrieves a batch.
+   */
+  retrieve(batchID, options) {
+    return this._client.get(path`/batches/${batchID}`, { ...options, __security: { bearerAuth: true } });
+  }
+  /**
+   * List your organization's batches.
+   */
+  list(query = {}, options) {
+    return this._client.getAPIList("/batches", CursorPage, {
+      query,
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Cancels an in-progress batch. The batch will be in status `cancelling` for up to
+   * 10 minutes, before changing to `cancelled`, where it will have partial results
+   * (if any) available in the output file.
+   */
+  cancel(batchID, options) {
+    return this._client.post(path`/batches/${batchID}/cancel`, {
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/beta/assistants.mjs
+var Assistants = class extends APIResource {
+  /**
+   * Create an assistant with a model and instructions.
+   *
+   * @deprecated
+   */
+  create(body, options) {
+    return this._client.post("/assistants", {
+      body,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Retrieves an assistant.
+   *
+   * @deprecated
+   */
+  retrieve(assistantID, options) {
+    return this._client.get(path`/assistants/${assistantID}`, {
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Modifies an assistant.
+   *
+   * @deprecated
+   */
+  update(assistantID, body, options) {
+    return this._client.post(path`/assistants/${assistantID}`, {
+      body,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Returns a list of assistants.
+   *
+   * @deprecated
+   */
+  list(query = {}, options) {
+    return this._client.getAPIList("/assistants", CursorPage, {
+      query,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Delete an assistant.
+   *
+   * @deprecated
+   */
+  delete(assistantID, options) {
+    return this._client.delete(path`/assistants/${assistantID}`, {
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/beta/realtime/sessions.mjs
+var Sessions = class extends APIResource {
+  /**
+   * Create an ephemeral API token for use in client-side applications with the
+   * Realtime API. Can be configured with the same session parameters as the
+   * `session.update` client event.
+   *
+   * It responds with a session object, plus a `client_secret` key which contains a
+   * usable ephemeral API token that can be used to authenticate browser clients for
+   * the Realtime API.
+   *
+   * @example
+   * ```ts
+   * const session =
+   *   await client.beta.realtime.sessions.create();
+   * ```
+   */
+  create(body, options) {
+    return this._client.post("/realtime/sessions", {
+      body,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/beta/realtime/transcription-sessions.mjs
+var TranscriptionSessions = class extends APIResource {
+  /**
+   * Create an ephemeral API token for use in client-side applications with the
+   * Realtime API specifically for realtime transcriptions. Can be configured with
+   * the same session parameters as the `transcription_session.update` client event.
+   *
+   * It responds with a session object, plus a `client_secret` key which contains a
+   * usable ephemeral API token that can be used to authenticate browser clients for
+   * the Realtime API.
+   *
+   * @example
+   * ```ts
+   * const transcriptionSession =
+   *   await client.beta.realtime.transcriptionSessions.create();
+   * ```
+   */
+  create(body, options) {
+    return this._client.post("/realtime/transcription_sessions", {
+      body,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/beta/realtime/realtime.mjs
+var Realtime = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.sessions = new Sessions(this._client);
+    this.transcriptionSessions = new TranscriptionSessions(this._client);
+  }
+};
+Realtime.Sessions = Sessions;
+Realtime.TranscriptionSessions = TranscriptionSessions;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/beta/chatkit/sessions.mjs
+var Sessions2 = class extends APIResource {
+  /**
+   * Create a ChatKit session.
+   *
+   * @example
+   * ```ts
+   * const chatSession =
+   *   await client.beta.chatkit.sessions.create({
+   *     user: 'x',
+   *     workflow: { id: 'id' },
+   *   });
+   * ```
+   */
+  create(body, options) {
+    return this._client.post("/chatkit/sessions", {
+      body,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "chatkit_beta=v1" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Cancel an active ChatKit session and return its most recent metadata.
+   *
+   * Cancelling prevents new requests from using the issued client secret.
+   *
+   * @example
+   * ```ts
+   * const chatSession =
+   *   await client.beta.chatkit.sessions.cancel('cksess_123');
+   * ```
+   */
+  cancel(sessionID, options) {
+    return this._client.post(path`/chatkit/sessions/${sessionID}/cancel`, {
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "chatkit_beta=v1" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/beta/chatkit/threads.mjs
+var Threads = class extends APIResource {
+  /**
+   * Retrieve a ChatKit thread by its identifier.
+   *
+   * @example
+   * ```ts
+   * const chatkitThread =
+   *   await client.beta.chatkit.threads.retrieve('cthr_123');
+   * ```
+   */
+  retrieve(threadID, options) {
+    return this._client.get(path`/chatkit/threads/${threadID}`, {
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "chatkit_beta=v1" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * List ChatKit threads with optional pagination and user filters.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const chatkitThread of client.beta.chatkit.threads.list()) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(query = {}, options) {
+    return this._client.getAPIList("/chatkit/threads", ConversationCursorPage, {
+      query,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "chatkit_beta=v1" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Delete a ChatKit thread along with its items and stored attachments.
+   *
+   * @example
+   * ```ts
+   * const thread = await client.beta.chatkit.threads.delete(
+   *   'cthr_123',
+   * );
+   * ```
+   */
+  delete(threadID, options) {
+    return this._client.delete(path`/chatkit/threads/${threadID}`, {
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "chatkit_beta=v1" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * List items that belong to a ChatKit thread.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const thread of client.beta.chatkit.threads.listItems(
+   *   'cthr_123',
+   * )) {
+   *   // ...
+   * }
+   * ```
+   */
+  listItems(threadID, query = {}, options) {
+    return this._client.getAPIList(path`/chatkit/threads/${threadID}/items`, ConversationCursorPage, {
+      query,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "chatkit_beta=v1" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/beta/chatkit/chatkit.mjs
+var ChatKit = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.sessions = new Sessions2(this._client);
+    this.threads = new Threads(this._client);
+  }
+};
+ChatKit.Sessions = Sessions2;
+ChatKit.Threads = Threads;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/beta/threads/messages.mjs
+var Messages2 = class extends APIResource {
+  /**
+   * Create a message.
+   *
+   * @deprecated The Assistants API is deprecated in favor of the Responses API
+   */
+  create(threadID, body, options) {
+    return this._client.post(path`/threads/${threadID}/messages`, {
+      body,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Retrieve a message.
+   *
+   * @deprecated The Assistants API is deprecated in favor of the Responses API
+   */
+  retrieve(messageID, params, options) {
+    const { thread_id } = params;
+    return this._client.get(path`/threads/${thread_id}/messages/${messageID}`, {
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Modifies a message.
+   *
+   * @deprecated The Assistants API is deprecated in favor of the Responses API
+   */
+  update(messageID, params, options) {
+    const { thread_id, ...body } = params;
+    return this._client.post(path`/threads/${thread_id}/messages/${messageID}`, {
+      body,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Returns a list of messages for a given thread.
+   *
+   * @deprecated The Assistants API is deprecated in favor of the Responses API
+   */
+  list(threadID, query = {}, options) {
+    return this._client.getAPIList(path`/threads/${threadID}/messages`, CursorPage, {
+      query,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Deletes a message.
+   *
+   * @deprecated The Assistants API is deprecated in favor of the Responses API
+   */
+  delete(messageID, params, options) {
+    const { thread_id } = params;
+    return this._client.delete(path`/threads/${thread_id}/messages/${messageID}`, {
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/beta/threads/runs/steps.mjs
+var Steps = class extends APIResource {
+  /**
+   * Retrieves a run step.
+   *
+   * @deprecated The Assistants API is deprecated in favor of the Responses API
+   */
+  retrieve(stepID, params, options) {
+    const { thread_id, run_id, ...query } = params;
+    return this._client.get(path`/threads/${thread_id}/runs/${run_id}/steps/${stepID}`, {
+      query,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Returns a list of run steps belonging to a run.
+   *
+   * @deprecated The Assistants API is deprecated in favor of the Responses API
+   */
+  list(runID, params, options) {
+    const { thread_id, ...query } = params;
+    return this._client.getAPIList(path`/threads/${thread_id}/runs/${runID}/steps`, CursorPage, {
+      query,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/internal/utils/base64.mjs
+var toFloat32Array = (base64Str) => {
+  if (typeof Buffer !== "undefined") {
+    const buf = Buffer.from(base64Str, "base64");
+    return Array.from(new Float32Array(buf.buffer, buf.byteOffset, buf.length / Float32Array.BYTES_PER_ELEMENT));
+  } else {
+    const binaryStr = atob(base64Str);
+    const len = binaryStr.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryStr.charCodeAt(i);
+    }
+    return Array.from(new Float32Array(bytes.buffer));
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/internal/utils/env.mjs
+var readEnv = (env) => {
+  if (typeof globalThis.process !== "undefined") {
+    return globalThis.process.env?.[env]?.trim() || void 0;
+  }
+  if (typeof globalThis.Deno !== "undefined") {
+    return globalThis.Deno.env?.get?.(env)?.trim() || void 0;
+  }
+  return void 0;
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/lib/AssistantStream.mjs
+var _AssistantStream_instances;
+var _a;
+var _AssistantStream_events;
+var _AssistantStream_runStepSnapshots;
+var _AssistantStream_messageSnapshots;
+var _AssistantStream_messageSnapshot;
+var _AssistantStream_finalRun;
+var _AssistantStream_currentContentIndex;
+var _AssistantStream_currentContent;
+var _AssistantStream_currentToolCallIndex;
+var _AssistantStream_currentToolCall;
+var _AssistantStream_currentEvent;
+var _AssistantStream_currentRunSnapshot;
+var _AssistantStream_currentRunStepSnapshot;
+var _AssistantStream_addEvent;
+var _AssistantStream_endRequest;
+var _AssistantStream_handleMessage;
+var _AssistantStream_handleRunStep;
+var _AssistantStream_handleEvent;
+var _AssistantStream_accumulateRunStep;
+var _AssistantStream_accumulateMessage;
+var _AssistantStream_accumulateContent;
+var _AssistantStream_handleRun;
+var AssistantStream = class extends EventStream {
+  constructor() {
+    super(...arguments);
+    _AssistantStream_instances.add(this);
+    _AssistantStream_events.set(this, []);
+    _AssistantStream_runStepSnapshots.set(this, {});
+    _AssistantStream_messageSnapshots.set(this, {});
+    _AssistantStream_messageSnapshot.set(this, void 0);
+    _AssistantStream_finalRun.set(this, void 0);
+    _AssistantStream_currentContentIndex.set(this, void 0);
+    _AssistantStream_currentContent.set(this, void 0);
+    _AssistantStream_currentToolCallIndex.set(this, void 0);
+    _AssistantStream_currentToolCall.set(this, void 0);
+    _AssistantStream_currentEvent.set(this, void 0);
+    _AssistantStream_currentRunSnapshot.set(this, void 0);
+    _AssistantStream_currentRunStepSnapshot.set(this, void 0);
+  }
+  [(_AssistantStream_events = /* @__PURE__ */ new WeakMap(), _AssistantStream_runStepSnapshots = /* @__PURE__ */ new WeakMap(), _AssistantStream_messageSnapshots = /* @__PURE__ */ new WeakMap(), _AssistantStream_messageSnapshot = /* @__PURE__ */ new WeakMap(), _AssistantStream_finalRun = /* @__PURE__ */ new WeakMap(), _AssistantStream_currentContentIndex = /* @__PURE__ */ new WeakMap(), _AssistantStream_currentContent = /* @__PURE__ */ new WeakMap(), _AssistantStream_currentToolCallIndex = /* @__PURE__ */ new WeakMap(), _AssistantStream_currentToolCall = /* @__PURE__ */ new WeakMap(), _AssistantStream_currentEvent = /* @__PURE__ */ new WeakMap(), _AssistantStream_currentRunSnapshot = /* @__PURE__ */ new WeakMap(), _AssistantStream_currentRunStepSnapshot = /* @__PURE__ */ new WeakMap(), _AssistantStream_instances = /* @__PURE__ */ new WeakSet(), Symbol.asyncIterator)]() {
+    const pushQueue = [];
+    const readQueue = [];
+    let done = false;
+    this.on("event", (event) => {
+      const reader = readQueue.shift();
+      if (reader) {
+        reader.resolve(event);
+      } else {
+        pushQueue.push(event);
+      }
+    });
+    this.on("end", () => {
+      done = true;
+      for (const reader of readQueue) {
+        reader.resolve(void 0);
+      }
+      readQueue.length = 0;
+    });
+    this.on("abort", (err) => {
+      done = true;
+      for (const reader of readQueue) {
+        reader.reject(err);
+      }
+      readQueue.length = 0;
+    });
+    this.on("error", (err) => {
+      done = true;
+      for (const reader of readQueue) {
+        reader.reject(err);
+      }
+      readQueue.length = 0;
+    });
+    return {
+      next: async () => {
+        if (!pushQueue.length) {
+          if (done) {
+            return { value: void 0, done: true };
+          }
+          return new Promise((resolve, reject) => readQueue.push({ resolve, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
+        }
+        const chunk = pushQueue.shift();
+        return { value: chunk, done: false };
+      },
+      return: async () => {
+        this.abort();
+        return { value: void 0, done: true };
+      }
+    };
+  }
+  static fromReadableStream(stream) {
+    const runner = new _a();
+    runner._run(() => runner._fromReadableStream(stream));
+    return runner;
+  }
+  async _fromReadableStream(readableStream, options) {
+    const signal = options?.signal;
+    if (signal) {
+      if (signal.aborted)
+        this.controller.abort();
+      signal.addEventListener("abort", () => this.controller.abort());
+    }
+    this._connected();
+    const stream = Stream.fromReadableStream(readableStream, this.controller);
+    for await (const event of stream) {
+      __classPrivateFieldGet(this, _AssistantStream_instances, "m", _AssistantStream_addEvent).call(this, event);
+    }
+    if (stream.controller.signal?.aborted) {
+      throw new APIUserAbortError();
+    }
+    return this._addRun(__classPrivateFieldGet(this, _AssistantStream_instances, "m", _AssistantStream_endRequest).call(this));
+  }
+  toReadableStream() {
+    const stream = new Stream(this[Symbol.asyncIterator].bind(this), this.controller);
+    return stream.toReadableStream();
+  }
+  static createToolAssistantStream(runId, runs, params, options) {
+    const runner = new _a();
+    runner._run(() => runner._runToolAssistantStream(runId, runs, params, {
+      ...options,
+      headers: { ...options?.headers, "X-Stainless-Helper-Method": "stream" }
+    }));
+    return runner;
+  }
+  async _createToolAssistantStream(run2, runId, params, options) {
+    const signal = options?.signal;
+    if (signal) {
+      if (signal.aborted)
+        this.controller.abort();
+      signal.addEventListener("abort", () => this.controller.abort());
+    }
+    const body = { ...params, stream: true };
+    const stream = await run2.submitToolOutputs(runId, body, {
+      ...options,
+      signal: this.controller.signal
+    });
+    this._connected();
+    for await (const event of stream) {
+      __classPrivateFieldGet(this, _AssistantStream_instances, "m", _AssistantStream_addEvent).call(this, event);
+    }
+    if (stream.controller.signal?.aborted) {
+      throw new APIUserAbortError();
+    }
+    return this._addRun(__classPrivateFieldGet(this, _AssistantStream_instances, "m", _AssistantStream_endRequest).call(this));
+  }
+  static createThreadAssistantStream(params, thread, options) {
+    const runner = new _a();
+    runner._run(() => runner._threadAssistantStream(params, thread, {
+      ...options,
+      headers: { ...options?.headers, "X-Stainless-Helper-Method": "stream" }
+    }));
+    return runner;
+  }
+  static createAssistantStream(threadId, runs, params, options) {
+    const runner = new _a();
+    runner._run(() => runner._runAssistantStream(threadId, runs, params, {
+      ...options,
+      headers: { ...options?.headers, "X-Stainless-Helper-Method": "stream" }
+    }));
+    return runner;
+  }
+  currentEvent() {
+    return __classPrivateFieldGet(this, _AssistantStream_currentEvent, "f");
+  }
+  currentRun() {
+    return __classPrivateFieldGet(this, _AssistantStream_currentRunSnapshot, "f");
+  }
+  currentMessageSnapshot() {
+    return __classPrivateFieldGet(this, _AssistantStream_messageSnapshot, "f");
+  }
+  currentRunStepSnapshot() {
+    return __classPrivateFieldGet(this, _AssistantStream_currentRunStepSnapshot, "f");
+  }
+  async finalRunSteps() {
+    await this.done();
+    return Object.values(__classPrivateFieldGet(this, _AssistantStream_runStepSnapshots, "f"));
+  }
+  async finalMessages() {
+    await this.done();
+    return Object.values(__classPrivateFieldGet(this, _AssistantStream_messageSnapshots, "f"));
+  }
+  async finalRun() {
+    await this.done();
+    if (!__classPrivateFieldGet(this, _AssistantStream_finalRun, "f"))
+      throw Error("Final run was not received.");
+    return __classPrivateFieldGet(this, _AssistantStream_finalRun, "f");
+  }
+  async _createThreadAssistantStream(thread, params, options) {
+    const signal = options?.signal;
+    if (signal) {
+      if (signal.aborted)
+        this.controller.abort();
+      signal.addEventListener("abort", () => this.controller.abort());
+    }
+    const body = { ...params, stream: true };
+    const stream = await thread.createAndRun(body, { ...options, signal: this.controller.signal });
+    this._connected();
+    for await (const event of stream) {
+      __classPrivateFieldGet(this, _AssistantStream_instances, "m", _AssistantStream_addEvent).call(this, event);
+    }
+    if (stream.controller.signal?.aborted) {
+      throw new APIUserAbortError();
+    }
+    return this._addRun(__classPrivateFieldGet(this, _AssistantStream_instances, "m", _AssistantStream_endRequest).call(this));
+  }
+  async _createAssistantStream(run2, threadId, params, options) {
+    const signal = options?.signal;
+    if (signal) {
+      if (signal.aborted)
+        this.controller.abort();
+      signal.addEventListener("abort", () => this.controller.abort());
+    }
+    const body = { ...params, stream: true };
+    const stream = await run2.create(threadId, body, { ...options, signal: this.controller.signal });
+    this._connected();
+    for await (const event of stream) {
+      __classPrivateFieldGet(this, _AssistantStream_instances, "m", _AssistantStream_addEvent).call(this, event);
+    }
+    if (stream.controller.signal?.aborted) {
+      throw new APIUserAbortError();
+    }
+    return this._addRun(__classPrivateFieldGet(this, _AssistantStream_instances, "m", _AssistantStream_endRequest).call(this));
+  }
+  static accumulateDelta(acc, delta) {
+    for (const [key, deltaValue] of Object.entries(delta)) {
+      if (!acc.hasOwnProperty(key)) {
+        acc[key] = deltaValue;
+        continue;
+      }
+      let accValue = acc[key];
+      if (accValue === null || accValue === void 0) {
+        acc[key] = deltaValue;
+        continue;
+      }
+      if (key === "index" || key === "type") {
+        acc[key] = deltaValue;
+        continue;
+      }
+      if (typeof accValue === "string" && typeof deltaValue === "string") {
+        accValue += deltaValue;
+      } else if (typeof accValue === "number" && typeof deltaValue === "number") {
+        accValue += deltaValue;
+      } else if (isObj(accValue) && isObj(deltaValue)) {
+        accValue = this.accumulateDelta(accValue, deltaValue);
+      } else if (Array.isArray(accValue) && Array.isArray(deltaValue)) {
+        if (accValue.every((x) => typeof x === "string" || typeof x === "number")) {
+          accValue.push(...deltaValue);
+          continue;
+        }
+        for (const deltaEntry of deltaValue) {
+          if (!isObj(deltaEntry)) {
+            throw new Error(`Expected array delta entry to be an object but got: ${deltaEntry}`);
+          }
+          const index = deltaEntry["index"];
+          if (index == null) {
+            console.error(deltaEntry);
+            throw new Error("Expected array delta entry to have an `index` property");
+          }
+          if (typeof index !== "number") {
+            throw new Error(`Expected array delta entry \`index\` property to be a number but got ${index}`);
+          }
+          const accEntry = accValue[index];
+          if (accEntry == null) {
+            accValue.push(deltaEntry);
+          } else {
+            accValue[index] = this.accumulateDelta(accEntry, deltaEntry);
+          }
+        }
+        continue;
+      } else {
+        throw Error(`Unhandled record type: ${key}, deltaValue: ${deltaValue}, accValue: ${accValue}`);
+      }
+      acc[key] = accValue;
+    }
+    return acc;
+  }
+  _addRun(run2) {
+    return run2;
+  }
+  async _threadAssistantStream(params, thread, options) {
+    return await this._createThreadAssistantStream(thread, params, options);
+  }
+  async _runAssistantStream(threadId, runs, params, options) {
+    return await this._createAssistantStream(runs, threadId, params, options);
+  }
+  async _runToolAssistantStream(runId, runs, params, options) {
+    return await this._createToolAssistantStream(runs, runId, params, options);
+  }
+};
+_a = AssistantStream, _AssistantStream_addEvent = function _AssistantStream_addEvent2(event) {
+  if (this.ended)
+    return;
+  __classPrivateFieldSet(this, _AssistantStream_currentEvent, event, "f");
+  __classPrivateFieldGet(this, _AssistantStream_instances, "m", _AssistantStream_handleEvent).call(this, event);
+  switch (event.event) {
+    case "thread.created":
+      break;
+    case "thread.run.created":
+    case "thread.run.queued":
+    case "thread.run.in_progress":
+    case "thread.run.requires_action":
+    case "thread.run.completed":
+    case "thread.run.incomplete":
+    case "thread.run.failed":
+    case "thread.run.cancelling":
+    case "thread.run.cancelled":
+    case "thread.run.expired":
+      __classPrivateFieldGet(this, _AssistantStream_instances, "m", _AssistantStream_handleRun).call(this, event);
+      break;
+    case "thread.run.step.created":
+    case "thread.run.step.in_progress":
+    case "thread.run.step.delta":
+    case "thread.run.step.completed":
+    case "thread.run.step.failed":
+    case "thread.run.step.cancelled":
+    case "thread.run.step.expired":
+      __classPrivateFieldGet(this, _AssistantStream_instances, "m", _AssistantStream_handleRunStep).call(this, event);
+      break;
+    case "thread.message.created":
+    case "thread.message.in_progress":
+    case "thread.message.delta":
+    case "thread.message.completed":
+    case "thread.message.incomplete":
+      __classPrivateFieldGet(this, _AssistantStream_instances, "m", _AssistantStream_handleMessage).call(this, event);
+      break;
+    case "error":
+      throw new Error("Encountered an error event in event processing - errors should be processed earlier");
+    default:
+      assertNever3(event);
+  }
+}, _AssistantStream_endRequest = function _AssistantStream_endRequest2() {
+  if (this.ended) {
+    throw new OpenAIError(`stream has ended, this shouldn't happen`);
+  }
+  if (!__classPrivateFieldGet(this, _AssistantStream_finalRun, "f"))
+    throw Error("Final run has not been received");
+  return __classPrivateFieldGet(this, _AssistantStream_finalRun, "f");
+}, _AssistantStream_handleMessage = function _AssistantStream_handleMessage2(event) {
+  const [accumulatedMessage, newContent] = __classPrivateFieldGet(this, _AssistantStream_instances, "m", _AssistantStream_accumulateMessage).call(this, event, __classPrivateFieldGet(this, _AssistantStream_messageSnapshot, "f"));
+  __classPrivateFieldSet(this, _AssistantStream_messageSnapshot, accumulatedMessage, "f");
+  __classPrivateFieldGet(this, _AssistantStream_messageSnapshots, "f")[accumulatedMessage.id] = accumulatedMessage;
+  for (const content of newContent) {
+    const snapshotContent = accumulatedMessage.content[content.index];
+    if (snapshotContent?.type == "text") {
+      this._emit("textCreated", snapshotContent.text);
+    }
+  }
+  switch (event.event) {
+    case "thread.message.created":
+      this._emit("messageCreated", event.data);
+      break;
+    case "thread.message.in_progress":
+      break;
+    case "thread.message.delta":
+      this._emit("messageDelta", event.data.delta, accumulatedMessage);
+      if (event.data.delta.content) {
+        for (const content of event.data.delta.content) {
+          if (content.type == "text" && content.text) {
+            let textDelta = content.text;
+            let snapshot = accumulatedMessage.content[content.index];
+            if (snapshot && snapshot.type == "text") {
+              this._emit("textDelta", textDelta, snapshot.text);
+            } else {
+              throw Error("The snapshot associated with this text delta is not text or missing");
+            }
+          }
+          if (content.index != __classPrivateFieldGet(this, _AssistantStream_currentContentIndex, "f")) {
+            if (__classPrivateFieldGet(this, _AssistantStream_currentContent, "f")) {
+              switch (__classPrivateFieldGet(this, _AssistantStream_currentContent, "f").type) {
+                case "text":
+                  this._emit("textDone", __classPrivateFieldGet(this, _AssistantStream_currentContent, "f").text, __classPrivateFieldGet(this, _AssistantStream_messageSnapshot, "f"));
+                  break;
+                case "image_file":
+                  this._emit("imageFileDone", __classPrivateFieldGet(this, _AssistantStream_currentContent, "f").image_file, __classPrivateFieldGet(this, _AssistantStream_messageSnapshot, "f"));
+                  break;
+              }
+            }
+            __classPrivateFieldSet(this, _AssistantStream_currentContentIndex, content.index, "f");
+          }
+          __classPrivateFieldSet(this, _AssistantStream_currentContent, accumulatedMessage.content[content.index], "f");
+        }
+      }
+      break;
+    case "thread.message.completed":
+    case "thread.message.incomplete":
+      if (__classPrivateFieldGet(this, _AssistantStream_currentContentIndex, "f") !== void 0) {
+        const currentContent = event.data.content[__classPrivateFieldGet(this, _AssistantStream_currentContentIndex, "f")];
+        if (currentContent) {
+          switch (currentContent.type) {
+            case "image_file":
+              this._emit("imageFileDone", currentContent.image_file, __classPrivateFieldGet(this, _AssistantStream_messageSnapshot, "f"));
+              break;
+            case "text":
+              this._emit("textDone", currentContent.text, __classPrivateFieldGet(this, _AssistantStream_messageSnapshot, "f"));
+              break;
+          }
+        }
+      }
+      if (__classPrivateFieldGet(this, _AssistantStream_messageSnapshot, "f")) {
+        this._emit("messageDone", event.data);
+      }
+      __classPrivateFieldSet(this, _AssistantStream_messageSnapshot, void 0, "f");
+  }
+}, _AssistantStream_handleRunStep = function _AssistantStream_handleRunStep2(event) {
+  const accumulatedRunStep = __classPrivateFieldGet(this, _AssistantStream_instances, "m", _AssistantStream_accumulateRunStep).call(this, event);
+  __classPrivateFieldSet(this, _AssistantStream_currentRunStepSnapshot, accumulatedRunStep, "f");
+  switch (event.event) {
+    case "thread.run.step.created":
+      this._emit("runStepCreated", event.data);
+      break;
+    case "thread.run.step.delta":
+      const delta = event.data.delta;
+      if (delta.step_details && delta.step_details.type == "tool_calls" && delta.step_details.tool_calls && accumulatedRunStep.step_details.type == "tool_calls") {
+        for (const toolCall of delta.step_details.tool_calls) {
+          if (toolCall.index == __classPrivateFieldGet(this, _AssistantStream_currentToolCallIndex, "f")) {
+            this._emit("toolCallDelta", toolCall, accumulatedRunStep.step_details.tool_calls[toolCall.index]);
+          } else {
+            if (__classPrivateFieldGet(this, _AssistantStream_currentToolCall, "f")) {
+              this._emit("toolCallDone", __classPrivateFieldGet(this, _AssistantStream_currentToolCall, "f"));
+            }
+            __classPrivateFieldSet(this, _AssistantStream_currentToolCallIndex, toolCall.index, "f");
+            __classPrivateFieldSet(this, _AssistantStream_currentToolCall, accumulatedRunStep.step_details.tool_calls[toolCall.index], "f");
+            if (__classPrivateFieldGet(this, _AssistantStream_currentToolCall, "f"))
+              this._emit("toolCallCreated", __classPrivateFieldGet(this, _AssistantStream_currentToolCall, "f"));
+          }
+        }
+      }
+      this._emit("runStepDelta", event.data.delta, accumulatedRunStep);
+      break;
+    case "thread.run.step.completed":
+    case "thread.run.step.failed":
+    case "thread.run.step.cancelled":
+    case "thread.run.step.expired":
+      __classPrivateFieldSet(this, _AssistantStream_currentRunStepSnapshot, void 0, "f");
+      const details = event.data.step_details;
+      if (details.type == "tool_calls") {
+        if (__classPrivateFieldGet(this, _AssistantStream_currentToolCall, "f")) {
+          this._emit("toolCallDone", __classPrivateFieldGet(this, _AssistantStream_currentToolCall, "f"));
+          __classPrivateFieldSet(this, _AssistantStream_currentToolCall, void 0, "f");
+        }
+      }
+      this._emit("runStepDone", event.data, accumulatedRunStep);
+      break;
+    case "thread.run.step.in_progress":
+      break;
+  }
+}, _AssistantStream_handleEvent = function _AssistantStream_handleEvent2(event) {
+  __classPrivateFieldGet(this, _AssistantStream_events, "f").push(event);
+  this._emit("event", event);
+}, _AssistantStream_accumulateRunStep = function _AssistantStream_accumulateRunStep2(event) {
+  switch (event.event) {
+    case "thread.run.step.created":
+      __classPrivateFieldGet(this, _AssistantStream_runStepSnapshots, "f")[event.data.id] = event.data;
+      return event.data;
+    case "thread.run.step.delta":
+      let snapshot = __classPrivateFieldGet(this, _AssistantStream_runStepSnapshots, "f")[event.data.id];
+      if (!snapshot) {
+        throw Error("Received a RunStepDelta before creation of a snapshot");
+      }
+      let data = event.data;
+      if (data.delta) {
+        const accumulated = _a.accumulateDelta(snapshot, data.delta);
+        __classPrivateFieldGet(this, _AssistantStream_runStepSnapshots, "f")[event.data.id] = accumulated;
+      }
+      return __classPrivateFieldGet(this, _AssistantStream_runStepSnapshots, "f")[event.data.id];
+    case "thread.run.step.completed":
+    case "thread.run.step.failed":
+    case "thread.run.step.cancelled":
+    case "thread.run.step.expired":
+    case "thread.run.step.in_progress":
+      __classPrivateFieldGet(this, _AssistantStream_runStepSnapshots, "f")[event.data.id] = event.data;
+      break;
+  }
+  if (__classPrivateFieldGet(this, _AssistantStream_runStepSnapshots, "f")[event.data.id])
+    return __classPrivateFieldGet(this, _AssistantStream_runStepSnapshots, "f")[event.data.id];
+  throw new Error("No snapshot available");
+}, _AssistantStream_accumulateMessage = function _AssistantStream_accumulateMessage2(event, snapshot) {
+  let newContent = [];
+  switch (event.event) {
+    case "thread.message.created":
+      return [event.data, newContent];
+    case "thread.message.delta":
+      if (!snapshot) {
+        throw Error("Received a delta with no existing snapshot (there should be one from message creation)");
+      }
+      let data = event.data;
+      if (data.delta.content) {
+        for (const contentElement of data.delta.content) {
+          if (contentElement.index in snapshot.content) {
+            let currentContent = snapshot.content[contentElement.index];
+            snapshot.content[contentElement.index] = __classPrivateFieldGet(this, _AssistantStream_instances, "m", _AssistantStream_accumulateContent).call(this, contentElement, currentContent);
+          } else {
+            snapshot.content[contentElement.index] = contentElement;
+            newContent.push(contentElement);
+          }
+        }
+      }
+      return [snapshot, newContent];
+    case "thread.message.in_progress":
+    case "thread.message.completed":
+    case "thread.message.incomplete":
+      if (snapshot) {
+        return [snapshot, newContent];
+      } else {
+        throw Error("Received thread message event with no existing snapshot");
+      }
+  }
+  throw Error("Tried to accumulate a non-message event");
+}, _AssistantStream_accumulateContent = function _AssistantStream_accumulateContent2(contentElement, currentContent) {
+  return _a.accumulateDelta(currentContent, contentElement);
+}, _AssistantStream_handleRun = function _AssistantStream_handleRun2(event) {
+  __classPrivateFieldSet(this, _AssistantStream_currentRunSnapshot, event.data, "f");
+  switch (event.event) {
+    case "thread.run.created":
+      break;
+    case "thread.run.queued":
+      break;
+    case "thread.run.in_progress":
+      break;
+    case "thread.run.requires_action":
+    case "thread.run.cancelled":
+    case "thread.run.failed":
+    case "thread.run.completed":
+    case "thread.run.expired":
+    case "thread.run.incomplete":
+      __classPrivateFieldSet(this, _AssistantStream_finalRun, event.data, "f");
+      if (__classPrivateFieldGet(this, _AssistantStream_currentToolCall, "f")) {
+        this._emit("toolCallDone", __classPrivateFieldGet(this, _AssistantStream_currentToolCall, "f"));
+        __classPrivateFieldSet(this, _AssistantStream_currentToolCall, void 0, "f");
+      }
+      break;
+    case "thread.run.cancelling":
+      break;
+  }
+};
+function assertNever3(_x) {
+}
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/beta/threads/runs/runs.mjs
+var Runs = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.steps = new Steps(this._client);
+  }
+  create(threadID, params, options) {
+    const { include, ...body } = params;
+    return this._client.post(path`/threads/${threadID}/runs`, {
+      query: { include },
+      body,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      stream: params.stream ?? false,
+      __synthesizeEventData: true,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Retrieves a run.
+   *
+   * @deprecated The Assistants API is deprecated in favor of the Responses API
+   */
+  retrieve(runID, params, options) {
+    const { thread_id } = params;
+    return this._client.get(path`/threads/${thread_id}/runs/${runID}`, {
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Modifies a run.
+   *
+   * @deprecated The Assistants API is deprecated in favor of the Responses API
+   */
+  update(runID, params, options) {
+    const { thread_id, ...body } = params;
+    return this._client.post(path`/threads/${thread_id}/runs/${runID}`, {
+      body,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Returns a list of runs belonging to a thread.
+   *
+   * @deprecated The Assistants API is deprecated in favor of the Responses API
+   */
+  list(threadID, query = {}, options) {
+    return this._client.getAPIList(path`/threads/${threadID}/runs`, CursorPage, {
+      query,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Cancels a run that is `in_progress`.
+   *
+   * @deprecated The Assistants API is deprecated in favor of the Responses API
+   */
+  cancel(runID, params, options) {
+    const { thread_id } = params;
+    return this._client.post(path`/threads/${thread_id}/runs/${runID}/cancel`, {
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * A helper to create a run an poll for a terminal state. More information on Run
+   * lifecycles can be found here:
+   * https://platform.openai.com/docs/assistants/how-it-works/runs-and-run-steps
+   */
+  async createAndPoll(threadId, body, options) {
+    const run2 = await this.create(threadId, body, options);
+    return await this.poll(run2.id, { thread_id: threadId }, options);
+  }
+  /**
+   * Create a Run stream
+   *
+   * @deprecated use `stream` instead
+   */
+  createAndStream(threadId, body, options) {
+    return AssistantStream.createAssistantStream(threadId, this._client.beta.threads.runs, body, options);
+  }
+  /**
+   * A helper to poll a run status until it reaches a terminal state. More
+   * information on Run lifecycles can be found here:
+   * https://platform.openai.com/docs/assistants/how-it-works/runs-and-run-steps
+   */
+  async poll(runId, params, options) {
+    const headers = buildHeaders([
+      options?.headers,
+      {
+        "X-Stainless-Poll-Helper": "true",
+        "X-Stainless-Custom-Poll-Interval": options?.pollIntervalMs?.toString() ?? void 0
+      }
+    ]);
+    while (true) {
+      const { data: run2, response } = await this.retrieve(runId, params, {
+        ...options,
+        headers: { ...options?.headers, ...headers }
+      }).withResponse();
+      switch (run2.status) {
+        //If we are in any sort of intermediate state we poll
+        case "queued":
+        case "in_progress":
+        case "cancelling":
+          let sleepInterval = 5e3;
+          if (options?.pollIntervalMs) {
+            sleepInterval = options.pollIntervalMs;
+          } else {
+            const headerInterval = response.headers.get("openai-poll-after-ms");
+            if (headerInterval) {
+              const headerIntervalMs = parseInt(headerInterval);
+              if (!isNaN(headerIntervalMs)) {
+                sleepInterval = headerIntervalMs;
+              }
+            }
+          }
+          await sleep(sleepInterval);
+          break;
+        //We return the run in any terminal state.
+        case "requires_action":
+        case "incomplete":
+        case "cancelled":
+        case "completed":
+        case "failed":
+        case "expired":
+          return run2;
+      }
+    }
+  }
+  /**
+   * Create a Run stream
+   */
+  stream(threadId, body, options) {
+    return AssistantStream.createAssistantStream(threadId, this._client.beta.threads.runs, body, options);
+  }
+  submitToolOutputs(runID, params, options) {
+    const { thread_id, ...body } = params;
+    return this._client.post(path`/threads/${thread_id}/runs/${runID}/submit_tool_outputs`, {
+      body,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      stream: params.stream ?? false,
+      __synthesizeEventData: true,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * A helper to submit a tool output to a run and poll for a terminal run state.
+   * More information on Run lifecycles can be found here:
+   * https://platform.openai.com/docs/assistants/how-it-works/runs-and-run-steps
+   */
+  async submitToolOutputsAndPoll(runId, params, options) {
+    const run2 = await this.submitToolOutputs(runId, params, options);
+    return await this.poll(run2.id, params, options);
+  }
+  /**
+   * Submit the tool outputs from a previous run and stream the run to a terminal
+   * state. More information on Run lifecycles can be found here:
+   * https://platform.openai.com/docs/assistants/how-it-works/runs-and-run-steps
+   */
+  submitToolOutputsStream(runId, params, options) {
+    return AssistantStream.createToolAssistantStream(runId, this._client.beta.threads.runs, params, options);
+  }
+};
+Runs.Steps = Steps;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/beta/threads/threads.mjs
+var Threads2 = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.runs = new Runs(this._client);
+    this.messages = new Messages2(this._client);
+  }
+  /**
+   * Create a thread.
+   *
+   * @deprecated The Assistants API is deprecated in favor of the Responses API
+   */
+  create(body = {}, options) {
+    return this._client.post("/threads", {
+      body,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Retrieves a thread.
+   *
+   * @deprecated The Assistants API is deprecated in favor of the Responses API
+   */
+  retrieve(threadID, options) {
+    return this._client.get(path`/threads/${threadID}`, {
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Modifies a thread.
+   *
+   * @deprecated The Assistants API is deprecated in favor of the Responses API
+   */
+  update(threadID, body, options) {
+    return this._client.post(path`/threads/${threadID}`, {
+      body,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Delete a thread.
+   *
+   * @deprecated The Assistants API is deprecated in favor of the Responses API
+   */
+  delete(threadID, options) {
+    return this._client.delete(path`/threads/${threadID}`, {
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  createAndRun(body, options) {
+    return this._client.post("/threads/runs", {
+      body,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      stream: body.stream ?? false,
+      __synthesizeEventData: true,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * A helper to create a thread, start a run and then poll for a terminal state.
+   * More information on Run lifecycles can be found here:
+   * https://platform.openai.com/docs/assistants/how-it-works/runs-and-run-steps
+   */
+  async createAndRunPoll(body, options) {
+    const run2 = await this.createAndRun(body, options);
+    return await this.runs.poll(run2.id, { thread_id: run2.thread_id }, options);
+  }
+  /**
+   * Create a thread and stream the run back
+   */
+  createAndRunStream(body, options) {
+    return AssistantStream.createThreadAssistantStream(body, this._client.beta.threads, options);
+  }
+};
+Threads2.Runs = Runs;
+Threads2.Messages = Messages2;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/beta/beta.mjs
+var Beta = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.realtime = new Realtime(this._client);
+    this.chatkit = new ChatKit(this._client);
+    this.assistants = new Assistants(this._client);
+    this.threads = new Threads2(this._client);
+  }
+};
+Beta.Realtime = Realtime;
+Beta.ChatKit = ChatKit;
+Beta.Assistants = Assistants;
+Beta.Threads = Threads2;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/completions.mjs
+var Completions2 = class extends APIResource {
+  create(body, options) {
+    return this._client.post("/completions", {
+      body,
+      ...options,
+      stream: body.stream ?? false,
+      __security: { bearerAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/containers/files/content.mjs
+var Content = class extends APIResource {
+  /**
+   * Retrieve Container File Content
+   */
+  retrieve(fileID, params, options) {
+    const { container_id } = params;
+    return this._client.get(path`/containers/${container_id}/files/${fileID}/content`, {
+      ...options,
+      headers: buildHeaders([{ Accept: "application/binary" }, options?.headers]),
+      __security: { bearerAuth: true },
+      __binaryResponse: true
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/containers/files/files.mjs
+var Files = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.content = new Content(this._client);
+  }
+  /**
+   * Create a Container File
+   *
+   * You can send either a multipart/form-data request with the raw file content, or
+   * a JSON request with a file ID.
+   */
+  create(containerID, body, options) {
+    return this._client.post(path`/containers/${containerID}/files`, maybeMultipartFormRequestOptions({ body, ...options, __security: { bearerAuth: true } }, this._client));
+  }
+  /**
+   * Retrieve Container File
+   */
+  retrieve(fileID, params, options) {
+    const { container_id } = params;
+    return this._client.get(path`/containers/${container_id}/files/${fileID}`, {
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * List Container files
+   */
+  list(containerID, query = {}, options) {
+    return this._client.getAPIList(path`/containers/${containerID}/files`, CursorPage, {
+      query,
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Delete Container File
+   */
+  delete(fileID, params, options) {
+    const { container_id } = params;
+    return this._client.delete(path`/containers/${container_id}/files/${fileID}`, {
+      ...options,
+      headers: buildHeaders([{ Accept: "*/*" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+};
+Files.Content = Content;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/containers/containers.mjs
+var Containers = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.files = new Files(this._client);
+  }
+  /**
+   * Create Container
+   */
+  create(body, options) {
+    return this._client.post("/containers", { body, ...options, __security: { bearerAuth: true } });
+  }
+  /**
+   * Retrieve Container
+   */
+  retrieve(containerID, options) {
+    return this._client.get(path`/containers/${containerID}`, {
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * List Containers
+   */
+  list(query = {}, options) {
+    return this._client.getAPIList("/containers", CursorPage, {
+      query,
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Delete Container
+   */
+  delete(containerID, options) {
+    return this._client.delete(path`/containers/${containerID}`, {
+      ...options,
+      headers: buildHeaders([{ Accept: "*/*" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+};
+Containers.Files = Files;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/conversations/items.mjs
+var Items = class extends APIResource {
+  /**
+   * Create items in a conversation with the given ID.
+   */
+  create(conversationID, params, options) {
+    const { include, ...body } = params;
+    return this._client.post(path`/conversations/${conversationID}/items`, {
+      query: { include },
+      body,
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Get a single item from a conversation with the given IDs.
+   */
+  retrieve(itemID, params, options) {
+    const { conversation_id, ...query } = params;
+    return this._client.get(path`/conversations/${conversation_id}/items/${itemID}`, {
+      query,
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * List all items for a conversation with the given ID.
+   */
+  list(conversationID, query = {}, options) {
+    return this._client.getAPIList(path`/conversations/${conversationID}/items`, ConversationCursorPage, { query, ...options, __security: { bearerAuth: true } });
+  }
+  /**
+   * Delete an item from a conversation with the given IDs.
+   */
+  delete(itemID, params, options) {
+    const { conversation_id } = params;
+    return this._client.delete(path`/conversations/${conversation_id}/items/${itemID}`, {
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/conversations/conversations.mjs
+var Conversations = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.items = new Items(this._client);
+  }
+  /**
+   * Create a conversation.
+   */
+  create(body = {}, options) {
+    return this._client.post("/conversations", { body, ...options, __security: { bearerAuth: true } });
+  }
+  /**
+   * Get a conversation
+   */
+  retrieve(conversationID, options) {
+    return this._client.get(path`/conversations/${conversationID}`, {
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Update a conversation
+   */
+  update(conversationID, body, options) {
+    return this._client.post(path`/conversations/${conversationID}`, {
+      body,
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Delete a conversation. Items in the conversation will not be deleted.
+   */
+  delete(conversationID, options) {
+    return this._client.delete(path`/conversations/${conversationID}`, {
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+};
+Conversations.Items = Items;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/embeddings.mjs
+var Embeddings = class extends APIResource {
+  /**
+   * Creates an embedding vector representing the input text.
+   *
+   * @example
+   * ```ts
+   * const createEmbeddingResponse =
+   *   await client.embeddings.create({
+   *     input: 'The quick brown fox jumped over the lazy dog',
+   *     model: 'text-embedding-3-small',
+   *   });
+   * ```
+   */
+  create(body, options) {
+    const hasUserProvidedEncodingFormat = !!body.encoding_format;
+    let encoding_format = hasUserProvidedEncodingFormat ? body.encoding_format : "base64";
+    if (hasUserProvidedEncodingFormat) {
+      loggerFor(this._client).debug("embeddings/user defined encoding_format:", body.encoding_format);
+    }
+    const response = this._client.post("/embeddings", {
+      body: {
+        ...body,
+        encoding_format
+      },
+      ...options,
+      __security: { bearerAuth: true }
+    });
+    if (hasUserProvidedEncodingFormat) {
+      return response;
+    }
+    loggerFor(this._client).debug("embeddings/decoding base64 embeddings from base64");
+    return response._thenUnwrap((response2) => {
+      if (response2 && response2.data) {
+        response2.data.forEach((embeddingBase64Obj) => {
+          const embeddingBase64Str = embeddingBase64Obj.embedding;
+          embeddingBase64Obj.embedding = toFloat32Array(embeddingBase64Str);
+        });
+      }
+      return response2;
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/evals/runs/output-items.mjs
+var OutputItems = class extends APIResource {
+  /**
+   * Get an evaluation run output item by ID.
+   */
+  retrieve(outputItemID, params, options) {
+    const { eval_id, run_id } = params;
+    return this._client.get(path`/evals/${eval_id}/runs/${run_id}/output_items/${outputItemID}`, {
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Get a list of output items for an evaluation run.
+   */
+  list(runID, params, options) {
+    const { eval_id, ...query } = params;
+    return this._client.getAPIList(path`/evals/${eval_id}/runs/${runID}/output_items`, CursorPage, { query, ...options, __security: { bearerAuth: true } });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/evals/runs/runs.mjs
+var Runs2 = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.outputItems = new OutputItems(this._client);
+  }
+  /**
+   * Kicks off a new run for a given evaluation, specifying the data source, and what
+   * model configuration to use to test. The datasource will be validated against the
+   * schema specified in the config of the evaluation.
+   */
+  create(evalID, body, options) {
+    return this._client.post(path`/evals/${evalID}/runs`, {
+      body,
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Get an evaluation run by ID.
+   */
+  retrieve(runID, params, options) {
+    const { eval_id } = params;
+    return this._client.get(path`/evals/${eval_id}/runs/${runID}`, {
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Get a list of runs for an evaluation.
+   */
+  list(evalID, query = {}, options) {
+    return this._client.getAPIList(path`/evals/${evalID}/runs`, CursorPage, {
+      query,
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Delete an eval run.
+   */
+  delete(runID, params, options) {
+    const { eval_id } = params;
+    return this._client.delete(path`/evals/${eval_id}/runs/${runID}`, {
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Cancel an ongoing evaluation run.
+   */
+  cancel(runID, params, options) {
+    const { eval_id } = params;
+    return this._client.post(path`/evals/${eval_id}/runs/${runID}`, {
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+};
+Runs2.OutputItems = OutputItems;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/evals/evals.mjs
+var Evals = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.runs = new Runs2(this._client);
+  }
+  /**
+   * Create the structure of an evaluation that can be used to test a model's
+   * performance. An evaluation is a set of testing criteria and the config for a
+   * data source, which dictates the schema of the data used in the evaluation. After
+   * creating an evaluation, you can run it on different models and model parameters.
+   * We support several types of graders and datasources. For more information, see
+   * the [Evals guide](https://platform.openai.com/docs/guides/evals).
+   */
+  create(body, options) {
+    return this._client.post("/evals", { body, ...options, __security: { bearerAuth: true } });
+  }
+  /**
+   * Get an evaluation by ID.
+   */
+  retrieve(evalID, options) {
+    return this._client.get(path`/evals/${evalID}`, { ...options, __security: { bearerAuth: true } });
+  }
+  /**
+   * Update certain properties of an evaluation.
+   */
+  update(evalID, body, options) {
+    return this._client.post(path`/evals/${evalID}`, { body, ...options, __security: { bearerAuth: true } });
+  }
+  /**
+   * List evaluations for a project.
+   */
+  list(query = {}, options) {
+    return this._client.getAPIList("/evals", CursorPage, {
+      query,
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Delete an evaluation.
+   */
+  delete(evalID, options) {
+    return this._client.delete(path`/evals/${evalID}`, { ...options, __security: { bearerAuth: true } });
+  }
+};
+Evals.Runs = Runs2;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/files.mjs
+var Files2 = class extends APIResource {
+  /**
+   * Upload a file that can be used across various endpoints. Individual files can be
+   * up to 512 MB, and each project can store up to 2.5 TB of files in total. There
+   * is no organization-wide storage limit. Uploads to this endpoint are rate-limited
+   * to 1,000 requests per minute per authenticated user.
+   *
+   * - The Assistants API supports files up to 2 million tokens and of specific file
+   *   types. See the
+   *   [Assistants Tools guide](https://platform.openai.com/docs/assistants/tools)
+   *   for details.
+   * - The Fine-tuning API only supports `.jsonl` files. The input also has certain
+   *   required formats for fine-tuning
+   *   [chat](https://platform.openai.com/docs/api-reference/fine-tuning/chat-input)
+   *   or
+   *   [completions](https://platform.openai.com/docs/api-reference/fine-tuning/completions-input)
+   *   models.
+   * - The Batch API only supports `.jsonl` files up to 200 MB in size. The input
+   *   also has a specific required
+   *   [format](https://platform.openai.com/docs/api-reference/batch/request-input).
+   * - For Retrieval or `file_search` ingestion, upload files here first. If you need
+   *   to attach multiple uploaded files to the same vector store, use
+   *   [`/vector_stores/{vector_store_id}/file_batches`](https://platform.openai.com/docs/api-reference/vector-stores-file-batches/createBatch)
+   *   instead of attaching them one by one. Vector store attachment has separate
+   *   limits from file upload, including 2,000 attached files per minute per
+   *   organization.
+   *
+   * Please [contact us](https://help.openai.com/) if you need to increase these
+   * storage limits.
+   */
+  create(body, options) {
+    return this._client.post("/files", multipartFormRequestOptions({ body, ...options, __security: { bearerAuth: true } }, this._client));
+  }
+  /**
+   * Returns information about a specific file.
+   */
+  retrieve(fileID, options) {
+    return this._client.get(path`/files/${fileID}`, { ...options, __security: { bearerAuth: true } });
+  }
+  /**
+   * Returns a list of files.
+   */
+  list(query = {}, options) {
+    return this._client.getAPIList("/files", CursorPage, {
+      query,
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Delete a file and remove it from all vector stores.
+   */
+  delete(fileID, options) {
+    return this._client.delete(path`/files/${fileID}`, { ...options, __security: { bearerAuth: true } });
+  }
+  /**
+   * Returns the contents of the specified file.
+   */
+  content(fileID, options) {
+    return this._client.get(path`/files/${fileID}/content`, {
+      ...options,
+      headers: buildHeaders([{ Accept: "application/binary" }, options?.headers]),
+      __security: { bearerAuth: true },
+      __binaryResponse: true
+    });
+  }
+  /**
+   * Waits for the given file to be processed, default timeout is 30 mins.
+   */
+  async waitForProcessing(id, { pollInterval = 5e3, maxWait = 30 * 60 * 1e3 } = {}) {
+    const TERMINAL_STATES = /* @__PURE__ */ new Set(["processed", "error", "deleted"]);
+    const start = Date.now();
+    let file2 = await this.retrieve(id);
+    while (!file2.status || !TERMINAL_STATES.has(file2.status)) {
+      await sleep(pollInterval);
+      file2 = await this.retrieve(id);
+      if (Date.now() - start > maxWait) {
+        throw new APIConnectionTimeoutError({
+          message: `Giving up on waiting for file ${id} to finish processing after ${maxWait} milliseconds.`
+        });
+      }
+    }
+    return file2;
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/fine-tuning/methods.mjs
+var Methods = class extends APIResource {
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/fine-tuning/alpha/graders.mjs
+var Graders = class extends APIResource {
+  /**
+   * Run a grader.
+   *
+   * @example
+   * ```ts
+   * const response = await client.fineTuning.alpha.graders.run({
+   *   grader: {
+   *     input: 'input',
+   *     name: 'name',
+   *     operation: 'eq',
+   *     reference: 'reference',
+   *     type: 'string_check',
+   *   },
+   *   model_sample: 'model_sample',
+   * });
+   * ```
+   */
+  run(body, options) {
+    return this._client.post("/fine_tuning/alpha/graders/run", {
+      body,
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Validate a grader.
+   *
+   * @example
+   * ```ts
+   * const response =
+   *   await client.fineTuning.alpha.graders.validate({
+   *     grader: {
+   *       input: 'input',
+   *       name: 'name',
+   *       operation: 'eq',
+   *       reference: 'reference',
+   *       type: 'string_check',
+   *     },
+   *   });
+   * ```
+   */
+  validate(body, options) {
+    return this._client.post("/fine_tuning/alpha/graders/validate", {
+      body,
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/fine-tuning/alpha/alpha.mjs
+var Alpha = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.graders = new Graders(this._client);
+  }
+};
+Alpha.Graders = Graders;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/fine-tuning/checkpoints/permissions.mjs
+var Permissions = class extends APIResource {
+  /**
+   * **NOTE:** Calling this endpoint requires an [admin API key](../admin-api-keys).
+   *
+   * This enables organization owners to share fine-tuned models with other projects
+   * in their organization.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const permissionCreateResponse of client.fineTuning.checkpoints.permissions.create(
+   *   'ft:gpt-4o-mini-2024-07-18:org:weather:B7R9VjQd',
+   *   { project_ids: ['string'] },
+   * )) {
+   *   // ...
+   * }
+   * ```
+   */
+  create(fineTunedModelCheckpoint, body, options) {
+    return this._client.getAPIList(path`/fine_tuning/checkpoints/${fineTunedModelCheckpoint}/permissions`, Page, { body, method: "post", ...options, __security: { adminAPIKeyAuth: true } });
+  }
+  /**
+   * **NOTE:** This endpoint requires an [admin API key](../admin-api-keys).
+   *
+   * Organization owners can use this endpoint to view all permissions for a
+   * fine-tuned model checkpoint.
+   *
+   * @deprecated Retrieve is deprecated. Please swap to the paginated list method instead.
+   */
+  retrieve(fineTunedModelCheckpoint, query = {}, options) {
+    return this._client.get(path`/fine_tuning/checkpoints/${fineTunedModelCheckpoint}/permissions`, {
+      query,
+      ...options,
+      __security: { adminAPIKeyAuth: true }
+    });
+  }
+  /**
+   * **NOTE:** This endpoint requires an [admin API key](../admin-api-keys).
+   *
+   * Organization owners can use this endpoint to view all permissions for a
+   * fine-tuned model checkpoint.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const permissionListResponse of client.fineTuning.checkpoints.permissions.list(
+   *   'ft-AF1WoRqd3aJAHsqc9NY7iL8F',
+   * )) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(fineTunedModelCheckpoint, query = {}, options) {
+    return this._client.getAPIList(path`/fine_tuning/checkpoints/${fineTunedModelCheckpoint}/permissions`, ConversationCursorPage, { query, ...options, __security: { adminAPIKeyAuth: true } });
+  }
+  /**
+   * **NOTE:** This endpoint requires an [admin API key](../admin-api-keys).
+   *
+   * Organization owners can use this endpoint to delete a permission for a
+   * fine-tuned model checkpoint.
+   *
+   * @example
+   * ```ts
+   * const permission =
+   *   await client.fineTuning.checkpoints.permissions.delete(
+   *     'cp_zc4Q7MP6XxulcVzj4MZdwsAB',
+   *     {
+   *       fine_tuned_model_checkpoint:
+   *         'ft:gpt-4o-mini-2024-07-18:org:weather:B7R9VjQd',
+   *     },
+   *   );
+   * ```
+   */
+  delete(permissionID, params, options) {
+    const { fine_tuned_model_checkpoint } = params;
+    return this._client.delete(path`/fine_tuning/checkpoints/${fine_tuned_model_checkpoint}/permissions/${permissionID}`, { ...options, __security: { adminAPIKeyAuth: true } });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/fine-tuning/checkpoints/checkpoints.mjs
+var Checkpoints = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.permissions = new Permissions(this._client);
+  }
+};
+Checkpoints.Permissions = Permissions;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/fine-tuning/jobs/checkpoints.mjs
+var Checkpoints2 = class extends APIResource {
+  /**
+   * List checkpoints for a fine-tuning job.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const fineTuningJobCheckpoint of client.fineTuning.jobs.checkpoints.list(
+   *   'ft-AF1WoRqd3aJAHsqc9NY7iL8F',
+   * )) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(fineTuningJobID, query = {}, options) {
+    return this._client.getAPIList(path`/fine_tuning/jobs/${fineTuningJobID}/checkpoints`, CursorPage, { query, ...options, __security: { bearerAuth: true } });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/fine-tuning/jobs/jobs.mjs
+var Jobs = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.checkpoints = new Checkpoints2(this._client);
+  }
+  /**
+   * Creates a fine-tuning job which begins the process of creating a new model from
+   * a given dataset.
+   *
+   * Response includes details of the enqueued job including job status and the name
+   * of the fine-tuned models once complete.
+   *
+   * [Learn more about fine-tuning](https://platform.openai.com/docs/guides/model-optimization)
+   *
+   * @example
+   * ```ts
+   * const fineTuningJob = await client.fineTuning.jobs.create({
+   *   model: 'gpt-4o-mini',
+   *   training_file: 'file-abc123',
+   * });
+   * ```
+   */
+  create(body, options) {
+    return this._client.post("/fine_tuning/jobs", { body, ...options, __security: { bearerAuth: true } });
+  }
+  /**
+   * Get info about a fine-tuning job.
+   *
+   * [Learn more about fine-tuning](https://platform.openai.com/docs/guides/model-optimization)
+   *
+   * @example
+   * ```ts
+   * const fineTuningJob = await client.fineTuning.jobs.retrieve(
+   *   'ft-AF1WoRqd3aJAHsqc9NY7iL8F',
+   * );
+   * ```
+   */
+  retrieve(fineTuningJobID, options) {
+    return this._client.get(path`/fine_tuning/jobs/${fineTuningJobID}`, {
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * List your organization's fine-tuning jobs
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const fineTuningJob of client.fineTuning.jobs.list()) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(query = {}, options) {
+    return this._client.getAPIList("/fine_tuning/jobs", CursorPage, {
+      query,
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Immediately cancel a fine-tune job.
+   *
+   * @example
+   * ```ts
+   * const fineTuningJob = await client.fineTuning.jobs.cancel(
+   *   'ft-AF1WoRqd3aJAHsqc9NY7iL8F',
+   * );
+   * ```
+   */
+  cancel(fineTuningJobID, options) {
+    return this._client.post(path`/fine_tuning/jobs/${fineTuningJobID}/cancel`, {
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Get status updates for a fine-tuning job.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const fineTuningJobEvent of client.fineTuning.jobs.listEvents(
+   *   'ft-AF1WoRqd3aJAHsqc9NY7iL8F',
+   * )) {
+   *   // ...
+   * }
+   * ```
+   */
+  listEvents(fineTuningJobID, query = {}, options) {
+    return this._client.getAPIList(path`/fine_tuning/jobs/${fineTuningJobID}/events`, CursorPage, { query, ...options, __security: { bearerAuth: true } });
+  }
+  /**
+   * Pause a fine-tune job.
+   *
+   * @example
+   * ```ts
+   * const fineTuningJob = await client.fineTuning.jobs.pause(
+   *   'ft-AF1WoRqd3aJAHsqc9NY7iL8F',
+   * );
+   * ```
+   */
+  pause(fineTuningJobID, options) {
+    return this._client.post(path`/fine_tuning/jobs/${fineTuningJobID}/pause`, {
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Resume a fine-tune job.
+   *
+   * @example
+   * ```ts
+   * const fineTuningJob = await client.fineTuning.jobs.resume(
+   *   'ft-AF1WoRqd3aJAHsqc9NY7iL8F',
+   * );
+   * ```
+   */
+  resume(fineTuningJobID, options) {
+    return this._client.post(path`/fine_tuning/jobs/${fineTuningJobID}/resume`, {
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+};
+Jobs.Checkpoints = Checkpoints2;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/fine-tuning/fine-tuning.mjs
+var FineTuning = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.methods = new Methods(this._client);
+    this.jobs = new Jobs(this._client);
+    this.checkpoints = new Checkpoints(this._client);
+    this.alpha = new Alpha(this._client);
+  }
+};
+FineTuning.Methods = Methods;
+FineTuning.Jobs = Jobs;
+FineTuning.Checkpoints = Checkpoints;
+FineTuning.Alpha = Alpha;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/graders/grader-models.mjs
+var GraderModels = class extends APIResource {
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/graders/graders.mjs
+var Graders2 = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.graderModels = new GraderModels(this._client);
+  }
+};
+Graders2.GraderModels = GraderModels;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/images.mjs
+var Images = class extends APIResource {
+  /**
+   * Creates a variation of a given image. This endpoint only supports `dall-e-2`.
+   *
+   * @example
+   * ```ts
+   * const imagesResponse = await client.images.createVariation({
+   *   image: fs.createReadStream('otter.png'),
+   * });
+   * ```
+   */
+  createVariation(body, options) {
+    return this._client.post("/images/variations", multipartFormRequestOptions({ body, ...options, __security: { bearerAuth: true } }, this._client));
+  }
+  edit(body, options) {
+    return this._client.post("/images/edits", multipartFormRequestOptions({ body, ...options, stream: body.stream ?? false, __security: { bearerAuth: true } }, this._client));
+  }
+  generate(body, options) {
+    return this._client.post("/images/generations", {
+      body,
+      ...options,
+      stream: body.stream ?? false,
+      __security: { bearerAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/models.mjs
+var Models = class extends APIResource {
+  /**
+   * Retrieves a model instance, providing basic information about the model such as
+   * the owner and permissioning.
+   */
+  retrieve(model, options) {
+    return this._client.get(path`/models/${model}`, { ...options, __security: { bearerAuth: true } });
+  }
+  /**
+   * Lists the currently available models, and provides basic information about each
+   * one such as the owner and availability.
+   */
+  list(options) {
+    return this._client.getAPIList("/models", Page, { ...options, __security: { bearerAuth: true } });
+  }
+  /**
+   * Delete a fine-tuned model. You must have the Owner role in your organization to
+   * delete a model.
+   */
+  delete(model, options) {
+    return this._client.delete(path`/models/${model}`, { ...options, __security: { bearerAuth: true } });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/moderations.mjs
+var Moderations = class extends APIResource {
+  /**
+   * Classifies if text and/or image inputs are potentially harmful. Learn more in
+   * the [moderation guide](https://platform.openai.com/docs/guides/moderation).
+   */
+  create(body, options) {
+    return this._client.post("/moderations", { body, ...options, __security: { bearerAuth: true } });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/realtime/calls.mjs
+var Calls = class extends APIResource {
+  /**
+   * Accept an incoming SIP call and configure the realtime session that will handle
+   * it.
+   *
+   * @example
+   * ```ts
+   * await client.realtime.calls.accept('call_id', {
+   *   type: 'realtime',
+   * });
+   * ```
+   */
+  accept(callID, body, options) {
+    return this._client.post(path`/realtime/calls/${callID}/accept`, {
+      body,
+      ...options,
+      headers: buildHeaders([{ Accept: "*/*" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * End an active Realtime API call, whether it was initiated over SIP or WebRTC.
+   *
+   * @example
+   * ```ts
+   * await client.realtime.calls.hangup('call_id');
+   * ```
+   */
+  hangup(callID, options) {
+    return this._client.post(path`/realtime/calls/${callID}/hangup`, {
+      ...options,
+      headers: buildHeaders([{ Accept: "*/*" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Transfer an active SIP call to a new destination using the SIP REFER verb.
+   *
+   * @example
+   * ```ts
+   * await client.realtime.calls.refer('call_id', {
+   *   target_uri: 'tel:+14155550123',
+   * });
+   * ```
+   */
+  refer(callID, body, options) {
+    return this._client.post(path`/realtime/calls/${callID}/refer`, {
+      body,
+      ...options,
+      headers: buildHeaders([{ Accept: "*/*" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Decline an incoming SIP call by returning a SIP status code to the caller.
+   *
+   * @example
+   * ```ts
+   * await client.realtime.calls.reject('call_id');
+   * ```
+   */
+  reject(callID, body = {}, options) {
+    return this._client.post(path`/realtime/calls/${callID}/reject`, {
+      body,
+      ...options,
+      headers: buildHeaders([{ Accept: "*/*" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/realtime/client-secrets.mjs
+var ClientSecrets = class extends APIResource {
+  /**
+   * Create a Realtime client secret with an associated session configuration.
+   *
+   * Client secrets are short-lived tokens that can be passed to a client app, such
+   * as a web frontend or mobile client, which grants access to the Realtime API
+   * without leaking your main API key. You can configure a custom TTL for each
+   * client secret.
+   *
+   * You can also attach session configuration options to the client secret, which
+   * will be applied to any sessions created using that client secret, but these can
+   * also be overridden by the client connection.
+   *
+   * [Learn more about authentication with client secrets over WebRTC](https://platform.openai.com/docs/guides/realtime-webrtc).
+   *
+   * Returns the created client secret and the effective session object. The client
+   * secret is a string that looks like `ek_1234`.
+   *
+   * @example
+   * ```ts
+   * const clientSecret =
+   *   await client.realtime.clientSecrets.create();
+   * ```
+   */
+  create(body, options) {
+    return this._client.post("/realtime/client_secrets", {
+      body,
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/realtime/realtime.mjs
+var Realtime2 = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.clientSecrets = new ClientSecrets(this._client);
+    this.calls = new Calls(this._client);
+  }
+};
+Realtime2.ClientSecrets = ClientSecrets;
+Realtime2.Calls = Calls;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/lib/ResponsesParser.mjs
+function maybeParseResponse(response, params) {
+  if (!params || !hasAutoParseableInput2(params)) {
+    return {
+      ...response,
+      output_parsed: null,
+      output: response.output.map((item) => {
+        if (item.type === "function_call") {
+          return {
+            ...item,
+            parsed_arguments: null
+          };
+        }
+        if (item.type === "message") {
+          return {
+            ...item,
+            content: item.content.map((content) => ({
+              ...content,
+              parsed: null
+            }))
+          };
+        } else {
+          return item;
+        }
+      })
+    };
+  }
+  return parseResponse(response, params);
+}
+function parseResponse(response, params) {
+  const output = response.output.map((item) => {
+    if (item.type === "function_call") {
+      return {
+        ...item,
+        parsed_arguments: parseToolCall2(params, item)
+      };
+    }
+    if (item.type === "message") {
+      const content = item.content.map((content2) => {
+        if (content2.type === "output_text") {
+          return {
+            ...content2,
+            parsed: parseTextFormat(params, content2.text)
+          };
+        }
+        return content2;
+      });
+      return {
+        ...item,
+        content
+      };
+    }
+    return item;
+  });
+  const parsed = Object.assign({}, response, { output });
+  if (!Object.getOwnPropertyDescriptor(response, "output_text")) {
+    addOutputText(parsed);
+  }
+  Object.defineProperty(parsed, "output_parsed", {
+    enumerable: true,
+    get() {
+      for (const output2 of parsed.output) {
+        if (output2.type !== "message") {
+          continue;
+        }
+        for (const content of output2.content) {
+          if (content.type === "output_text" && content.parsed !== null) {
+            return content.parsed;
+          }
+        }
+      }
+      return null;
+    }
+  });
+  return parsed;
+}
+function parseTextFormat(params, content) {
+  if (params.text?.format?.type !== "json_schema") {
+    return null;
+  }
+  if ("$parseRaw" in params.text?.format) {
+    const text_format = params.text?.format;
+    return text_format.$parseRaw(content);
+  }
+  return JSON.parse(content);
+}
+function hasAutoParseableInput2(params) {
+  if (isAutoParsableResponseFormat(params.text?.format)) {
+    return true;
+  }
+  return false;
+}
+function isAutoParsableTool2(tool) {
+  return tool?.["$brand"] === "auto-parseable-tool";
+}
+function getInputToolByName(input_tools, name) {
+  return input_tools.find((tool) => tool.type === "function" && tool.name === name);
+}
+function parseToolCall2(params, toolCall) {
+  const inputTool = getInputToolByName(params.tools ?? [], toolCall.name);
+  return {
+    ...toolCall,
+    ...toolCall,
+    parsed_arguments: isAutoParsableTool2(inputTool) ? inputTool.$parseRaw(toolCall.arguments) : inputTool?.strict ? JSON.parse(toolCall.arguments) : null
+  };
+}
+function addOutputText(rsp) {
+  const texts = [];
+  for (const output of rsp.output) {
+    if (output.type !== "message") {
+      continue;
+    }
+    for (const content of output.content) {
+      if (content.type === "output_text") {
+        texts.push(content.text);
+      }
+    }
+  }
+  rsp.output_text = texts.join("");
+}
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/lib/responses/ResponseStream.mjs
+var _ResponseStream_instances;
+var _ResponseStream_params;
+var _ResponseStream_currentResponseSnapshot;
+var _ResponseStream_finalResponse;
+var _ResponseStream_beginRequest;
+var _ResponseStream_addEvent;
+var _ResponseStream_endRequest;
+var _ResponseStream_accumulateResponse;
+var ResponseStream = class _ResponseStream extends EventStream {
+  constructor(params) {
+    super();
+    _ResponseStream_instances.add(this);
+    _ResponseStream_params.set(this, void 0);
+    _ResponseStream_currentResponseSnapshot.set(this, void 0);
+    _ResponseStream_finalResponse.set(this, void 0);
+    __classPrivateFieldSet(this, _ResponseStream_params, params, "f");
+  }
+  static createResponse(client, params, options) {
+    const runner = new _ResponseStream(params);
+    runner._run(() => runner._createOrRetrieveResponse(client, params, {
+      ...options,
+      headers: { ...options?.headers, "X-Stainless-Helper-Method": "stream" }
+    }));
+    return runner;
+  }
+  async _createOrRetrieveResponse(client, params, options) {
+    const signal = options?.signal;
+    if (signal) {
+      if (signal.aborted)
+        this.controller.abort();
+      signal.addEventListener("abort", () => this.controller.abort());
+    }
+    __classPrivateFieldGet(this, _ResponseStream_instances, "m", _ResponseStream_beginRequest).call(this);
+    let stream;
+    let starting_after = null;
+    if ("response_id" in params) {
+      stream = await client.responses.retrieve(params.response_id, { stream: true }, { ...options, signal: this.controller.signal, stream: true });
+      starting_after = params.starting_after ?? null;
+    } else {
+      stream = await client.responses.create({ ...params, stream: true }, { ...options, signal: this.controller.signal });
+    }
+    this._connected();
+    for await (const event of stream) {
+      __classPrivateFieldGet(this, _ResponseStream_instances, "m", _ResponseStream_addEvent).call(this, event, starting_after);
+    }
+    if (stream.controller.signal?.aborted) {
+      throw new APIUserAbortError();
+    }
+    return __classPrivateFieldGet(this, _ResponseStream_instances, "m", _ResponseStream_endRequest).call(this);
+  }
+  [(_ResponseStream_params = /* @__PURE__ */ new WeakMap(), _ResponseStream_currentResponseSnapshot = /* @__PURE__ */ new WeakMap(), _ResponseStream_finalResponse = /* @__PURE__ */ new WeakMap(), _ResponseStream_instances = /* @__PURE__ */ new WeakSet(), _ResponseStream_beginRequest = function _ResponseStream_beginRequest2() {
+    if (this.ended)
+      return;
+    __classPrivateFieldSet(this, _ResponseStream_currentResponseSnapshot, void 0, "f");
+  }, _ResponseStream_addEvent = function _ResponseStream_addEvent2(event, starting_after) {
+    if (this.ended)
+      return;
+    const maybeEmit = (name, event2) => {
+      if (starting_after == null || event2.sequence_number > starting_after) {
+        this._emit(name, event2);
+      }
+    };
+    const response = __classPrivateFieldGet(this, _ResponseStream_instances, "m", _ResponseStream_accumulateResponse).call(this, event);
+    maybeEmit("event", event);
+    switch (event.type) {
+      case "response.output_text.delta": {
+        const output = response.output[event.output_index];
+        if (!output) {
+          throw new OpenAIError(`missing output at index ${event.output_index}`);
+        }
+        if (output.type === "message") {
+          const content = output.content[event.content_index];
+          if (!content) {
+            throw new OpenAIError(`missing content at index ${event.content_index}`);
+          }
+          if (content.type !== "output_text") {
+            throw new OpenAIError(`expected content to be 'output_text', got ${content.type}`);
+          }
+          maybeEmit("response.output_text.delta", {
+            ...event,
+            snapshot: content.text
+          });
+        }
+        break;
+      }
+      case "response.function_call_arguments.delta": {
+        const output = response.output[event.output_index];
+        if (!output) {
+          throw new OpenAIError(`missing output at index ${event.output_index}`);
+        }
+        if (output.type === "function_call") {
+          maybeEmit("response.function_call_arguments.delta", {
+            ...event,
+            snapshot: output.arguments
+          });
+        }
+        break;
+      }
+      default:
+        maybeEmit(event.type, event);
+        break;
+    }
+  }, _ResponseStream_endRequest = function _ResponseStream_endRequest2() {
+    if (this.ended) {
+      throw new OpenAIError(`stream has ended, this shouldn't happen`);
+    }
+    const snapshot = __classPrivateFieldGet(this, _ResponseStream_currentResponseSnapshot, "f");
+    if (!snapshot) {
+      throw new OpenAIError(`request ended without sending any events`);
+    }
+    __classPrivateFieldSet(this, _ResponseStream_currentResponseSnapshot, void 0, "f");
+    const parsedResponse = finalizeResponse(snapshot, __classPrivateFieldGet(this, _ResponseStream_params, "f"));
+    __classPrivateFieldSet(this, _ResponseStream_finalResponse, parsedResponse, "f");
+    return parsedResponse;
+  }, _ResponseStream_accumulateResponse = function _ResponseStream_accumulateResponse2(event) {
+    let snapshot = __classPrivateFieldGet(this, _ResponseStream_currentResponseSnapshot, "f");
+    if (!snapshot) {
+      if (event.type !== "response.created") {
+        throw new OpenAIError(`When snapshot hasn't been set yet, expected 'response.created' event, got ${event.type}`);
+      }
+      snapshot = __classPrivateFieldSet(this, _ResponseStream_currentResponseSnapshot, event.response, "f");
+      return snapshot;
+    }
+    switch (event.type) {
+      case "response.output_item.added": {
+        snapshot.output.push(event.item);
+        break;
+      }
+      case "response.content_part.added": {
+        const output = snapshot.output[event.output_index];
+        if (!output) {
+          throw new OpenAIError(`missing output at index ${event.output_index}`);
+        }
+        const type = output.type;
+        const part = event.part;
+        if (type === "message" && part.type !== "reasoning_text") {
+          output.content.push(part);
+        } else if (type === "reasoning" && part.type === "reasoning_text") {
+          if (!output.content) {
+            output.content = [];
+          }
+          output.content.push(part);
+        }
+        break;
+      }
+      case "response.output_text.delta": {
+        const output = snapshot.output[event.output_index];
+        if (!output) {
+          throw new OpenAIError(`missing output at index ${event.output_index}`);
+        }
+        if (output.type === "message") {
+          const content = output.content[event.content_index];
+          if (!content) {
+            throw new OpenAIError(`missing content at index ${event.content_index}`);
+          }
+          if (content.type !== "output_text") {
+            throw new OpenAIError(`expected content to be 'output_text', got ${content.type}`);
+          }
+          content.text += event.delta;
+        }
+        break;
+      }
+      case "response.function_call_arguments.delta": {
+        const output = snapshot.output[event.output_index];
+        if (!output) {
+          throw new OpenAIError(`missing output at index ${event.output_index}`);
+        }
+        if (output.type === "function_call") {
+          output.arguments += event.delta;
+        }
+        break;
+      }
+      case "response.reasoning_text.delta": {
+        const output = snapshot.output[event.output_index];
+        if (!output) {
+          throw new OpenAIError(`missing output at index ${event.output_index}`);
+        }
+        if (output.type === "reasoning") {
+          const content = output.content?.[event.content_index];
+          if (!content) {
+            throw new OpenAIError(`missing content at index ${event.content_index}`);
+          }
+          if (content.type !== "reasoning_text") {
+            throw new OpenAIError(`expected content to be 'reasoning_text', got ${content.type}`);
+          }
+          content.text += event.delta;
+        }
+        break;
+      }
+      case "response.completed": {
+        __classPrivateFieldSet(this, _ResponseStream_currentResponseSnapshot, event.response, "f");
+        break;
+      }
+    }
+    return snapshot;
+  }, Symbol.asyncIterator)]() {
+    const pushQueue = [];
+    const readQueue = [];
+    let done = false;
+    this.on("event", (event) => {
+      const reader = readQueue.shift();
+      if (reader) {
+        reader.resolve(event);
+      } else {
+        pushQueue.push(event);
+      }
+    });
+    this.on("end", () => {
+      done = true;
+      for (const reader of readQueue) {
+        reader.resolve(void 0);
+      }
+      readQueue.length = 0;
+    });
+    this.on("abort", (err) => {
+      done = true;
+      for (const reader of readQueue) {
+        reader.reject(err);
+      }
+      readQueue.length = 0;
+    });
+    this.on("error", (err) => {
+      done = true;
+      for (const reader of readQueue) {
+        reader.reject(err);
+      }
+      readQueue.length = 0;
+    });
+    return {
+      next: async () => {
+        if (!pushQueue.length) {
+          if (done) {
+            return { value: void 0, done: true };
+          }
+          return new Promise((resolve, reject) => readQueue.push({ resolve, reject })).then((event2) => event2 ? { value: event2, done: false } : { value: void 0, done: true });
+        }
+        const event = pushQueue.shift();
+        return { value: event, done: false };
+      },
+      return: async () => {
+        this.abort();
+        return { value: void 0, done: true };
+      }
+    };
+  }
+  /**
+   * @returns a promise that resolves with the final Response, or rejects
+   * if an error occurred or the stream ended prematurely without producing a REsponse.
+   */
+  async finalResponse() {
+    await this.done();
+    const response = __classPrivateFieldGet(this, _ResponseStream_finalResponse, "f");
+    if (!response)
+      throw new OpenAIError("stream ended without producing a ChatCompletion");
+    return response;
+  }
+};
+function finalizeResponse(snapshot, params) {
+  return maybeParseResponse(snapshot, params);
+}
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/responses/input-items.mjs
+var InputItems = class extends APIResource {
+  /**
+   * Returns a list of input items for a given response.
+   *
+   * @example
+   * ```ts
+   * // Automatically fetches more pages as needed.
+   * for await (const responseItem of client.responses.inputItems.list(
+   *   'response_id',
+   * )) {
+   *   // ...
+   * }
+   * ```
+   */
+  list(responseID, query = {}, options) {
+    return this._client.getAPIList(path`/responses/${responseID}/input_items`, CursorPage, { query, ...options, __security: { bearerAuth: true } });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/responses/input-tokens.mjs
+var InputTokens = class extends APIResource {
+  /**
+   * Returns input token counts of the request.
+   *
+   * Returns an object with `object` set to `response.input_tokens` and an
+   * `input_tokens` count.
+   *
+   * @example
+   * ```ts
+   * const response = await client.responses.inputTokens.count();
+   * ```
+   */
+  count(body = {}, options) {
+    return this._client.post("/responses/input_tokens", {
+      body,
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/responses/responses.mjs
+var Responses = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.inputItems = new InputItems(this._client);
+    this.inputTokens = new InputTokens(this._client);
+  }
+  create(body, options) {
+    return this._client.post("/responses", {
+      body,
+      ...options,
+      stream: body.stream ?? false,
+      __security: { bearerAuth: true }
+    })._thenUnwrap((rsp) => {
+      if ("object" in rsp && rsp.object === "response") {
+        addOutputText(rsp);
+      }
+      return rsp;
+    });
+  }
+  retrieve(responseID, query = {}, options) {
+    return this._client.get(path`/responses/${responseID}`, {
+      query,
+      ...options,
+      stream: query?.stream ?? false,
+      __security: { bearerAuth: true }
+    })._thenUnwrap((rsp) => {
+      if ("object" in rsp && rsp.object === "response") {
+        addOutputText(rsp);
+      }
+      return rsp;
+    });
+  }
+  /**
+   * Deletes a model response with the given ID.
+   *
+   * @example
+   * ```ts
+   * await client.responses.delete(
+   *   'resp_677efb5139a88190b512bc3fef8e535d',
+   * );
+   * ```
+   */
+  delete(responseID, options) {
+    return this._client.delete(path`/responses/${responseID}`, {
+      ...options,
+      headers: buildHeaders([{ Accept: "*/*" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  parse(body, options) {
+    return this._client.responses.create(body, options)._thenUnwrap((response) => parseResponse(response, body));
+  }
+  /**
+   * Creates a model response stream
+   */
+  stream(body, options) {
+    return ResponseStream.createResponse(this._client, body, options);
+  }
+  /**
+   * Cancels a model response with the given ID. Only responses created with the
+   * `background` parameter set to `true` can be cancelled.
+   * [Learn more](https://platform.openai.com/docs/guides/background).
+   *
+   * @example
+   * ```ts
+   * const response = await client.responses.cancel(
+   *   'resp_677efb5139a88190b512bc3fef8e535d',
+   * );
+   * ```
+   */
+  cancel(responseID, options) {
+    return this._client.post(path`/responses/${responseID}/cancel`, {
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Compact a conversation. Returns a compacted response object.
+   *
+   * Learn when and how to compact long-running conversations in the
+   * [conversation state guide](https://platform.openai.com/docs/guides/conversation-state#managing-the-context-window).
+   * For ZDR-compatible compaction details, see
+   * [Compaction (advanced)](https://platform.openai.com/docs/guides/conversation-state#compaction-advanced).
+   *
+   * @example
+   * ```ts
+   * const compactedResponse = await client.responses.compact({
+   *   model: 'gpt-5.4',
+   * });
+   * ```
+   */
+  compact(body, options) {
+    return this._client.post("/responses/compact", { body, ...options, __security: { bearerAuth: true } });
+  }
+};
+Responses.InputItems = InputItems;
+Responses.InputTokens = InputTokens;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/skills/content.mjs
+var Content2 = class extends APIResource {
+  /**
+   * Download a skill zip bundle by its ID.
+   */
+  retrieve(skillID, options) {
+    return this._client.get(path`/skills/${skillID}/content`, {
+      ...options,
+      headers: buildHeaders([{ Accept: "application/binary" }, options?.headers]),
+      __security: { bearerAuth: true },
+      __binaryResponse: true
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/skills/versions/content.mjs
+var Content3 = class extends APIResource {
+  /**
+   * Download a skill version zip bundle.
+   */
+  retrieve(version3, params, options) {
+    const { skill_id } = params;
+    return this._client.get(path`/skills/${skill_id}/versions/${version3}/content`, {
+      ...options,
+      headers: buildHeaders([{ Accept: "application/binary" }, options?.headers]),
+      __security: { bearerAuth: true },
+      __binaryResponse: true
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/skills/versions/versions.mjs
+var Versions = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.content = new Content3(this._client);
+  }
+  /**
+   * Create a new immutable skill version.
+   */
+  create(skillID, body = {}, options) {
+    return this._client.post(path`/skills/${skillID}/versions`, maybeMultipartFormRequestOptions({ body, ...options, __security: { bearerAuth: true } }, this._client));
+  }
+  /**
+   * Get a specific skill version.
+   */
+  retrieve(version3, params, options) {
+    const { skill_id } = params;
+    return this._client.get(path`/skills/${skill_id}/versions/${version3}`, {
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * List skill versions for a skill.
+   */
+  list(skillID, query = {}, options) {
+    return this._client.getAPIList(path`/skills/${skillID}/versions`, CursorPage, {
+      query,
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Delete a skill version.
+   */
+  delete(version3, params, options) {
+    const { skill_id } = params;
+    return this._client.delete(path`/skills/${skill_id}/versions/${version3}`, {
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+};
+Versions.Content = Content3;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/skills/skills.mjs
+var Skills = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.content = new Content2(this._client);
+    this.versions = new Versions(this._client);
+  }
+  /**
+   * Create a new skill.
+   */
+  create(body = {}, options) {
+    return this._client.post("/skills", maybeMultipartFormRequestOptions({ body, ...options, __security: { bearerAuth: true } }, this._client));
+  }
+  /**
+   * Get a skill by its ID.
+   */
+  retrieve(skillID, options) {
+    return this._client.get(path`/skills/${skillID}`, { ...options, __security: { bearerAuth: true } });
+  }
+  /**
+   * Update the default version pointer for a skill.
+   */
+  update(skillID, body, options) {
+    return this._client.post(path`/skills/${skillID}`, {
+      body,
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * List all skills for the current project.
+   */
+  list(query = {}, options) {
+    return this._client.getAPIList("/skills", CursorPage, {
+      query,
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Delete a skill by its ID.
+   */
+  delete(skillID, options) {
+    return this._client.delete(path`/skills/${skillID}`, { ...options, __security: { bearerAuth: true } });
+  }
+};
+Skills.Content = Content2;
+Skills.Versions = Versions;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/uploads/parts.mjs
+var Parts = class extends APIResource {
+  /**
+   * Adds a
+   * [Part](https://platform.openai.com/docs/api-reference/uploads/part-object) to an
+   * [Upload](https://platform.openai.com/docs/api-reference/uploads/object) object.
+   * A Part represents a chunk of bytes from the file you are trying to upload.
+   *
+   * Each Part can be at most 64 MB, and you can add Parts until you hit the Upload
+   * maximum of 8 GB.
+   *
+   * It is possible to add multiple Parts in parallel. You can decide the intended
+   * order of the Parts when you
+   * [complete the Upload](https://platform.openai.com/docs/api-reference/uploads/complete).
+   */
+  create(uploadID, body, options) {
+    return this._client.post(path`/uploads/${uploadID}/parts`, multipartFormRequestOptions({ body, ...options, __security: { bearerAuth: true } }, this._client));
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/uploads/uploads.mjs
+var Uploads = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.parts = new Parts(this._client);
+  }
+  /**
+   * Creates an intermediate
+   * [Upload](https://platform.openai.com/docs/api-reference/uploads/object) object
+   * that you can add
+   * [Parts](https://platform.openai.com/docs/api-reference/uploads/part-object) to.
+   * Currently, an Upload can accept at most 8 GB in total and expires after an hour
+   * after you create it.
+   *
+   * Once you complete the Upload, we will create a
+   * [File](https://platform.openai.com/docs/api-reference/files/object) object that
+   * contains all the parts you uploaded. This File is usable in the rest of our
+   * platform as a regular File object.
+   *
+   * For certain `purpose` values, the correct `mime_type` must be specified. Please
+   * refer to documentation for the
+   * [supported MIME types for your use case](https://platform.openai.com/docs/assistants/tools/file-search#supported-files).
+   *
+   * For guidance on the proper filename extensions for each purpose, please follow
+   * the documentation on
+   * [creating a File](https://platform.openai.com/docs/api-reference/files/create).
+   *
+   * Returns the Upload object with status `pending`.
+   */
+  create(body, options) {
+    return this._client.post("/uploads", { body, ...options, __security: { bearerAuth: true } });
+  }
+  /**
+   * Cancels the Upload. No Parts may be added after an Upload is cancelled.
+   *
+   * Returns the Upload object with status `cancelled`.
+   */
+  cancel(uploadID, options) {
+    return this._client.post(path`/uploads/${uploadID}/cancel`, {
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Completes the
+   * [Upload](https://platform.openai.com/docs/api-reference/uploads/object).
+   *
+   * Within the returned Upload object, there is a nested
+   * [File](https://platform.openai.com/docs/api-reference/files/object) object that
+   * is ready to use in the rest of the platform.
+   *
+   * You can specify the order of the Parts by passing in an ordered list of the Part
+   * IDs.
+   *
+   * The number of bytes uploaded upon completion must match the number of bytes
+   * initially specified when creating the Upload object. No Parts may be added after
+   * an Upload is completed. Returns the Upload object with status `completed`,
+   * including an additional `file` property containing the created usable File
+   * object.
+   */
+  complete(uploadID, body, options) {
+    return this._client.post(path`/uploads/${uploadID}/complete`, {
+      body,
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+};
+Uploads.Parts = Parts;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/lib/Util.mjs
+var allSettledWithThrow = async (promises) => {
+  const results = await Promise.allSettled(promises);
+  const rejected = results.filter((result) => result.status === "rejected");
+  if (rejected.length) {
+    for (const result of rejected) {
+      console.error(result.reason);
+    }
+    throw new Error(`${rejected.length} promise(s) failed - see the above errors`);
+  }
+  const values = [];
+  for (const result of results) {
+    if (result.status === "fulfilled") {
+      values.push(result.value);
+    }
+  }
+  return values;
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/vector-stores/file-batches.mjs
+var FileBatches = class extends APIResource {
+  /**
+   * Create a vector store file batch.
+   */
+  create(vectorStoreID, body, options) {
+    return this._client.post(path`/vector_stores/${vectorStoreID}/file_batches`, {
+      body,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Retrieves a vector store file batch.
+   */
+  retrieve(batchID, params, options) {
+    const { vector_store_id } = params;
+    return this._client.get(path`/vector_stores/${vector_store_id}/file_batches/${batchID}`, {
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Cancel a vector store file batch. This attempts to cancel the processing of
+   * files in this batch as soon as possible.
+   */
+  cancel(batchID, params, options) {
+    const { vector_store_id } = params;
+    return this._client.post(path`/vector_stores/${vector_store_id}/file_batches/${batchID}/cancel`, {
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Create a vector store batch and poll until all files have been processed.
+   */
+  async createAndPoll(vectorStoreId, body, options) {
+    const batch = await this.create(vectorStoreId, body);
+    return await this.poll(vectorStoreId, batch.id, options);
+  }
+  /**
+   * Returns a list of vector store files in a batch.
+   */
+  listFiles(batchID, params, options) {
+    const { vector_store_id, ...query } = params;
+    return this._client.getAPIList(path`/vector_stores/${vector_store_id}/file_batches/${batchID}/files`, CursorPage, {
+      query,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Wait for the given file batch to be processed.
+   *
+   * Note: this will return even if one of the files failed to process, you need to
+   * check batch.file_counts.failed_count to handle this case.
+   */
+  async poll(vectorStoreID, batchID, options) {
+    const headers = buildHeaders([
+      options?.headers,
+      {
+        "X-Stainless-Poll-Helper": "true",
+        "X-Stainless-Custom-Poll-Interval": options?.pollIntervalMs?.toString() ?? void 0
+      }
+    ]);
+    while (true) {
+      const { data: batch, response } = await this.retrieve(batchID, { vector_store_id: vectorStoreID }, {
+        ...options,
+        headers
+      }).withResponse();
+      switch (batch.status) {
+        case "in_progress":
+          let sleepInterval = 5e3;
+          if (options?.pollIntervalMs) {
+            sleepInterval = options.pollIntervalMs;
+          } else {
+            const headerInterval = response.headers.get("openai-poll-after-ms");
+            if (headerInterval) {
+              const headerIntervalMs = parseInt(headerInterval);
+              if (!isNaN(headerIntervalMs)) {
+                sleepInterval = headerIntervalMs;
+              }
+            }
+          }
+          await sleep(sleepInterval);
+          break;
+        case "failed":
+        case "cancelled":
+        case "completed":
+          return batch;
+      }
+    }
+  }
+  /**
+   * Uploads the given files concurrently and then creates a vector store file batch.
+   *
+   * The concurrency limit is configurable using the `maxConcurrency` parameter.
+   */
+  async uploadAndPoll(vectorStoreId, { files, fileIds = [] }, options) {
+    if (files == null || files.length == 0) {
+      throw new Error(`No \`files\` provided to process. If you've already uploaded files you should use \`.createAndPoll()\` instead`);
+    }
+    const configuredConcurrency = options?.maxConcurrency ?? 5;
+    const concurrencyLimit = Math.min(configuredConcurrency, files.length);
+    const client = this._client;
+    const fileIterator = files.values();
+    const allFileIds = [...fileIds];
+    async function processFiles(iterator) {
+      for (let item of iterator) {
+        const fileObj = await client.files.create({ file: item, purpose: "assistants" }, options);
+        allFileIds.push(fileObj.id);
+      }
+    }
+    const workers = Array(concurrencyLimit).fill(fileIterator).map(processFiles);
+    await allSettledWithThrow(workers);
+    return await this.createAndPoll(vectorStoreId, {
+      file_ids: allFileIds
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/vector-stores/files.mjs
+var Files3 = class extends APIResource {
+  /**
+   * Create a vector store file by attaching a
+   * [File](https://platform.openai.com/docs/api-reference/files) to a
+   * [vector store](https://platform.openai.com/docs/api-reference/vector-stores/object).
+   */
+  create(vectorStoreID, body, options) {
+    return this._client.post(path`/vector_stores/${vectorStoreID}/files`, {
+      body,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Retrieves a vector store file.
+   */
+  retrieve(fileID, params, options) {
+    const { vector_store_id } = params;
+    return this._client.get(path`/vector_stores/${vector_store_id}/files/${fileID}`, {
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Update attributes on a vector store file.
+   */
+  update(fileID, params, options) {
+    const { vector_store_id, ...body } = params;
+    return this._client.post(path`/vector_stores/${vector_store_id}/files/${fileID}`, {
+      body,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Returns a list of vector store files.
+   */
+  list(vectorStoreID, query = {}, options) {
+    return this._client.getAPIList(path`/vector_stores/${vectorStoreID}/files`, CursorPage, {
+      query,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Delete a vector store file. This will remove the file from the vector store but
+   * the file itself will not be deleted. To delete the file, use the
+   * [delete file](https://platform.openai.com/docs/api-reference/files/delete)
+   * endpoint.
+   */
+  delete(fileID, params, options) {
+    const { vector_store_id } = params;
+    return this._client.delete(path`/vector_stores/${vector_store_id}/files/${fileID}`, {
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Attach a file to the given vector store and wait for it to be processed.
+   */
+  async createAndPoll(vectorStoreId, body, options) {
+    const file2 = await this.create(vectorStoreId, body, options);
+    return await this.poll(vectorStoreId, file2.id, options);
+  }
+  /**
+   * Wait for the vector store file to finish processing.
+   *
+   * Note: this will return even if the file failed to process, you need to check
+   * file.last_error and file.status to handle these cases
+   */
+  async poll(vectorStoreID, fileID, options) {
+    const headers = buildHeaders([
+      options?.headers,
+      {
+        "X-Stainless-Poll-Helper": "true",
+        "X-Stainless-Custom-Poll-Interval": options?.pollIntervalMs?.toString() ?? void 0
+      }
+    ]);
+    while (true) {
+      const fileResponse = await this.retrieve(fileID, {
+        vector_store_id: vectorStoreID
+      }, { ...options, headers }).withResponse();
+      const file2 = fileResponse.data;
+      switch (file2.status) {
+        case "in_progress":
+          let sleepInterval = 5e3;
+          if (options?.pollIntervalMs) {
+            sleepInterval = options.pollIntervalMs;
+          } else {
+            const headerInterval = fileResponse.response.headers.get("openai-poll-after-ms");
+            if (headerInterval) {
+              const headerIntervalMs = parseInt(headerInterval);
+              if (!isNaN(headerIntervalMs)) {
+                sleepInterval = headerIntervalMs;
+              }
+            }
+          }
+          await sleep(sleepInterval);
+          break;
+        case "failed":
+        case "completed":
+          return file2;
+      }
+    }
+  }
+  /**
+   * Upload a file to the `files` API and then attach it to the given vector store.
+   *
+   * Note the file will be asynchronously processed (you can use the alternative
+   * polling helper method to wait for processing to complete).
+   */
+  async upload(vectorStoreId, file2, options) {
+    const fileInfo = await this._client.files.create({ file: file2, purpose: "assistants" }, options);
+    return this.create(vectorStoreId, { file_id: fileInfo.id }, options);
+  }
+  /**
+   * Add a file to a vector store and poll until processing is complete.
+   */
+  async uploadAndPoll(vectorStoreId, file2, options) {
+    const fileInfo = await this.upload(vectorStoreId, file2, options);
+    return await this.poll(vectorStoreId, fileInfo.id, options);
+  }
+  /**
+   * Retrieve the parsed contents of a vector store file.
+   */
+  content(fileID, params, options) {
+    const { vector_store_id } = params;
+    return this._client.getAPIList(path`/vector_stores/${vector_store_id}/files/${fileID}/content`, Page, {
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/vector-stores/vector-stores.mjs
+var VectorStores = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    this.files = new Files3(this._client);
+    this.fileBatches = new FileBatches(this._client);
+  }
+  /**
+   * Create a vector store.
+   */
+  create(body, options) {
+    return this._client.post("/vector_stores", {
+      body,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Retrieves a vector store.
+   */
+  retrieve(vectorStoreID, options) {
+    return this._client.get(path`/vector_stores/${vectorStoreID}`, {
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Modifies a vector store.
+   */
+  update(vectorStoreID, body, options) {
+    return this._client.post(path`/vector_stores/${vectorStoreID}`, {
+      body,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Returns a list of vector stores.
+   */
+  list(query = {}, options) {
+    return this._client.getAPIList("/vector_stores", CursorPage, {
+      query,
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Delete a vector store.
+   */
+  delete(vectorStoreID, options) {
+    return this._client.delete(path`/vector_stores/${vectorStoreID}`, {
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Search a vector store for relevant chunks based on a query and file attributes
+   * filter.
+   */
+  search(vectorStoreID, body, options) {
+    return this._client.getAPIList(path`/vector_stores/${vectorStoreID}/search`, Page, {
+      body,
+      method: "post",
+      ...options,
+      headers: buildHeaders([{ "OpenAI-Beta": "assistants=v2" }, options?.headers]),
+      __security: { bearerAuth: true }
+    });
+  }
+};
+VectorStores.Files = Files3;
+VectorStores.FileBatches = FileBatches;
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/videos.mjs
+var Videos = class extends APIResource {
+  /**
+   * Create a new video generation job from a prompt and optional reference assets.
+   */
+  create(body, options) {
+    return this._client.post("/videos", multipartFormRequestOptions({ body, ...options, __security: { bearerAuth: true } }, this._client));
+  }
+  /**
+   * Fetch the latest metadata for a generated video.
+   */
+  retrieve(videoID, options) {
+    return this._client.get(path`/videos/${videoID}`, { ...options, __security: { bearerAuth: true } });
+  }
+  /**
+   * List recently generated videos for the current project.
+   */
+  list(query = {}, options) {
+    return this._client.getAPIList("/videos", ConversationCursorPage, {
+      query,
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Permanently delete a completed or failed video and its stored assets.
+   */
+  delete(videoID, options) {
+    return this._client.delete(path`/videos/${videoID}`, { ...options, __security: { bearerAuth: true } });
+  }
+  /**
+   * Create a character from an uploaded video.
+   */
+  createCharacter(body, options) {
+    return this._client.post("/videos/characters", multipartFormRequestOptions({ body, ...options, __security: { bearerAuth: true } }, this._client));
+  }
+  /**
+   * Download the generated video bytes or a derived preview asset.
+   *
+   * Streams the rendered video content for the specified video job.
+   */
+  downloadContent(videoID, query = {}, options) {
+    return this._client.get(path`/videos/${videoID}/content`, {
+      query,
+      ...options,
+      headers: buildHeaders([{ Accept: "application/binary" }, options?.headers]),
+      __security: { bearerAuth: true },
+      __binaryResponse: true
+    });
+  }
+  /**
+   * Create a new video generation job by editing a source video or existing
+   * generated video.
+   */
+  edit(body, options) {
+    return this._client.post("/videos/edits", multipartFormRequestOptions({ body, ...options, __security: { bearerAuth: true } }, this._client));
+  }
+  /**
+   * Create an extension of a completed video.
+   */
+  extend(body, options) {
+    return this._client.post("/videos/extensions", multipartFormRequestOptions({ body, ...options, __security: { bearerAuth: true } }, this._client));
+  }
+  /**
+   * Fetch a character.
+   */
+  getCharacter(characterID, options) {
+    return this._client.get(path`/videos/characters/${characterID}`, {
+      ...options,
+      __security: { bearerAuth: true }
+    });
+  }
+  /**
+   * Create a remix of a completed video using a refreshed prompt.
+   */
+  remix(videoID, body, options) {
+    return this._client.post(path`/videos/${videoID}/remix`, maybeMultipartFormRequestOptions({ body, ...options, __security: { bearerAuth: true } }, this._client));
+  }
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/resources/webhooks/webhooks.mjs
+var _Webhooks_instances;
+var _Webhooks_validateSecret;
+var _Webhooks_getRequiredHeader;
+var Webhooks = class extends APIResource {
+  constructor() {
+    super(...arguments);
+    _Webhooks_instances.add(this);
+  }
+  /**
+   * Validates that the given payload was sent by OpenAI and parses the payload.
+   */
+  async unwrap(payload, headers, secret = this._client.webhookSecret, tolerance = 300) {
+    await this.verifySignature(payload, headers, secret, tolerance);
+    return JSON.parse(payload);
+  }
+  /**
+   * Validates whether or not the webhook payload was sent by OpenAI.
+   *
+   * An error will be raised if the webhook payload was not sent by OpenAI.
+   *
+   * @param payload - The webhook payload
+   * @param headers - The webhook headers
+   * @param secret - The webhook secret (optional, will use client secret if not provided)
+   * @param tolerance - Maximum age of the webhook in seconds (default: 300 = 5 minutes)
+   */
+  async verifySignature(payload, headers, secret = this._client.webhookSecret, tolerance = 300) {
+    if (typeof crypto === "undefined" || typeof crypto.subtle.importKey !== "function" || typeof crypto.subtle.verify !== "function") {
+      throw new Error("Webhook signature verification is only supported when the `crypto` global is defined");
+    }
+    __classPrivateFieldGet(this, _Webhooks_instances, "m", _Webhooks_validateSecret).call(this, secret);
+    const headersObj = buildHeaders([headers]).values;
+    const signatureHeader = __classPrivateFieldGet(this, _Webhooks_instances, "m", _Webhooks_getRequiredHeader).call(this, headersObj, "webhook-signature");
+    const timestamp2 = __classPrivateFieldGet(this, _Webhooks_instances, "m", _Webhooks_getRequiredHeader).call(this, headersObj, "webhook-timestamp");
+    const webhookId = __classPrivateFieldGet(this, _Webhooks_instances, "m", _Webhooks_getRequiredHeader).call(this, headersObj, "webhook-id");
+    const timestampSeconds = parseInt(timestamp2, 10);
+    if (isNaN(timestampSeconds)) {
+      throw new InvalidWebhookSignatureError("Invalid webhook timestamp format");
+    }
+    const nowSeconds = Math.floor(Date.now() / 1e3);
+    if (nowSeconds - timestampSeconds > tolerance) {
+      throw new InvalidWebhookSignatureError("Webhook timestamp is too old");
+    }
+    if (timestampSeconds > nowSeconds + tolerance) {
+      throw new InvalidWebhookSignatureError("Webhook timestamp is too new");
+    }
+    const signatures = signatureHeader.split(" ").map((part) => part.startsWith("v1,") ? part.substring(3) : part);
+    const decodedSecret = secret.startsWith("whsec_") ? Buffer.from(secret.replace("whsec_", ""), "base64") : Buffer.from(secret, "utf-8");
+    const signedPayload = webhookId ? `${webhookId}.${timestamp2}.${payload}` : `${timestamp2}.${payload}`;
+    const key = await crypto.subtle.importKey("raw", decodedSecret, { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
+    for (const signature of signatures) {
+      try {
+        const signatureBytes = Buffer.from(signature, "base64");
+        const isValid = await crypto.subtle.verify("HMAC", key, signatureBytes, new TextEncoder().encode(signedPayload));
+        if (isValid) {
+          return;
+        }
+      } catch {
+        continue;
+      }
+    }
+    throw new InvalidWebhookSignatureError("The given webhook signature does not match the expected signature");
+  }
+};
+_Webhooks_instances = /* @__PURE__ */ new WeakSet(), _Webhooks_validateSecret = function _Webhooks_validateSecret2(secret) {
+  if (typeof secret !== "string" || secret.length === 0) {
+    throw new Error(`The webhook secret must either be set using the env var, OPENAI_WEBHOOK_SECRET, on the client class, OpenAI({ webhookSecret: '123' }), or passed to this function`);
+  }
+}, _Webhooks_getRequiredHeader = function _Webhooks_getRequiredHeader2(headers, name) {
+  if (!headers) {
+    throw new Error(`Headers are required`);
+  }
+  const value = headers.get(name);
+  if (value === null || value === void 0) {
+    throw new Error(`Missing required header: ${name}`);
+  }
+  return value;
+};
+
+// node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/client.mjs
+var _OpenAI_instances;
+var _a2;
+var _OpenAI_encoder;
+var _OpenAI_baseURLOverridden;
+var WORKLOAD_IDENTITY_API_KEY_PLACEHOLDER = "workload-identity-auth";
+var OpenAI = class {
+  /**
+   * API Client for interfacing with the OpenAI API.
+   *
+   * @param {string | null | undefined} [opts.apiKey=process.env['OPENAI_API_KEY'] ?? null]
+   * @param {string | null | undefined} [opts.adminAPIKey=process.env['OPENAI_ADMIN_KEY'] ?? null]
+   * @param {string | null | undefined} [opts.organization=process.env['OPENAI_ORG_ID'] ?? null]
+   * @param {string | null | undefined} [opts.project=process.env['OPENAI_PROJECT_ID'] ?? null]
+   * @param {string | null | undefined} [opts.webhookSecret=process.env['OPENAI_WEBHOOK_SECRET'] ?? null]
+   * @param {string} [opts.baseURL=process.env['OPENAI_BASE_URL'] ?? https://api.openai.com/v1] - Override the default base URL for the API.
+   * @param {number} [opts.timeout=10 minutes] - The maximum amount of time (in milliseconds) the client will wait for a response before timing out.
+   * @param {MergedRequestInit} [opts.fetchOptions] - Additional `RequestInit` options to be passed to `fetch` calls.
+   * @param {Fetch} [opts.fetch] - Specify a custom `fetch` function implementation.
+   * @param {number} [opts.maxRetries=2] - The maximum number of times the client will retry a request.
+   * @param {HeadersLike} opts.defaultHeaders - Default headers to include with every request to the API.
+   * @param {Record<string, string | undefined>} opts.defaultQuery - Default query parameters to include with every request to the API.
+   * @param {boolean} [opts.dangerouslyAllowBrowser=false] - By default, client-side use of this library is not allowed, as it risks exposing your secret API credentials to attackers.
+   */
+  constructor({ baseURL = readEnv("OPENAI_BASE_URL"), apiKey = readEnv("OPENAI_API_KEY") ?? null, adminAPIKey = readEnv("OPENAI_ADMIN_KEY") ?? null, organization = readEnv("OPENAI_ORG_ID") ?? null, project = readEnv("OPENAI_PROJECT_ID") ?? null, webhookSecret = readEnv("OPENAI_WEBHOOK_SECRET") ?? null, workloadIdentity, ...opts } = {}) {
+    _OpenAI_instances.add(this);
+    _OpenAI_encoder.set(this, void 0);
+    this.completions = new Completions2(this);
+    this.chat = new Chat(this);
+    this.embeddings = new Embeddings(this);
+    this.files = new Files2(this);
+    this.images = new Images(this);
+    this.audio = new Audio(this);
+    this.moderations = new Moderations(this);
+    this.models = new Models(this);
+    this.fineTuning = new FineTuning(this);
+    this.graders = new Graders2(this);
+    this.vectorStores = new VectorStores(this);
+    this.webhooks = new Webhooks(this);
+    this.beta = new Beta(this);
+    this.batches = new Batches(this);
+    this.uploads = new Uploads(this);
+    this.admin = new Admin(this);
+    this.responses = new Responses(this);
+    this.realtime = new Realtime2(this);
+    this.conversations = new Conversations(this);
+    this.evals = new Evals(this);
+    this.containers = new Containers(this);
+    this.skills = new Skills(this);
+    this.videos = new Videos(this);
+    const options = {
+      apiKey,
+      adminAPIKey,
+      organization,
+      project,
+      webhookSecret,
+      workloadIdentity,
+      ...opts,
+      baseURL: baseURL || `https://api.openai.com/v1`
+    };
+    if (apiKey && workloadIdentity) {
+      throw new OpenAIError("The `apiKey` and `workloadIdentity` options are mutually exclusive");
+    }
+    if (!apiKey && !adminAPIKey && !workloadIdentity) {
+      throw new OpenAIError("Missing credentials. Please pass an `apiKey`, `workloadIdentity`, `adminAPIKey`, or set the `OPENAI_API_KEY` or `OPENAI_ADMIN_KEY` environment variable.");
+    }
+    if (!options.dangerouslyAllowBrowser && isRunningInBrowser()) {
+      throw new OpenAIError("It looks like you're running in a browser-like environment.\n\nThis is disabled by default, as it risks exposing your secret API credentials to attackers.\nIf you understand the risks and have appropriate mitigations in place,\nyou can set the `dangerouslyAllowBrowser` option to `true`, e.g.,\n\nnew OpenAI({ apiKey, dangerouslyAllowBrowser: true });\n\nhttps://help.openai.com/en/articles/5112595-best-practices-for-api-key-safety\n");
+    }
+    this.baseURL = options.baseURL;
+    this.timeout = options.timeout ?? _a2.DEFAULT_TIMEOUT;
+    this.logger = options.logger ?? console;
+    const defaultLogLevel = "warn";
+    this.logLevel = defaultLogLevel;
+    this.logLevel = parseLogLevel(options.logLevel, "ClientOptions.logLevel", this) ?? parseLogLevel(readEnv("OPENAI_LOG"), "process.env['OPENAI_LOG']", this) ?? defaultLogLevel;
+    this.fetchOptions = options.fetchOptions;
+    this.maxRetries = options.maxRetries ?? 2;
+    this.fetch = options.fetch ?? getDefaultFetch();
+    __classPrivateFieldSet(this, _OpenAI_encoder, FallbackEncoder, "f");
+    const customHeadersEnv = readEnv("OPENAI_CUSTOM_HEADERS");
+    if (customHeadersEnv) {
+      const parsed = {};
+      for (const line2 of customHeadersEnv.split("\n")) {
+        const colon = line2.indexOf(":");
+        if (colon >= 0) {
+          parsed[line2.substring(0, colon).trim()] = line2.substring(colon + 1).trim();
+        }
+      }
+      options.defaultHeaders = buildHeaders([parsed, options.defaultHeaders]);
+    }
+    this._options = options;
+    if (workloadIdentity) {
+      this._workloadIdentityAuth = new WorkloadIdentityAuth(workloadIdentity, this.fetch);
+    }
+    this.apiKey = typeof apiKey === "string" ? apiKey : null;
+    this.adminAPIKey = adminAPIKey;
+    this.organization = organization;
+    this.project = project;
+    this.webhookSecret = webhookSecret;
+  }
+  /**
+   * Create a new client instance re-using the same options given to the current client with optional overriding.
+   */
+  withOptions(options) {
+    const client = new this.constructor({
+      ...this._options,
+      baseURL: this.baseURL,
+      maxRetries: this.maxRetries,
+      timeout: this.timeout,
+      logger: this.logger,
+      logLevel: this.logLevel,
+      fetch: this.fetch,
+      fetchOptions: this.fetchOptions,
+      apiKey: this._options.apiKey,
+      adminAPIKey: this.adminAPIKey,
+      workloadIdentity: this._options.workloadIdentity,
+      organization: this.organization,
+      project: this.project,
+      webhookSecret: this.webhookSecret,
+      ...options
+    });
+    return client;
+  }
+  defaultQuery() {
+    return this._options.defaultQuery;
+  }
+  validateHeaders({ values, nulls }, schemes = {
+    bearerAuth: true,
+    adminAPIKeyAuth: true
+  }) {
+    if (values.get("authorization") || values.get("api-key")) {
+      return;
+    }
+    if (nulls.has("authorization") || nulls.has("api-key")) {
+      return;
+    }
+    if (this._workloadIdentityAuth && schemes.bearerAuth) {
+      return;
+    }
+    throw new Error('Could not resolve authentication method. Expected either apiKey or adminAPIKey to be set. Or for one of the "Authorization" or "api-key" headers to be explicitly omitted');
+  }
+  async authHeaders(opts, schemes = {
+    bearerAuth: true,
+    adminAPIKeyAuth: true
+  }) {
+    return buildHeaders([
+      schemes.bearerAuth ? await this.bearerAuth(opts) : null,
+      schemes.adminAPIKeyAuth ? await this.adminAPIKeyAuth(opts) : null
+    ]);
+  }
+  async bearerAuth(opts) {
+    if (this._workloadIdentityAuth) {
+      return buildHeaders([{ Authorization: `Bearer ${await this._workloadIdentityAuth.getToken()}` }]);
+    }
+    if (this.apiKey == null) {
+      return void 0;
+    }
+    return buildHeaders([{ Authorization: `Bearer ${this.apiKey}` }]);
+  }
+  async adminAPIKeyAuth(opts) {
+    if (this.adminAPIKey == null) {
+      return void 0;
+    }
+    return buildHeaders([{ Authorization: `Bearer ${this.adminAPIKey}` }]);
+  }
+  stringifyQuery(query) {
+    return stringifyQuery(query);
+  }
+  getUserAgent() {
+    return `${this.constructor.name}/JS ${VERSION}`;
+  }
+  defaultIdempotencyKey() {
+    return `stainless-node-retry-${uuid42()}`;
+  }
+  makeStatusError(status, error46, message2, headers) {
+    return APIError.generate(status, error46, message2, headers);
+  }
+  async _callApiKey() {
+    const apiKey = this._options.apiKey;
+    if (typeof apiKey !== "function")
+      return false;
+    let token;
+    try {
+      token = await apiKey();
+    } catch (err) {
+      if (err instanceof OpenAIError)
+        throw err;
+      throw new OpenAIError(
+        `Failed to get token from 'apiKey' function: ${err.message}`,
+        // @ts-ignore
+        { cause: err }
+      );
+    }
+    if (typeof token !== "string" || !token) {
+      throw new OpenAIError(`Expected 'apiKey' function argument to return a string but it returned ${token}`);
+    }
+    this.apiKey = token;
+    return true;
+  }
+  buildURL(path2, query, defaultBaseURL) {
+    const baseURL = !__classPrivateFieldGet(this, _OpenAI_instances, "m", _OpenAI_baseURLOverridden).call(this) && defaultBaseURL || this.baseURL;
+    const url2 = isAbsoluteURL(path2) ? new URL(path2) : new URL(baseURL + (baseURL.endsWith("/") && path2.startsWith("/") ? path2.slice(1) : path2));
+    const defaultQuery = this.defaultQuery();
+    const pathQuery = Object.fromEntries(url2.searchParams);
+    if (!isEmptyObj(defaultQuery) || !isEmptyObj(pathQuery)) {
+      query = { ...pathQuery, ...defaultQuery, ...query };
+    }
+    if (typeof query === "object" && query && !Array.isArray(query)) {
+      url2.search = this.stringifyQuery(query);
+    }
+    return url2.toString();
+  }
+  /**
+   * Used as a callback for mutating the given `FinalRequestOptions` object.
+   */
+  async prepareOptions(options) {
+    const security = options.__security ?? { bearerAuth: true };
+    if (security.bearerAuth) {
+      await this._callApiKey();
+    }
+  }
+  /**
+   * Used as a callback for mutating the given `RequestInit` object.
+   *
+   * This is useful for cases where you want to add certain headers based off of
+   * the request properties, e.g. `method` or `url`.
+   */
+  async prepareRequest(request, { url: url2, options }) {
+  }
+  get(path2, opts) {
+    return this.methodRequest("get", path2, opts);
+  }
+  post(path2, opts) {
+    return this.methodRequest("post", path2, opts);
+  }
+  patch(path2, opts) {
+    return this.methodRequest("patch", path2, opts);
+  }
+  put(path2, opts) {
+    return this.methodRequest("put", path2, opts);
+  }
+  delete(path2, opts) {
+    return this.methodRequest("delete", path2, opts);
+  }
+  methodRequest(method, path2, opts) {
+    return this.request(Promise.resolve(opts).then((opts2) => {
+      return { method, path: path2, ...opts2 };
+    }));
+  }
+  request(options, remainingRetries = null) {
+    return new APIPromise(this, this.makeRequest(options, remainingRetries, void 0));
+  }
+  async makeRequest(optionsInput, retriesRemaining, retryOfRequestLogID) {
+    const options = await optionsInput;
+    const maxRetries = options.maxRetries ?? this.maxRetries;
+    if (retriesRemaining == null) {
+      retriesRemaining = maxRetries;
+    }
+    await this.prepareOptions(options);
+    const { req, url: url2, timeout } = await this.buildRequest(options, {
+      retryCount: maxRetries - retriesRemaining
+    });
+    await this.prepareRequest(req, { url: url2, options });
+    const requestLogID = "log_" + (Math.random() * (1 << 24) | 0).toString(16).padStart(6, "0");
+    const retryLogStr = retryOfRequestLogID === void 0 ? "" : `, retryOf: ${retryOfRequestLogID}`;
+    const startTime = Date.now();
+    loggerFor(this).debug(`[${requestLogID}] sending request`, formatRequestDetails({
+      retryOfRequestLogID,
+      method: options.method,
+      url: url2,
+      options,
+      headers: req.headers
+    }));
+    if (options.signal?.aborted) {
+      throw new APIUserAbortError();
+    }
+    const security = options.__security ?? { bearerAuth: true };
+    const controller = new AbortController();
+    const response = await this.fetchWithAuth(url2, req, timeout, controller, security).catch(castToError);
+    const headersTime = Date.now();
+    if (response instanceof globalThis.Error) {
+      const retryMessage = `retrying, ${retriesRemaining} attempts remaining`;
+      if (options.signal?.aborted) {
+        throw new APIUserAbortError();
+      }
+      const isTimeout = isAbortError2(response) || /timed? ?out/i.test(String(response) + ("cause" in response ? String(response.cause) : ""));
+      if (retriesRemaining) {
+        loggerFor(this).info(`[${requestLogID}] connection ${isTimeout ? "timed out" : "failed"} - ${retryMessage}`);
+        loggerFor(this).debug(`[${requestLogID}] connection ${isTimeout ? "timed out" : "failed"} (${retryMessage})`, formatRequestDetails({
+          retryOfRequestLogID,
+          url: url2,
+          durationMs: headersTime - startTime,
+          message: response.message
+        }));
+        return this.retryRequest(options, retriesRemaining, retryOfRequestLogID ?? requestLogID);
+      }
+      loggerFor(this).info(`[${requestLogID}] connection ${isTimeout ? "timed out" : "failed"} - error; no more retries left`);
+      loggerFor(this).debug(`[${requestLogID}] connection ${isTimeout ? "timed out" : "failed"} (error; no more retries left)`, formatRequestDetails({
+        retryOfRequestLogID,
+        url: url2,
+        durationMs: headersTime - startTime,
+        message: response.message
+      }));
+      if (response instanceof OAuthError || response instanceof SubjectTokenProviderError) {
+        throw response;
+      }
+      if (isTimeout) {
+        throw new APIConnectionTimeoutError();
+      }
+      throw new APIConnectionError({ cause: response });
+    }
+    const specialHeaders = [...response.headers.entries()].filter(([name]) => name === "x-request-id").map(([name, value]) => ", " + name + ": " + JSON.stringify(value)).join("");
+    const responseInfo = `[${requestLogID}${retryLogStr}${specialHeaders}] ${req.method} ${url2} ${response.ok ? "succeeded" : "failed"} with status ${response.status} in ${headersTime - startTime}ms`;
+    if (!response.ok) {
+      if (response.status === 401 && this._workloadIdentityAuth && security.bearerAuth && !options.__metadata?.["hasStreamingBody"] && !options.__metadata?.["workloadIdentityTokenRefreshed"]) {
+        await CancelReadableStream(response.body);
+        this._workloadIdentityAuth.invalidateToken();
+        return this.makeRequest({
+          ...options,
+          __metadata: {
+            ...options.__metadata,
+            workloadIdentityTokenRefreshed: true
+          }
+        }, retriesRemaining, retryOfRequestLogID ?? requestLogID);
+      }
+      const shouldRetry = await this.shouldRetry(response);
+      if (retriesRemaining && shouldRetry) {
+        const retryMessage2 = `retrying, ${retriesRemaining} attempts remaining`;
+        await CancelReadableStream(response.body);
+        loggerFor(this).info(`${responseInfo} - ${retryMessage2}`);
+        loggerFor(this).debug(`[${requestLogID}] response error (${retryMessage2})`, formatRequestDetails({
+          retryOfRequestLogID,
+          url: response.url,
+          status: response.status,
+          headers: response.headers,
+          durationMs: headersTime - startTime
+        }));
+        return this.retryRequest(options, retriesRemaining, retryOfRequestLogID ?? requestLogID, response.headers);
+      }
+      const retryMessage = shouldRetry ? `error; no more retries left` : `error; not retryable`;
+      loggerFor(this).info(`${responseInfo} - ${retryMessage}`);
+      const errText = await response.text().catch((err2) => castToError(err2).message);
+      const errJSON = safeJSON(errText);
+      const errMessage = errJSON ? void 0 : errText;
+      loggerFor(this).debug(`[${requestLogID}] response error (${retryMessage})`, formatRequestDetails({
+        retryOfRequestLogID,
+        url: response.url,
+        status: response.status,
+        headers: response.headers,
+        message: errMessage,
+        durationMs: Date.now() - startTime
+      }));
+      const err = this.makeStatusError(response.status, errJSON, errMessage, response.headers);
+      throw err;
+    }
+    loggerFor(this).info(responseInfo);
+    loggerFor(this).debug(`[${requestLogID}] response start`, formatRequestDetails({
+      retryOfRequestLogID,
+      url: response.url,
+      status: response.status,
+      headers: response.headers,
+      durationMs: headersTime - startTime
+    }));
+    return { response, options, controller, requestLogID, retryOfRequestLogID, startTime };
+  }
+  getAPIList(path2, Page2, opts) {
+    return this.requestAPIList(Page2, opts && "then" in opts ? opts.then((opts2) => ({ method: "get", path: path2, ...opts2 })) : { method: "get", path: path2, ...opts });
+  }
+  requestAPIList(Page2, options) {
+    const request = this.makeRequest(options, null, void 0);
+    return new PagePromise(this, request, Page2);
+  }
+  async fetchWithAuth(url2, init, timeout, controller, schemes = {
+    bearerAuth: true,
+    adminAPIKeyAuth: true
+  }) {
+    if (this._workloadIdentityAuth && schemes.bearerAuth) {
+      const headers = init.headers;
+      const authHeader = headers.get("Authorization");
+      if (!authHeader || authHeader === `Bearer ${WORKLOAD_IDENTITY_API_KEY_PLACEHOLDER}`) {
+        const token = await this._workloadIdentityAuth.getToken();
+        headers.set("Authorization", `Bearer ${token}`);
+      }
+    }
+    const response = await this.fetchWithTimeout(url2, init, timeout, controller);
+    return response;
+  }
+  async fetchWithTimeout(url2, init, ms, controller) {
+    const { signal, method, ...options } = init || {};
+    const abort = this._makeAbort(controller);
+    if (signal)
+      signal.addEventListener("abort", abort, { once: true });
+    const timeout = setTimeout(abort, ms);
+    const isReadableBody = globalThis.ReadableStream && options.body instanceof globalThis.ReadableStream || typeof options.body === "object" && options.body !== null && Symbol.asyncIterator in options.body;
+    const fetchOptions = {
+      signal: controller.signal,
+      ...isReadableBody ? { duplex: "half" } : {},
+      method: "GET",
+      ...options
+    };
+    if (method) {
+      fetchOptions.method = method.toUpperCase();
+    }
+    try {
+      return await this.fetch.call(void 0, url2, fetchOptions);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+  async shouldRetry(response) {
+    const shouldRetryHeader = response.headers.get("x-should-retry");
+    if (shouldRetryHeader === "true")
+      return true;
+    if (shouldRetryHeader === "false")
+      return false;
+    if (response.status === 408)
+      return true;
+    if (response.status === 409)
+      return true;
+    if (response.status === 429)
+      return true;
+    if (response.status >= 500)
+      return true;
+    return false;
+  }
+  async retryRequest(options, retriesRemaining, requestLogID, responseHeaders) {
+    let timeoutMillis;
+    const retryAfterMillisHeader = responseHeaders?.get("retry-after-ms");
+    if (retryAfterMillisHeader) {
+      const timeoutMs = parseFloat(retryAfterMillisHeader);
+      if (!Number.isNaN(timeoutMs)) {
+        timeoutMillis = timeoutMs;
+      }
+    }
+    const retryAfterHeader = responseHeaders?.get("retry-after");
+    if (retryAfterHeader && !timeoutMillis) {
+      const timeoutSeconds = parseFloat(retryAfterHeader);
+      if (!Number.isNaN(timeoutSeconds)) {
+        timeoutMillis = timeoutSeconds * 1e3;
+      } else {
+        timeoutMillis = Date.parse(retryAfterHeader) - Date.now();
+      }
+    }
+    if (timeoutMillis === void 0) {
+      const maxRetries = options.maxRetries ?? this.maxRetries;
+      timeoutMillis = this.calculateDefaultRetryTimeoutMillis(retriesRemaining, maxRetries);
+    }
+    await sleep(timeoutMillis);
+    return this.makeRequest(options, retriesRemaining - 1, requestLogID);
+  }
+  calculateDefaultRetryTimeoutMillis(retriesRemaining, maxRetries) {
+    const initialRetryDelay = 0.5;
+    const maxRetryDelay = 8;
+    const numRetries = maxRetries - retriesRemaining;
+    const sleepSeconds = Math.min(initialRetryDelay * Math.pow(2, numRetries), maxRetryDelay);
+    const jitter = 1 - Math.random() * 0.25;
+    return sleepSeconds * jitter * 1e3;
+  }
+  async buildRequest(inputOptions, { retryCount = 0 } = {}) {
+    const options = { ...inputOptions };
+    const { method, path: path2, query, defaultBaseURL } = options;
+    const url2 = this.buildURL(path2, query, defaultBaseURL);
+    if ("timeout" in options)
+      validatePositiveInteger("timeout", options.timeout);
+    options.timeout = options.timeout ?? this.timeout;
+    const { bodyHeaders, body, isStreamingBody } = this.buildBody({ options });
+    if (isStreamingBody) {
+      inputOptions.__metadata = {
+        ...inputOptions.__metadata,
+        hasStreamingBody: true
+      };
+    }
+    const reqHeaders = await this.buildHeaders({ options: inputOptions, method, bodyHeaders, retryCount });
+    const req = {
+      method,
+      headers: reqHeaders,
+      ...options.signal && { signal: options.signal },
+      ...globalThis.ReadableStream && body instanceof globalThis.ReadableStream && { duplex: "half" },
+      ...body && { body },
+      ...this.fetchOptions ?? {},
+      ...options.fetchOptions ?? {}
+    };
+    return { req, url: url2, timeout: options.timeout };
+  }
+  async buildHeaders({ options, method, bodyHeaders, retryCount }) {
+    let idempotencyHeaders = {};
+    if (this.idempotencyHeader && method !== "get") {
+      if (!options.idempotencyKey)
+        options.idempotencyKey = this.defaultIdempotencyKey();
+      idempotencyHeaders[this.idempotencyHeader] = options.idempotencyKey;
+    }
+    const headers = buildHeaders([
+      idempotencyHeaders,
+      {
+        Accept: "application/json",
+        "User-Agent": this.getUserAgent(),
+        "X-Stainless-Retry-Count": String(retryCount),
+        ...options.timeout ? { "X-Stainless-Timeout": String(Math.trunc(options.timeout / 1e3)) } : {},
+        ...getPlatformHeaders(),
+        "OpenAI-Organization": this.organization,
+        "OpenAI-Project": this.project
+      },
+      await this.authHeaders(options, options.__security ?? { bearerAuth: true }),
+      this._options.defaultHeaders,
+      bodyHeaders,
+      options.headers
+    ]);
+    this.validateHeaders(headers, options.__security ?? { bearerAuth: true });
+    return headers.values;
+  }
+  _makeAbort(controller) {
+    return () => controller.abort();
+  }
+  buildBody({ options: { body, headers: rawHeaders } }) {
+    if (!body) {
+      return { bodyHeaders: void 0, body: void 0, isStreamingBody: false };
+    }
+    const headers = buildHeaders([rawHeaders]);
+    const isReadableStream = typeof globalThis.ReadableStream !== "undefined" && body instanceof globalThis.ReadableStream;
+    const isRetryableBody = !isReadableStream && (typeof body === "string" || body instanceof ArrayBuffer || ArrayBuffer.isView(body) || typeof globalThis.Blob !== "undefined" && body instanceof globalThis.Blob || body instanceof URLSearchParams || body instanceof FormData);
+    if (
+      // Pass raw type verbatim
+      ArrayBuffer.isView(body) || body instanceof ArrayBuffer || body instanceof DataView || typeof body === "string" && // Preserve legacy string encoding behavior for now
+      headers.values.has("content-type") || // `Blob` is superset of `File`
+      globalThis.Blob && body instanceof globalThis.Blob || // `FormData` -> `multipart/form-data`
+      body instanceof FormData || // `URLSearchParams` -> `application/x-www-form-urlencoded`
+      body instanceof URLSearchParams || // Send chunked stream (each chunk has own `length`)
+      isReadableStream
+    ) {
+      return { bodyHeaders: void 0, body, isStreamingBody: !isRetryableBody };
+    } else if (typeof body === "object" && (Symbol.asyncIterator in body || Symbol.iterator in body && "next" in body && typeof body.next === "function")) {
+      return {
+        bodyHeaders: void 0,
+        body: ReadableStreamFrom(body),
+        isStreamingBody: true
+      };
+    } else if (typeof body === "object" && headers.values.get("content-type") === "application/x-www-form-urlencoded") {
+      return {
+        bodyHeaders: { "content-type": "application/x-www-form-urlencoded" },
+        body: this.stringifyQuery(body),
+        isStreamingBody: false
+      };
+    } else {
+      return { ...__classPrivateFieldGet(this, _OpenAI_encoder, "f").call(this, { body, headers }), isStreamingBody: false };
+    }
+  }
+};
+_a2 = OpenAI, _OpenAI_encoder = /* @__PURE__ */ new WeakMap(), _OpenAI_instances = /* @__PURE__ */ new WeakSet(), _OpenAI_baseURLOverridden = function _OpenAI_baseURLOverridden2() {
+  return this.baseURL !== "https://api.openai.com/v1";
+};
+OpenAI.OpenAI = _a2;
+OpenAI.DEFAULT_TIMEOUT = 6e5;
+OpenAI.OpenAIError = OpenAIError;
+OpenAI.APIError = APIError;
+OpenAI.APIConnectionError = APIConnectionError;
+OpenAI.APIConnectionTimeoutError = APIConnectionTimeoutError;
+OpenAI.APIUserAbortError = APIUserAbortError;
+OpenAI.NotFoundError = NotFoundError;
+OpenAI.ConflictError = ConflictError;
+OpenAI.RateLimitError = RateLimitError;
+OpenAI.BadRequestError = BadRequestError;
+OpenAI.AuthenticationError = AuthenticationError;
+OpenAI.InternalServerError = InternalServerError;
+OpenAI.PermissionDeniedError = PermissionDeniedError;
+OpenAI.UnprocessableEntityError = UnprocessableEntityError;
+OpenAI.InvalidWebhookSignatureError = InvalidWebhookSignatureError;
+OpenAI.toFile = toFile;
+OpenAI.Completions = Completions2;
+OpenAI.Chat = Chat;
+OpenAI.Embeddings = Embeddings;
+OpenAI.Files = Files2;
+OpenAI.Images = Images;
+OpenAI.Audio = Audio;
+OpenAI.Moderations = Moderations;
+OpenAI.Models = Models;
+OpenAI.FineTuning = FineTuning;
+OpenAI.Graders = Graders2;
+OpenAI.VectorStores = VectorStores;
+OpenAI.Webhooks = Webhooks;
+OpenAI.Beta = Beta;
+OpenAI.Batches = Batches;
+OpenAI.Uploads = Uploads;
+OpenAI.Admin = Admin;
+OpenAI.Responses = Responses;
+OpenAI.Realtime = Realtime2;
+OpenAI.Conversations = Conversations;
+OpenAI.Evals = Evals;
+OpenAI.Containers = Containers;
+OpenAI.Skills = Skills;
+OpenAI.Videos = Videos;
+
+// server/ai-analysis.router.ts
+async function generateAiAnalysis(input) {
+  const apiKey = process.env.ZAI_API_KEY;
+  if (!apiKey) throw new Error("ZAI_API_KEY n\xE3o configurada");
+  const client = new OpenAI({
+    apiKey,
+    baseURL: "https://api.z.ai/v1"
+  });
+  const brl = (v) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const num = (v) => v.toLocaleString("pt-BR");
+  const pct = (v) => `${v.toFixed(2)}%`;
+  const purchases = input.purchases ?? 0;
+  const purchaseValue = input.purchaseValue ?? 0;
+  const costPerPurchase = input.costPerPurchase ?? 0;
+  const roas = input.roas ?? 0;
+  const messagesInitiated = input.messagesInitiated ?? 0;
+  const costPerMessage = input.costPerMessage ?? 0;
+  const instagramProfileVisits = input.instagramProfileVisits ?? 0;
+  const costPerProfileVisit = input.costPerProfileVisit ?? 0;
+  const newInstagramFollowers = input.newInstagramFollowers ?? 0;
+  const videoRetentionRate = input.videoRetentionRate ?? 0;
+  const frequencia = input.totalImpressions / Math.max(input.totalReach, 1);
+  const prompt = `Voc\xEA \xE9 um especialista s\xEAnior em tr\xE1fego pago e marketing digital. Analise os dados abaixo de uma campanha Meta Ads e gere um relat\xF3rio de performance conciso para o CLIENTE. Tom: profissional, positivo quando poss\xEDvel, orientado a a\xE7\xE3o.
+
+DADOS DA CAMPANHA${input.empresa ? ` \u2014 ${input.empresa}` : ""}${input.periodo ? ` (${input.periodo})` : ""}:
+
+\u{1F4CA} ALCANCE:
+- Pessoas alcan\xE7adas: ${num(input.totalReach)}
+- Impress\xF5es: ${num(input.totalImpressions)}
+- Frequ\xEAncia: ${frequencia.toFixed(1)}x
+
+\u{1F4B0} INVESTIMENTO:
+- Total investido: ${brl(input.totalSpent)}
+- CPM: ${brl(input.cpm)} (m\xE9dia mercado: R$ 12,00)
+- CPC: ${brl(input.cpc)} (m\xE9dia mercado: R$ 1,50)
+- CTR: ${pct(input.ctr)} (m\xE9dia mercado: 1,5%)
+- Cliques: ${num(input.totalClicks)}
+${purchases > 0 ? `
+\u{1F6CD}\uFE0F VENDAS:
+- Vendas: ${purchases}
+- Faturamento: ${brl(purchaseValue)}
+- ROAS: ${roas.toFixed(2)}x
+- Custo por venda: ${brl(costPerPurchase)}` : ""}
+${messagesInitiated > 0 ? `
+\u{1F4AC} MENSAGENS:
+- Mensagens iniciadas: ${num(messagesInitiated)}
+- Custo por mensagem: ${brl(costPerMessage)}` : ""}
+${instagramProfileVisits > 0 ? `
+\u{1F464} INSTAGRAM:
+- Visitas ao perfil: ${num(instagramProfileVisits)}
+- Custo por visita: ${brl(costPerProfileVisit)}
+- Novos seguidores: ${num(newInstagramFollowers)}` : ""}
+${videoRetentionRate > 0 ? `
+\u{1F3AC} V\xCDDEO:
+- Reten\xE7\xE3o: ${pct(videoRetentionRate)} (m\xE9dia: 15-20%)` : ""}
+
+BENCHMARKS Meta Ads Brasil: CTR bom >1,5% | CPM bom <R$12 | CPC bom <R$1,50 | ROAS sustent\xE1vel >3x | Frequ\xEAncia ideal 1,5-3x
+
+Responda SOMENTE com JSON v\xE1lido (sem markdown, sem texto extra):
+{
+  "pontosFortesTexto": ["frase curta com n\xFAmero real 1", "frase curta com n\xFAmero real 2"],
+  "pontosFracosTexto": ["frase curta com n\xFAmero real 1"],
+  "recomendacaoPrincipal": "Par\xE1grafo de 2-4 frases com recomenda\xE7\xE3o espec\xEDfica citando valores reais do relat\xF3rio."
+}
+
+REGRAS: m\xE1ximo 4 itens por lista | cada item = 1 frase com o n\xFAmero real | se ROAS >= 3x destaque como ponto principal | listas podem ser vazias []`;
+  const response = await client.chat.completions.create({
+    model: "glm-4-flash",
+    messages: [{ role: "user", content: prompt }],
+    max_tokens: 1024,
+    temperature: 0.7
+  });
+  const text2 = response.choices[0]?.message?.content?.trim() ?? "";
+  const jsonMatch = text2.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error("Resposta inv\xE1lida da IA");
+  const parsed = JSON.parse(jsonMatch[0]);
+  return {
+    pontosFortesTexto: parsed.pontosFortesTexto ?? [],
+    pontosFracosTexto: parsed.pontosFracosTexto ?? [],
+    recomendacaoPrincipal: parsed.recomendacaoPrincipal ?? ""
+  };
+}
+var aiAnalysisRouter = router({});
 
 // server/routers.ts
 var createCompanySchema = external_exports.object({
@@ -56007,8 +65315,30 @@ async function fetchMetaInsights(adAccountId, accessToken, startDate, endDate) {
     costPerMessage: messagesInitiated > 0 ? parseFloat((totalSpent / messagesInitiated).toFixed(2)) : 0
   };
 }
+function parseMetaInsightRow(row, idKey, nameKey) {
+  const PURCHASE_TYPES = ["purchase", "offsite_conversion.fb_pixel_purchase", "omni_purchase"];
+  const getVal = (arr, types3) => {
+    const a = (arr || []).find((x) => types3.includes(x.action_type));
+    return a ? parseFloat(a.value || "0") : 0;
+  };
+  const spend = parseFloat(row.spend || "0");
+  const purchases = getVal(row.actions, PURCHASE_TYPES);
+  const revenue = getVal(row.action_values, PURCHASE_TYPES);
+  return {
+    id: row[idKey],
+    name: row[nameKey],
+    spend,
+    impressions: parseInt(row.impressions || "0"),
+    clicks: parseInt(row.clicks || "0"),
+    purchases,
+    revenue,
+    roi: spend > 0 ? (revenue - spend) / spend * 100 : 0,
+    cpa: purchases > 0 ? spend / purchases : 0
+  };
+}
 var appRouter = router({
   system: systemRouter,
+  aiAnalysis: aiAnalysisRouter,
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
     login: publicProcedure.input(external_exports.object({
@@ -56098,7 +65428,7 @@ var appRouter = router({
       if (!company || company.userId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
       }
-      const slug = `${input.title.toLowerCase().replace(/\s+/g, "-")}-${nanoid(8)}`;
+      const slug = `${input.title.toLowerCase().replace(/\//g, "-").replace(/\s+/g, "-").replace(/[^a-z0-9\-]/g, "").replace(/-+/g, "-").replace(/^-|-$/g, "")}-${nanoid(8)}`;
       const report = await createReport(
         input.companyId,
         ctx.user.id,
@@ -56120,6 +65450,51 @@ var appRouter = router({
           videoRetentionRate: input.metrics.videoRetentionRate.toString(),
           costPerProfileVisit: input.metrics.costPerProfileVisit.toString()
         });
+        try {
+          const dm = deriveMetrics({
+            totalSpent: parseFloat(input.metrics.totalSpent),
+            totalImpressions: input.metrics.totalImpressions,
+            totalClicks: input.metrics.totalClicks,
+            instagramProfileVisits: input.metrics.instagramProfileVisits ?? 0,
+            messagesInitiated: input.metrics.messagesInitiated ?? 0,
+            purchases: input.metrics.purchases ?? 0,
+            purchaseValue: input.metrics.purchaseValue ?? 0,
+            cpm,
+            ctr,
+            costPerClick: parseFloat(input.metrics.costPerClick),
+            costPerProfileVisit: parseFloat(input.metrics.costPerProfileVisit),
+            costPerMessage: input.metrics.costPerMessage ?? 0,
+            costPerPurchase: input.metrics.costPerPurchase ?? 0
+          });
+          const totalSpent = dm.totalSpent ?? 0;
+          const purchases = dm.purchases ?? 0;
+          const purchaseValue = dm.purchaseValue ?? 0;
+          const roas = totalSpent > 0 && purchaseValue > 0 ? purchaseValue / totalSpent : 0;
+          const aiResult = await generateAiAnalysis({
+            totalSpent,
+            ctr: dm.ctr ?? 0,
+            cpm: dm.cpm ?? 0,
+            cpc: dm.costPerClick ?? 0,
+            totalImpressions: input.metrics.totalImpressions,
+            totalReach: input.metrics.totalReach,
+            totalClicks: input.metrics.totalClicks,
+            purchases,
+            purchaseValue,
+            costPerPurchase: dm.costPerPurchase ?? 0,
+            roas,
+            messagesInitiated: input.metrics.messagesInitiated ?? 0,
+            costPerMessage: dm.costPerMessage ?? 0,
+            instagramProfileVisits: input.metrics.instagramProfileVisits ?? 0,
+            costPerProfileVisit: dm.costPerProfileVisit ?? 0,
+            newInstagramFollowers: input.metrics.newInstagramFollowers ?? 0,
+            videoRetentionRate: parseFloat(input.metrics.videoRetentionRate),
+            empresa: company.name,
+            periodo: input.title
+          });
+          await updateReportAiAnalysis(report.id, JSON.stringify(aiResult));
+        } catch (err) {
+          console.error("[AI] generateAiAnalysis falhou:", err);
+        }
       }
       return report;
     }),
@@ -56224,6 +65599,55 @@ var appRouter = router({
       }
       const metrics = await getMetricsByReportId(report.id);
       const company = await getCompanyById(report.companyId);
+      if (!report.aiAnalysis && metrics) {
+        try {
+          const dm = deriveMetrics({
+            totalSpent: parseFloat(metrics.totalSpent ?? "0"),
+            totalImpressions: Number(metrics.totalImpressions ?? 0),
+            totalClicks: Number(metrics.totalClicks ?? 0),
+            instagramProfileVisits: Number(metrics.instagramProfileVisits ?? 0),
+            messagesInitiated: Number(metrics.messagesInitiated ?? 0),
+            purchases: parseInt(metrics.purchases ?? "0", 10),
+            purchaseValue: parseFloat(metrics.purchaseValue ?? "0"),
+            cpm: parseFloat(metrics.cpm ?? "0"),
+            ctr: parseFloat(metrics.ctr ?? "0"),
+            costPerClick: parseFloat(metrics.costPerClick ?? "0"),
+            costPerProfileVisit: parseFloat(metrics.costPerProfileVisit ?? "0"),
+            costPerMessage: parseFloat(metrics.costPerMessage ?? "0"),
+            costPerPurchase: parseFloat(metrics.costPerPurchase ?? "0")
+          });
+          const totalSpent = dm.totalSpent ?? 0;
+          const purchaseValue = dm.purchaseValue ?? 0;
+          const purchases = dm.purchases ?? 0;
+          const roas = totalSpent > 0 && purchaseValue > 0 ? purchaseValue / totalSpent : 0;
+          const aiResult = await generateAiAnalysis({
+            totalSpent,
+            ctr: dm.ctr ?? 0,
+            cpm: dm.cpm ?? 0,
+            cpc: dm.costPerClick ?? 0,
+            totalImpressions: metrics.totalImpressions,
+            totalReach: metrics.totalReach,
+            totalClicks: metrics.totalClicks,
+            purchases,
+            purchaseValue,
+            costPerPurchase: dm.costPerPurchase ?? 0,
+            roas,
+            messagesInitiated: metrics.messagesInitiated,
+            costPerMessage: dm.costPerMessage ?? 0,
+            instagramProfileVisits: metrics.instagramProfileVisits,
+            costPerProfileVisit: dm.costPerProfileVisit ?? 0,
+            newInstagramFollowers: metrics.newInstagramFollowers,
+            videoRetentionRate: parseFloat(metrics.videoRetentionRate ?? "0"),
+            empresa: company?.name,
+            periodo: report.title
+          });
+          const aiJson = JSON.stringify(aiResult);
+          await updateReportAiAnalysis(report.id, aiJson);
+          return { report: { ...report, aiAnalysis: aiJson }, metrics, company };
+        } catch (err) {
+          console.error("[AI] getBySlug lazy generation falhou:", err);
+        }
+      }
       return { report, metrics, company };
     })
   }),
@@ -56362,6 +65786,88 @@ var appRouter = router({
         campaigns: data.data ?? []
       };
     }),
+    /**
+     * Insights por campanha para o período selecionado (ao vivo da Meta API)
+     * Retorna spend, receita, compras, ROI, CPA por campaign_id
+     */
+    campaignInsights: protectedProcedure.input(external_exports.object({
+      companyId: external_exports.number().int().positive(),
+      startDate: external_exports.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      endDate: external_exports.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+    })).query(async ({ ctx, input }) => {
+      const company = await getCompanyById(input.companyId);
+      if (!company || company.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
+      if (!company.metaAccessToken || !company.metaAdAccountId) return [];
+      const accountId = company.metaAdAccountId.startsWith("act_") ? company.metaAdAccountId : `act_${company.metaAdAccountId}`;
+      const url2 = new URL(`https://graph.facebook.com/v19.0/${accountId}/insights`);
+      url2.searchParams.set("fields", "campaign_id,campaign_name,spend,impressions,clicks,actions,action_values");
+      url2.searchParams.set("level", "campaign");
+      url2.searchParams.set("time_range", JSON.stringify({ since: input.startDate, until: input.endDate }));
+      url2.searchParams.set("limit", "500");
+      url2.searchParams.set("access_token", company.metaAccessToken);
+      const res = await fetch(url2.toString());
+      const data = await res.json();
+      if (data.error) throw new TRPCError({ code: "BAD_REQUEST", message: data.error.message });
+      return (data.data ?? []).map((row) => parseMetaInsightRow(row, "campaign_id", "campaign_name"));
+    }),
+    /**
+     * Insights por adset de uma campanha (ao vivo da Meta API)
+     * Retorna adsets com status + métricas do período
+     */
+    adsetInsights: protectedProcedure.input(external_exports.object({
+      companyId: external_exports.number().int().positive(),
+      campaignId: external_exports.string().min(1),
+      startDate: external_exports.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      endDate: external_exports.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+    })).query(async ({ ctx, input }) => {
+      const company = await getCompanyById(input.companyId);
+      if (!company || company.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
+      if (!company.metaAccessToken) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Meta n\xE3o conectado" });
+      const [adsetsRes, insightsRes] = await Promise.all([
+        fetch(`https://graph.facebook.com/v19.0/${input.campaignId}/adsets?fields=id,name,status,effective_status,daily_budget,lifetime_budget&limit=200&access_token=${company.metaAccessToken}`),
+        fetch(`https://graph.facebook.com/v19.0/${input.campaignId}/insights?fields=adset_id,adset_name,spend,impressions,clicks,actions,action_values&level=adset&time_range=${encodeURIComponent(JSON.stringify({ since: input.startDate, until: input.endDate }))}&limit=200&access_token=${company.metaAccessToken}`)
+      ]);
+      const [adsetsData, insightsData] = await Promise.all([adsetsRes.json(), insightsRes.json()]);
+      const insightsMap = {};
+      for (const row of insightsData.data ?? []) {
+        insightsMap[row.adset_id] = parseMetaInsightRow(row, "adset_id", "adset_name");
+      }
+      return (adsetsData.data ?? []).map((adset) => ({
+        id: adset.id,
+        name: adset.name,
+        status: adset.effective_status || adset.status,
+        ...insightsMap[adset.id] ?? { spend: 0, impressions: 0, clicks: 0, purchases: 0, revenue: 0, roi: 0, cpa: 0 }
+      }));
+    }),
+    /**
+     * Insights por anúncio de um adset (ao vivo da Meta API)
+     * Retorna ads com status + métricas do período
+     */
+    adInsights: protectedProcedure.input(external_exports.object({
+      companyId: external_exports.number().int().positive(),
+      adsetId: external_exports.string().min(1),
+      startDate: external_exports.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      endDate: external_exports.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+    })).query(async ({ ctx, input }) => {
+      const company = await getCompanyById(input.companyId);
+      if (!company || company.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
+      if (!company.metaAccessToken) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Meta n\xE3o conectado" });
+      const [adsRes, insightsRes] = await Promise.all([
+        fetch(`https://graph.facebook.com/v19.0/${input.adsetId}/ads?fields=id,name,status,effective_status&limit=200&access_token=${company.metaAccessToken}`),
+        fetch(`https://graph.facebook.com/v19.0/${input.adsetId}/insights?fields=ad_id,ad_name,spend,impressions,clicks,actions,action_values&level=ad&time_range=${encodeURIComponent(JSON.stringify({ since: input.startDate, until: input.endDate }))}&limit=200&access_token=${company.metaAccessToken}`)
+      ]);
+      const [adsData, insightsData] = await Promise.all([adsRes.json(), insightsRes.json()]);
+      const insightsMap = {};
+      for (const row of insightsData.data ?? []) {
+        insightsMap[row.ad_id] = parseMetaInsightRow(row, "ad_id", "ad_name");
+      }
+      return (adsData.data ?? []).map((ad) => ({
+        id: ad.id,
+        name: ad.name,
+        status: ad.effective_status || ad.status,
+        ...insightsMap[ad.id] ?? { spend: 0, impressions: 0, clicks: 0, purchases: 0, revenue: 0, roi: 0, cpa: 0 }
+      }));
+    }),
     /** Lista anúncios de uma campanha (para gerar UTMs por anúncio) */
     listAds: protectedProcedure.input(external_exports.object({
       companyId: external_exports.number().int().positive(),
@@ -56462,11 +65968,198 @@ async function createContext(opts) {
   };
 }
 
+// server/webhookRoutes.ts
+var import_express = __toESM(require_express2(), 1);
+
+// server/webhookHandler.ts
+async function handleSaleWebhook(req, res) {
+  const companyId = Number(req.body?.companyId ?? req.query?.companyId);
+  const { orderId, orderValue, source } = req.body || {};
+  const platform = source || req.query?.platform || "custom";
+  try {
+    const { companyId: _c, orderId: _o, orderValue: _v, source: _s, ...utmParams } = req.body || {};
+    if (!companyId || !orderId || orderValue == null || !source) {
+      await logWebhookEvent({
+        companyId: Number.isFinite(companyId) ? companyId : null,
+        platform,
+        success: false,
+        message: "Campos obrigat\xF3rios faltando: companyId, orderId, orderValue, source"
+      });
+      return res.status(400).json({
+        error: "Campos obrigat\xF3rios faltando: companyId, orderId, orderValue, source"
+      });
+    }
+    const pool2 = await getRawPool();
+    if (!pool2) {
+      return res.status(500).json({ error: "Database connection failed" });
+    }
+    const company = await getCompanyById(companyId);
+    if (!company) {
+      await logWebhookEvent({ companyId, platform, success: false, message: "Empresa n\xE3o encontrada" });
+      return res.status(404).json({ error: "Empresa n\xE3o encontrada" });
+    }
+    const userId = company.userId;
+    let trackingId = null;
+    if (utmParams.utmCampaign) {
+      const trackResult = await pool2.query(
+        `SELECT id FROM "utmTracking"
+         WHERE "companyId" = $1
+           AND "utmCampaign" = $2
+           AND "utmSource" IS NOT DISTINCT FROM $3
+           AND "utmMedium" IS NOT DISTINCT FROM $4
+         ORDER BY "createdAt" DESC LIMIT 1`,
+        [
+          companyId,
+          utmParams.utmCampaign,
+          utmParams.utmSource || null,
+          utmParams.utmMedium || null
+        ]
+      );
+      if (trackResult.rows.length > 0) {
+        trackingId = trackResult.rows[0].id;
+        await pool2.query(
+          `UPDATE "utmTracking" SET "conversionCount" = "conversionCount" + 1 WHERE "id" = $1`,
+          [trackingId]
+        );
+      }
+    }
+    const saleResult = await pool2.query(
+      `INSERT INTO "trackedSales" (
+        "companyId", "userId", "trackingId", "orderId", "orderValue",
+        "utmSource", "utmMedium", "utmCampaign", "utmContent", "utmTerm",
+        "customerEmail", "customerPhone", "source", "externalId", "saleDate"
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW())
+      RETURNING *`,
+      [
+        companyId,
+        userId,
+        trackingId,
+        orderId,
+        orderValue,
+        utmParams.utmSource || null,
+        utmParams.utmMedium || null,
+        utmParams.utmCampaign || null,
+        utmParams.utmContent || null,
+        utmParams.utmTerm || null,
+        utmParams.customerEmail || null,
+        utmParams.customerPhone || null,
+        source,
+        utmParams.externalId || null
+      ]
+    );
+    const saleId = saleResult.rows[0].id;
+    const message2 = trackingId ? "Venda rastreada com sucesso" : "Venda registrada mas UTM n\xE3o encontrada";
+    await logWebhookEvent({
+      companyId,
+      platform,
+      success: true,
+      saleId,
+      trackingFound: !!trackingId,
+      message: message2,
+      payloadSummary: `order=${orderId} valor=${orderValue}`
+    });
+    return res.status(200).json({
+      success: true,
+      saleId,
+      trackingFound: !!trackingId,
+      message: message2
+    });
+  } catch (err) {
+    console.error("[Webhook] Error:", err);
+    await logWebhookEvent({
+      companyId: Number.isFinite(companyId) ? companyId : null,
+      platform,
+      success: false,
+      message: err?.message || "Erro ao processar webhook"
+    });
+    return res.status(500).json({
+      error: err.message || "Erro ao processar webhook"
+    });
+  }
+}
+async function handleShopifyWebhook(req, res) {
+  try {
+    const signature = req.headers["x-shopify-hmac-sha256"];
+    const body = req.rawBody || JSON.stringify(req.body);
+    const order = req.body;
+    const payload = {
+      companyId: req.query.companyId || 1,
+      orderId: order.id.toString(),
+      orderValue: parseFloat(order.total_price),
+      source: "shopify",
+      customerEmail: order.email,
+      customerPhone: order.shipping_address?.phone,
+      externalId: order.id.toString(),
+      // UTMs viriam de custom fields ou checkout
+      utmSource: order.metafields?.find((m) => m.key === "utm_source")?.value,
+      utmMedium: order.metafields?.find((m) => m.key === "utm_medium")?.value,
+      utmCampaign: order.metafields?.find((m) => m.key === "utm_campaign")?.value,
+      utmContent: order.metafields?.find((m) => m.key === "utm_content")?.value,
+      utmTerm: order.metafields?.find((m) => m.key === "utm_term")?.value
+    };
+    return handleSaleWebhook({ body: payload }, res);
+  } catch (err) {
+    console.error("[Shopify Webhook] Error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+}
+async function handleWooCommerceWebhook(req, res) {
+  try {
+    const order = req.body;
+    const payload = {
+      companyId: req.query.companyId || 1,
+      orderId: order.id.toString(),
+      orderValue: parseFloat(order.total),
+      source: "woocommerce",
+      customerEmail: order.billing.email,
+      customerPhone: order.billing.phone,
+      externalId: order.id.toString(),
+      utmSource: order.meta_data?.find((m) => m.key === "_utm_source")?.value,
+      utmMedium: order.meta_data?.find((m) => m.key === "_utm_medium")?.value,
+      utmCampaign: order.meta_data?.find((m) => m.key === "_utm_campaign")?.value,
+      utmContent: order.meta_data?.find((m) => m.key === "_utm_content")?.value,
+      utmTerm: order.meta_data?.find((m) => m.key === "_utm_term")?.value
+    };
+    return handleSaleWebhook({ body: payload }, res);
+  } catch (err) {
+    console.error("[WooCommerce Webhook] Error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+// server/webhookRoutes.ts
+var router2 = (0, import_express.Router)();
+router2.post("/webhook/sale", handleSaleWebhook);
+router2.post("/webhook/shopify", (req, res) => {
+  handleShopifyWebhook(req, res);
+});
+router2.post("/webhook/woocommerce", (req, res) => {
+  handleWooCommerceWebhook(req, res);
+});
+router2.post("/webhook/test", (req, res) => {
+  console.log("[Webhook Test]", {
+    headers: req.headers,
+    body: req.body
+  });
+  res.status(200).json({
+    success: true,
+    message: "Webhook test received",
+    body: req.body
+  });
+});
+var webhookRoutes_default = router2;
+
 // server/vercelEntry.ts
-var app = (0, import_express.default)();
-app.use(import_express.default.json({ limit: "50mb" }));
-app.use(import_express.default.urlencoded({ limit: "50mb", extended: true }));
+var app = (0, import_express2.default)();
+app.use(import_express2.default.json({
+  limit: "50mb",
+  verify: (req, _res, buf) => {
+    req.rawBody = buf?.toString("utf8");
+  }
+}));
+app.use(import_express2.default.urlencoded({ limit: "50mb", extended: true }));
 registerOAuthRoutes(app);
+app.use(webhookRoutes_default);
 app.use(
   "/api/trpc",
   createExpressMiddleware({

@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import crypto from "crypto";
-import { getRawPool } from "./db";
-import { TRPCError } from "@trpc/server";
+import { getRawPool, getCompanyById, logWebhookEvent } from "./db";
 
 /**
  * Valida assinatura HMAC de Shopify/WooCommerce
@@ -22,21 +21,38 @@ export function validateWebhookSignature(
  * Handler genérico para webhooks de venda
  */
 export async function handleSaleWebhook(req: Request, res: Response) {
+  // companyId pode vir no body ou na query string (?companyId=)
+  const companyId = Number(req.body?.companyId ?? req.query?.companyId);
+  const { orderId, orderValue, source } = req.body || {};
+  const platform = (source || (req.query as any)?.platform || "custom") as string;
   try {
-    const { companyId, orderId, orderValue, source, ...utmParams } = req.body;
+    const { companyId: _c, orderId: _o, orderValue: _v, source: _s, ...utmParams } = req.body || {};
 
     // Validações básicas
-    if (!companyId || !orderId || !orderValue || !source) {
+    if (!companyId || !orderId || orderValue == null || !source) {
+      await logWebhookEvent({
+        companyId: Number.isFinite(companyId) ? companyId : null,
+        platform,
+        success: false,
+        message: "Campos obrigatórios faltando: companyId, orderId, orderValue, source",
+      });
       return res.status(400).json({
         error: "Campos obrigatórios faltando: companyId, orderId, orderValue, source",
       });
     }
 
-    // Chamar tRPC utm.recordSale
     const pool = await getRawPool();
     if (!pool) {
       return res.status(500).json({ error: "Database connection failed" });
     }
+
+    // userId obrigatório (coluna NOT NULL) — derivar da empresa dona
+    const company = await getCompanyById(companyId);
+    if (!company) {
+      await logWebhookEvent({ companyId, platform, success: false, message: "Empresa não encontrada" });
+      return res.status(404).json({ error: "Empresa não encontrada" });
+    }
+    const userId = company.userId;
 
     // Procurar tracking ID baseado nos parâmetros UTM
     let trackingId = null;
@@ -77,7 +93,7 @@ export async function handleSaleWebhook(req: Request, res: Response) {
       RETURNING *`,
       [
         companyId,
-        null, // userId
+        userId,
         trackingId,
         orderId,
         orderValue,
@@ -93,16 +109,35 @@ export async function handleSaleWebhook(req: Request, res: Response) {
       ]
     );
 
+    const saleId = saleResult.rows[0].id;
+    const message = trackingId
+      ? "Venda rastreada com sucesso"
+      : "Venda registrada mas UTM não encontrada";
+
+    await logWebhookEvent({
+      companyId,
+      platform,
+      success: true,
+      saleId,
+      trackingFound: !!trackingId,
+      message,
+      payloadSummary: `order=${orderId} valor=${orderValue}`,
+    });
+
     return res.status(200).json({
       success: true,
-      saleId: saleResult.rows[0].id,
+      saleId,
       trackingFound: !!trackingId,
-      message: trackingId
-        ? "Venda rastreada com sucesso"
-        : "Venda registrada mas UTM não encontrada",
+      message,
     });
   } catch (err: any) {
     console.error("[Webhook] Error:", err);
+    await logWebhookEvent({
+      companyId: Number.isFinite(companyId) ? companyId : null,
+      platform,
+      success: false,
+      message: err?.message || "Erro ao processar webhook",
+    });
     return res.status(500).json({
       error: err.message || "Erro ao processar webhook",
     });

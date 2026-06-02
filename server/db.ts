@@ -157,6 +157,22 @@ async function ensureTables(pool: InstanceType<typeof Pool>) {
       "createdAt" timestamp DEFAULT now() NOT NULL,
       "updatedAt" timestamp DEFAULT now() NOT NULL
     )`,
+    // Garante coluna de health check em webhooks já existentes
+    `ALTER TABLE "webhookConfigs" ADD COLUMN IF NOT EXISTS "lastHealthCheck" timestamp`,
+    // Log de cada chamada de webhook recebida (para status "Recebendo ✓" e debug)
+    `CREATE TABLE IF NOT EXISTS "webhookEvents" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "companyId" integer,
+      "platform" varchar(64) NOT NULL,
+      "success" boolean DEFAULT true NOT NULL,
+      "saleId" integer,
+      "trackingFound" boolean DEFAULT false NOT NULL,
+      "message" text,
+      "payloadSummary" text,
+      "createdAt" timestamp DEFAULT now() NOT NULL
+    )`,
+    `CREATE INDEX IF NOT EXISTS "idx_webhookEvents_companyId" ON "webhookEvents"("companyId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_webhookEvents_platform" ON "webhookEvents"("platform")`,
     // UTM indices for performance
     `CREATE INDEX IF NOT EXISTS "idx_utmTracking_companyId" ON "utmTracking"("companyId")`,
     `CREATE INDEX IF NOT EXISTS "idx_utmSessions_trackingId" ON "utmSessions"("trackingId")`,
@@ -260,6 +276,57 @@ export async function getCompanyById(id: number) {
   const db = await getDb();
   const [result] = await db.select().from(companies).where(eq(companies.id, id)).limit(1);
   return result;
+}
+
+// ─── Webhook events / health ────────────────────────────────────────────────
+/** Registra cada chamada de webhook recebida (sucesso ou erro) e atualiza o health check */
+export async function logWebhookEvent(e: {
+  companyId: number | null;
+  platform: string;
+  success: boolean;
+  saleId?: number | null;
+  trackingFound?: boolean;
+  message?: string | null;
+  payloadSummary?: string | null;
+}) {
+  const pool = await getRawPool();
+  if (!pool) return;
+  try {
+    await pool.query(
+      `INSERT INTO "webhookEvents"
+        ("companyId", "platform", "success", "saleId", "trackingFound", "message", "payloadSummary")
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        e.companyId ?? null,
+        e.platform,
+        e.success,
+        e.saleId ?? null,
+        e.trackingFound ?? false,
+        e.message ?? null,
+        e.payloadSummary ?? null,
+      ]
+    );
+    if (e.companyId && e.success) {
+      await pool.query(
+        `UPDATE "webhookConfigs" SET "lastHealthCheck" = NOW(), "updatedAt" = NOW()
+         WHERE "companyId" = $1 AND "platform" = $2`,
+        [e.companyId, e.platform]
+      );
+    }
+  } catch (err: any) {
+    console.error("[Webhook] logWebhookEvent falhou:", err?.message || err);
+  }
+}
+
+/** Eventos recentes de webhook de uma empresa (para status na UI) */
+export async function getRecentWebhookEvents(companyId: number, limit = 20) {
+  const pool = await getRawPool();
+  if (!pool) return [];
+  const r = await pool.query(
+    `SELECT * FROM "webhookEvents" WHERE "companyId" = $1 ORDER BY "createdAt" DESC LIMIT $2`,
+    [companyId, limit]
+  );
+  return r.rows;
 }
 
 export async function updateCompany(id: number, name: string, description?: string) {

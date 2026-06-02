@@ -4,6 +4,7 @@ import * as db from "./db";
 import { getRawPool } from "./db";
 import { TRPCError } from "@trpc/server";
 import crypto from "crypto";
+import { ENV } from "./_core/env";
 
 // ─── Database query helper ──────────────────────────────────────────────────
 async function executeQuery(sql: string, params: any[] = []) {
@@ -78,8 +79,8 @@ export const webhookRouter = router({
       // Gerar secret para validação HMAC
       const webhookSecret = crypto.randomBytes(32).toString("hex");
 
-      // Construir URL do webhook baseado na plataforma
-      const baseUrl = "https://sistemaderelatoriosmetaof.vercel.app";
+      // Construir URL do webhook baseado na plataforma (domínio vivo via env)
+      const baseUrl = ENV.appBaseUrl.replace(/\/+$/, "");
       const webhookUrl = `${baseUrl}/webhook/${input.platform}?companyId=${input.companyId}`;
 
       // Inserir no banco
@@ -274,5 +275,25 @@ export const webhookRouter = router({
         trackedSales: parseInt(stats.tracked_sales || "0"),
         totalRevenue: parseFloat(stats.total_revenue || "0"),
       };
+    }),
+
+  /**
+   * Eventos recentes de webhook recebidos por uma empresa.
+   * Alimenta o status "Recebendo ✓ / Última chamada há X min" na UI de Integrações.
+   */
+  recentEvents: protectedProcedure
+    .input(z.object({ companyId: z.number().int().positive(), limit: z.number().int().min(1).max(100).optional() }))
+    .query(async ({ input, ctx }) => {
+      const userId = ctx.user?.id;
+      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+
+      const company = await db.getCompanyById(input.companyId);
+      if (!company || company.userId !== userId) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      const events = await db.getRecentWebhookEvents(input.companyId, input.limit ?? 20);
+      const lastReceivedAt = events.length > 0 ? events[0].createdAt : null;
+      return { events, lastReceivedAt };
     }),
 });

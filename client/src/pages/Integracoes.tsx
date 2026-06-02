@@ -95,6 +95,52 @@ export default function Integracoes() {
   const { data: webhooks, refetch: refetchWebhooks, isLoading: webhooksLoading } =
     trpc.webhook.list.useQuery({ companyId: selectedCompanyId ?? 0 }, { enabled: !!selectedCompanyId });
 
+  // Eventos recebidos (status "Recebendo ✓")
+  const { data: webhookEvents, refetch: refetchEvents } =
+    trpc.webhook.recentEvents.useQuery(
+      { companyId: selectedCompanyId ?? 0, limit: 50 },
+      { enabled: !!selectedCompanyId, refetchInterval: 15000 }
+    );
+
+  const [testingPlatform, setTestingPlatform] = useState<string | null>(null);
+
+  // Último evento recebido por plataforma
+  const lastEventByPlatform = (platform: string) =>
+    webhookEvents?.events?.find((e: any) => e.platform === platform) ?? null;
+
+  const timeAgo = (d: string | Date | null) => {
+    if (!d) return null;
+    const diff = Date.now() - new Date(d).getTime();
+    const min = Math.floor(diff / 60000);
+    if (min < 1) return "agora há pouco";
+    if (min < 60) return `há ${min} min`;
+    const h = Math.floor(min / 60);
+    if (h < 24) return `há ${h} h`;
+    return `há ${Math.floor(h / 24)} d`;
+  };
+
+  // Testa a acessibilidade do endpoint de webhook (prova que a rota está montada e o domínio certo)
+  const handleTestWebhook = async (webhook: any) => {
+    setTestingPlatform(webhook.platform);
+    try {
+      const res = await fetch("/webhook/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ping: true, platform: webhook.platform, companyId: selectedCompanyId }),
+      });
+      if (res.ok) {
+        toast.success("✓ Conexão OK — o endpoint de webhook está acessível e respondendo.");
+      } else {
+        toast.error(`Endpoint respondeu com status ${res.status}. Verifique o deploy.`);
+      }
+    } catch (err: any) {
+      toast.error("Falha ao acessar o endpoint de webhook. " + (err?.message || ""));
+    } finally {
+      setTestingPlatform(null);
+      refetchEvents();
+    }
+  };
+
   const createWebhookMut = trpc.webhook.create.useMutation({
     onSuccess: () => {
       refetchWebhooks();
@@ -449,10 +495,38 @@ export default function Integracoes() {
                           </Badge>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1 break-all">{webhook.webhookUrl}</p>
+                        {/* Status de recebimento */}
+                        {(() => {
+                          const last = lastEventByPlatform(webhook.platform);
+                          if (last) {
+                            return (
+                              <p className="text-[11px] mt-1.5 flex items-center gap-1.5 text-emerald-400">
+                                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                Recebendo ✓ — última chamada {timeAgo(last.createdAt)}
+                                {last.trackingFound ? " (UTM casada)" : ""}
+                              </p>
+                            );
+                          }
+                          return (
+                            <p className="text-[11px] mt-1.5 flex items-center gap-1.5 text-white/40">
+                              <span className="inline-block h-1.5 w-1.5 rounded-full bg-white/30" />
+                              Nenhuma venda recebida ainda — use "Testar conexão" para validar
+                            </p>
+                          );
+                        })()}
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-lg text-xs h-7 gap-1 text-primary border-primary/30 hover:border-primary/50"
+                        onClick={() => handleTestWebhook(webhook)}
+                        disabled={testingPlatform === webhook.platform}
+                      >
+                        {testingPlatform === webhook.platform ? "Testando..." : "Testar conexão"}
+                      </Button>
                       <Button
                         size="sm"
                         variant={webhook.status === "active" ? "outline" : "default"}
