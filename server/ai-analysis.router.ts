@@ -43,7 +43,7 @@ export async function generateAiAnalysis(input: AiAnalysisInput): Promise<AiAnal
     apiKey,
     baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
   });
-  const MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+  const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
   const brl = (v: number) =>
     v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
