@@ -164,17 +164,17 @@ export default function ContasAnuncio() {
           <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Detalhes por conta</h2>
           <div className="space-y-3">
             {insightsData.accounts.map((acc: any) => (
-              <Card key={acc.companyId} className="glass-card border-white/10">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <Card key={acc.companyId} className="glass-card border-white/10 hover:border-primary/25 transition-colors duration-300">
+                <CardContent className="p-5">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
                       <Building2 className="h-4 w-4 text-primary" />
                     </div>
-                    <div>
-                      <p className="font-semibold text-sm">{acc.companyName}</p>
-                      <p className="text-[10px] text-muted-foreground font-mono">{acc.adAccountId}</p>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm truncate">{acc.companyName}</p>
+                      <p className="text-[10px] text-muted-foreground font-mono truncate">{acc.adAccountId}</p>
                     </div>
-                    <div className="ml-auto">
+                    <div className="ml-auto shrink-0">
                       <Badge className="text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
                         <Zap className="h-2.5 w-2.5 mr-1" /> Ativo
                       </Badge>
@@ -194,9 +194,9 @@ export default function ContasAnuncio() {
                         color: "text-emerald-400"
                       },
                     ].map(m => (
-                      <div key={m.label} className="p-2.5 rounded-xl bg-white/3 border border-white/5 space-y-1">
+                      <div key={m.label} className="p-3.5 rounded-xl bg-white/[0.03] border border-white/8 space-y-1.5">
                         <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{m.label}</p>
-                        <p className={`text-sm font-bold ${m.color}`}>{m.value}</p>
+                        <p className={`text-base font-bold tabular-nums ${m.color}`}>{m.value}</p>
                       </div>
                     ))}
                   </div>

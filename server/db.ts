@@ -471,6 +471,29 @@ export async function updateReportAiAnalysis(id: number, aiAnalysis: string) {
   await db.update(reports).set({ aiAnalysis }).where(eq(reports.id, id));
 }
 
+/**
+ * Soma das vendas rastreadas (trackedSales) de uma empresa em um período.
+ * Usado para mostrar receita/ROAS REAIS no relatório do cliente.
+ */
+export async function getTrackedSalesSummary(
+  companyId: number,
+  startDate: string,
+  endDate: string
+): Promise<{ revenue: number; count: number }> {
+  const pool = await getRawPool();
+  if (!pool) return { revenue: 0, count: 0 };
+  const result = await pool.query(
+    `SELECT COUNT(*) AS count, COALESCE(SUM("orderValue"), 0) AS revenue
+     FROM "trackedSales"
+     WHERE "companyId" = $1 AND "saleDate"::date BETWEEN $2 AND $3`,
+    [companyId, startDate, endDate]
+  );
+  return {
+    revenue: parseFloat(result.rows[0]?.revenue || "0"),
+    count: parseInt(result.rows[0]?.count || "0"),
+  };
+}
+
 // Metrics queries
 export async function getMetricsByReportId(reportId: number) {
   const db = await getDb();

@@ -147,7 +147,7 @@ export default function PublicReport() {
     );
   }
 
-  const { report, metrics, company } = data;
+  const { report, metrics, company, tracked } = data as any;
 
   const handleCopyUrl = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -178,12 +178,20 @@ export default function PublicReport() {
     costPerPurchase:        parseFloat(m?.costPerPurchase ?? "0") || 0,
   });
 
-  const purchases       = dm.purchases ?? 0;
-  const purchaseValue   = dm.purchaseValue ?? 0;
-  const costPerMessage  = dm.costPerMessage ?? 0;
-  const costPerPurchase = dm.costPerPurchase ?? 0;
-  const hasPurchases    = purchases > 0 || purchaseValue > 0;
   const totalSpent      = dm.totalSpent ?? 0;
+  const costPerMessage  = dm.costPerMessage ?? 0;
+
+  // Vendas REAIS rastreadas (webhook + manual) têm prioridade sobre as digitadas
+  const trackedRevenue  = Number(tracked?.revenue ?? 0) || 0;
+  const trackedCount    = Number(tracked?.count ?? 0) || 0;
+  const isTracked       = trackedRevenue > 0 || trackedCount > 0;
+
+  const purchases       = isTracked ? trackedCount : (dm.purchases ?? 0);
+  const purchaseValue   = isTracked ? trackedRevenue : (dm.purchaseValue ?? 0);
+  const costPerPurchase = isTracked
+    ? (totalSpent > 0 && trackedCount > 0 ? totalSpent / trackedCount : 0)
+    : (dm.costPerPurchase ?? 0);
+  const hasPurchases    = purchases > 0 || purchaseValue > 0;
   const roas            = totalSpent > 0 && purchaseValue > 0 ? (purchaseValue / totalSpent).toFixed(2) : null;
 
   return (
@@ -345,7 +353,14 @@ export default function PublicReport() {
             {hasPurchases && (
               <>
                 <Divider />
-                <SectionHeader icon={ShoppingBag} title="Conversões e Vendas" accent="emerald" />
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <SectionHeader icon={ShoppingBag} title="Conversões e Vendas" accent="emerald" />
+                </div>
+                {isTracked && (
+                  <div className="-mt-3 mb-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-400/10 border border-cyan-400/25 text-[11px] text-cyan-300 font-medium">
+                    <Link className="h-3 w-3" /> Vendas reais rastreadas (link/checkout/WhatsApp)
+                  </div>
+                )}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-10">
                   <HighlightCard
                     label="Total Faturado"
@@ -356,7 +371,7 @@ export default function PublicReport() {
                   <HighlightCard
                     label="Nº de Compras"
                     value={formatNumber(purchases)}
-                    sub="conversões rastreadas"
+                    sub={isTracked ? "vendas rastreadas" : "conversões"}
                     accent="emerald"
                   />
                   <MetricCard

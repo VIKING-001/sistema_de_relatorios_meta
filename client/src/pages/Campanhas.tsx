@@ -77,9 +77,9 @@ function StatusBadge({ status }: { status: string }) {
 // ─── Metric cell ──────────────────────────────────────────────────────────────
 function MetricCell({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
-    <div className="text-right w-[90px] shrink-0">
+    <div className="text-right w-[104px] shrink-0">
       <p className="text-[9px] text-white/30 uppercase tracking-wider">{label}</p>
-      <p className={`text-xs font-bold mt-0.5 tabular-nums ${color ?? "text-white/80"}`}>{value}</p>
+      <p className={`text-[13px] font-bold mt-0.5 tabular-nums ${color ?? "text-white/80"}`}>{value}</p>
     </div>
   );
 }
@@ -590,10 +590,10 @@ function CompanyDetailView({ company, onBack }: { company: any; onBack: () => vo
             <div className="w-5 shrink-0" />
             <div className="flex-1">Campanha / Conjunto / Anúncio</div>
             <div className="flex items-center gap-3 shrink-0 ml-3">
-              <div className="w-[90px] text-right">Gasto</div>
-              <div className="w-[90px] text-right">Receita</div>
-              <div className="w-[90px] text-right">ROI</div>
-              <div className="w-[90px] text-right">CPA</div>
+              <div className="w-[104px] text-right">Gasto</div>
+              <div className="w-[104px] text-right">Receita</div>
+              <div className="w-[104px] text-right">ROI/ROAS</div>
+              <div className="w-[104px] text-right">CPA</div>
             </div>
           </div>
         )}
