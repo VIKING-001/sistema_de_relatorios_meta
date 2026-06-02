@@ -11,6 +11,7 @@ import Relatorios from "./pages/Relatorios";
 import ContasAnuncio from "./pages/ContasAnuncio";
 import Campanhas from "./pages/Campanhas";
 import GeradorUrl from "./pages/GeradorUrl";
+import Vendas from "./pages/Vendas";
 import Integracoes from "./pages/Integracoes";
 import Configuracoes from "./pages/Configuracoes";
 import PublicReport from "./pages/PublicReport";
@@ -24,7 +25,7 @@ function PrivateRoutes() {
         <Route path="/relatorios"    component={Relatorios} />
         <Route path="/contas"        component={ContasAnuncio} />
         <Route path="/campanhas"     component={Campanhas} />
-        <Route path="/compras"       component={Campanhas} />
+        <Route path="/compras"       component={Vendas} />
         <Route path="/gerador-url"   component={GeradorUrl} />
         <Route path="/integracoes"   component={Integracoes} />
         <Route path="/configuracoes" component={Configuracoes} />

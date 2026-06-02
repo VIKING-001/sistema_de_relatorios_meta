@@ -248,6 +248,125 @@ export const utmRouter = router({
     }),
 
   /**
+   * Registrar venda MANUAL (ex.: fechada no WhatsApp/Direct).
+   * Opcionalmente vinculada a uma campanha (utm_campaign) para casar ROAS.
+   */
+  recordManualSale: protectedProcedure
+    .input(
+      z.object({
+        companyId: z.number().int().positive(),
+        orderValue: z.number().positive(),
+        orderId: z.string().optional(),
+        utmCampaign: z.string().optional(),
+        utmSource: z.string().optional(),
+        customerName: z.string().optional(),
+        customerPhone: z.string().optional(),
+        saleDate: z.string().optional(), // YYYY-MM-DD
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.user?.id;
+      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+
+      const company = await db.getCompanyById(input.companyId);
+      if (!company || company.userId !== userId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado à empresa" });
+      }
+
+      // Tenta casar com um link UTM existente (pela campanha) e conta a conversão
+      let trackingId: number | null = null;
+      if (input.utmCampaign) {
+        const tr = await executeQuery(
+          `SELECT id FROM "utmTracking"
+           WHERE "companyId" = $1 AND lower(trim("utmCampaign")) = lower(trim($2))
+           ORDER BY "createdAt" DESC LIMIT 1`,
+          [input.companyId, input.utmCampaign]
+        );
+        if (tr.rows.length > 0) {
+          trackingId = tr.rows[0].id;
+          await executeQuery(
+            `UPDATE "utmTracking" SET "conversionCount" = "conversionCount" + 1 WHERE "id" = $1`,
+            [trackingId]
+          );
+        }
+      }
+
+      const orderId = input.orderId || `manual-${nanoid(8)}`;
+      const saleDate = input.saleDate ? `${input.saleDate} 12:00:00` : null;
+
+      const result = await executeQuery(
+        `INSERT INTO "trackedSales" (
+          "companyId", "userId", "trackingId", "orderId", "orderValue",
+          "utmSource", "utmCampaign", "customerPhone", "source", "saleDate"
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'manual', COALESCE($9::timestamp, NOW()))
+        RETURNING *`,
+        [
+          input.companyId,
+          userId,
+          trackingId,
+          orderId,
+          input.orderValue,
+          input.utmSource || null,
+          input.utmCampaign || null,
+          input.customerPhone || null,
+          saleDate,
+        ]
+      );
+
+      return { success: true, sale: result.rows[0], trackingFound: !!trackingId };
+    }),
+
+  /**
+   * Listar vendas (trackedSales) de uma empresa, com resumo e filtro de período.
+   */
+  listSales: protectedProcedure
+    .input(
+      z.object({
+        companyId: z.number().int().positive(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const userId = ctx.user?.id;
+      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+
+      const company = await db.getCompanyById(input.companyId);
+      if (!company || company.userId !== userId) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      const params: any[] = [input.companyId];
+      let dateFilter = "";
+      if (input.startDate && input.endDate) {
+        dateFilter = `AND "saleDate"::date BETWEEN $2 AND $3`;
+        params.push(input.startDate, input.endDate);
+      }
+
+      const sales = await executeQuery(
+        `SELECT id, "orderId", "orderValue", "utmCampaign", "utmSource",
+                "customerPhone", "source", "saleDate", "trackingId"
+         FROM "trackedSales"
+         WHERE "companyId" = $1 ${dateFilter}
+         ORDER BY "saleDate" DESC
+         LIMIT 500`,
+        params
+      );
+
+      const summary = await executeQuery(
+        `SELECT COUNT(*) AS count, COALESCE(SUM("orderValue"), 0) AS revenue
+         FROM "trackedSales" WHERE "companyId" = $1 ${dateFilter}`,
+        params
+      );
+
+      return {
+        sales: sales.rows,
+        totalCount: parseInt(summary.rows[0]?.count || "0"),
+        totalRevenue: parseFloat(summary.rows[0]?.revenue || "0"),
+      };
+    }),
+
+  /**
    * Obter estatísticas de rastreamento (ROAS, conversões, etc)
    */
   getStats: protectedProcedure
