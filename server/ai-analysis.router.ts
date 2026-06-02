@@ -34,13 +34,16 @@ export interface AiAnalysisResult {
  * Chamado no servidor durante a criação do relatório.
  */
 export async function generateAiAnalysis(input: AiAnalysisInput): Promise<AiAnalysisResult> {
-  const apiKey = process.env.ZAI_API_KEY;
-  if (!apiKey) throw new Error("ZAI_API_KEY não configurada");
+  // Google Gemini (gratuito) via endpoint compatível com OpenAI.
+  // Aceita GEMINI_API_KEY (preferencial) ou GOOGLE_API_KEY.
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  if (!apiKey) throw new Error("GEMINI_API_KEY não configurada");
 
   const client = new OpenAI({
     apiKey,
-    baseURL: "https://api.z.ai/v1",
+    baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
   });
+  const MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 
   const brl = (v: number) =>
     v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -105,10 +108,11 @@ Responda SOMENTE com JSON válido (sem markdown, sem texto extra):
 REGRAS: máximo 4 itens por lista | cada item = 1 frase com o número real | se ROAS >= 3x destaque como ponto principal | listas podem ser vazias []`;
 
   const response = await client.chat.completions.create({
-    model: "glm-4-flash",
+    model: MODEL,
     messages: [{ role: "user", content: prompt }],
     max_tokens: 1024,
     temperature: 0.7,
+    response_format: { type: "json_object" },
   });
 
   const text = response.choices[0]?.message?.content?.trim() ?? "";
