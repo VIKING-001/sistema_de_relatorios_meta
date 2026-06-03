@@ -181,6 +181,20 @@ async function ensureTables(pool: InstanceType<typeof Pool>) {
     `CREATE INDEX IF NOT EXISTS "idx_trackedSales_trackingId" ON "trackedSales"("trackingId")`,
     `CREATE INDEX IF NOT EXISTS "idx_trackedSales_saleDate" ON "trackedSales"("saleDate")`,
     `CREATE INDEX IF NOT EXISTS "idx_webhookConfigs_companyId" ON "webhookConfigs"("companyId")`,
+    // Credenciais de API para integração com plataformas externas
+    `CREATE TABLE IF NOT EXISTS "apiCredentials" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "companyId" integer NOT NULL,
+      "userId" integer NOT NULL,
+      "name" varchar(255) NOT NULL,
+      "tokenHash" varchar(255) NOT NULL,
+      "platform" varchar(64) NOT NULL,
+      "status" varchar(64) DEFAULT 'active',
+      "lastUsedAt" timestamp,
+      "createdAt" timestamp DEFAULT now() NOT NULL,
+      "updatedAt" timestamp DEFAULT now() NOT NULL
+    )`,
+    `CREATE INDEX IF NOT EXISTS "idx_apiCredentials_companyId" ON "apiCredentials"("companyId")`,
   ];
   try {
     for (const sql of statements) {

@@ -18297,17 +18297,17 @@ var require_router = __commonJS({
     var toString = Object.prototype.toString;
     var proto = module2.exports = function(options) {
       var opts = options || {};
-      function router3(req, res, next) {
-        router3.handle(req, res, next);
+      function router4(req, res, next) {
+        router4.handle(req, res, next);
       }
-      setPrototypeOf(router3, proto);
-      router3.params = {};
-      router3._params = [];
-      router3.caseSensitive = opts.caseSensitive;
-      router3.mergeParams = opts.mergeParams;
-      router3.strict = opts.strict;
-      router3.stack = [];
-      return router3;
+      setPrototypeOf(router4, proto);
+      router4.params = {};
+      router4._params = [];
+      router4.caseSensitive = opts.caseSensitive;
+      router4.mergeParams = opts.mergeParams;
+      router4.strict = opts.strict;
+      router4.stack = [];
+      return router4;
     };
     proto.param = function param(name, fn) {
       if (typeof name === "function") {
@@ -20913,7 +20913,7 @@ var require_application = __commonJS({
   "node_modules/.pnpm/express@4.21.2/node_modules/express/lib/application.js"(exports2, module2) {
     "use strict";
     var finalhandler = require_finalhandler();
-    var Router2 = require_router();
+    var Router3 = require_router();
     var methods = require_methods();
     var middleware = require_init();
     var query = require_query();
@@ -20978,7 +20978,7 @@ var require_application = __commonJS({
     };
     app2.lazyrouter = function lazyrouter() {
       if (!this._router) {
-        this._router = new Router2({
+        this._router = new Router3({
           caseSensitive: this.enabled("case sensitive routing"),
           strict: this.enabled("strict routing")
         });
@@ -20987,17 +20987,17 @@ var require_application = __commonJS({
       }
     };
     app2.handle = function handle(req, res, callback) {
-      var router3 = this._router;
+      var router4 = this._router;
       var done = callback || finalhandler(req, res, {
         env: this.get("env"),
         onerror: logerror.bind(this)
       });
-      if (!router3) {
+      if (!router4) {
         debug("no routes defined on app");
         done();
         return;
       }
-      router3.handle(req, res, done);
+      router4.handle(req, res, done);
     };
     app2.use = function use(fn) {
       var offset = 0;
@@ -21017,15 +21017,15 @@ var require_application = __commonJS({
         throw new TypeError("app.use() requires a middleware function");
       }
       this.lazyrouter();
-      var router3 = this._router;
+      var router4 = this._router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router3.use(path2, fn2);
+          return router4.use(path2, fn2);
         }
         debug(".use app under %s", path2);
         fn2.mountpath = path2;
         fn2.parent = this;
-        router3.use(path2, function mounted_app(req, res, next) {
+        router4.use(path2, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             setPrototypeOf(req, orig.request);
@@ -22841,7 +22841,7 @@ var require_express = __commonJS({
     var mixin = require_merge_descriptors();
     var proto = require_application();
     var Route = require_route();
-    var Router2 = require_router();
+    var Router3 = require_router();
     var req = require_request();
     var res = require_response();
     exports2 = module2.exports = createApplication;
@@ -22864,7 +22864,7 @@ var require_express = __commonJS({
     exports2.request = req;
     exports2.response = res;
     exports2.Route = Route;
-    exports2.Router = Router2;
+    exports2.Router = Router3;
     exports2.json = bodyParser.json;
     exports2.query = require_query();
     exports2.raw = bodyParser.raw;
@@ -29523,7 +29523,7 @@ module.exports = __toCommonJS(vercelEntry_exports);
 })();
 
 // server/vercelEntry.ts
-var import_express2 = __toESM(require_express2(), 1);
+var import_express3 = __toESM(require_express2(), 1);
 
 // node_modules/.pnpm/@trpc+server@11.6.0_typescript@5.9.3/node_modules/@trpc/server/dist/utils-CLZnJdb_.mjs
 var TRPC_ERROR_CODES_BY_KEY = {
@@ -29948,19 +29948,19 @@ function createRouterFactory(config2) {
       procedures,
       lazy: lazy$1
     }, emptyRouter), {}, { record: record2 });
-    const router3 = (0, import_objectSpread22.default)((0, import_objectSpread22.default)({}, record2), {}, {
+    const router4 = (0, import_objectSpread22.default)((0, import_objectSpread22.default)({}, record2), {}, {
       _def,
       createCaller: createCallerFactory()({ _def })
     });
-    return router3;
+    return router4;
   }
   return createRouterInner;
 }
 function isProcedure(procedureOrRouter) {
   return typeof procedureOrRouter === "function";
 }
-async function getProcedureAtPath(router3, path2) {
-  const { _def } = router3;
+async function getProcedureAtPath(router4, path2) {
+  const { _def } = router4;
   let procedure = _def.procedures[path2];
   while (!procedure) {
     const key = Object.keys(_def.lazy).find((key$1) => path2.startsWith(key$1));
@@ -29972,14 +29972,14 @@ async function getProcedureAtPath(router3, path2) {
   return procedure;
 }
 function createCallerFactory() {
-  return function createCallerInner(router3) {
-    const { _def } = router3;
+  return function createCallerInner(router4) {
+    const { _def } = router4;
     return function createCaller(ctxOrCallback, opts) {
       return createRecursiveProxy(async (innerOpts) => {
         const { path: path2, args } = innerOpts;
         const fullPath = path2.join(".");
         if (path2.length === 1 && path2[0] === "_def") return _def;
-        const procedure = await getProcedureAtPath(router3, fullPath);
+        const procedure = await getProcedureAtPath(router4, fullPath);
         let ctx = void 0;
         try {
           if (!procedure) throw new TRPCError({
@@ -30026,7 +30026,7 @@ function mergeRouters(...routerList) {
     }
     return prev;
   }, defaultTransformer);
-  const router3 = createRouterFactory({
+  const router4 = createRouterFactory({
     errorFormatter,
     transformer,
     isDev: routerList.every((r) => r._def._config.isDev),
@@ -30034,7 +30034,7 @@ function mergeRouters(...routerList) {
     isServer: routerList.every((r) => r._def._config.isServer),
     $types: (_routerList$ = routerList[0]) === null || _routerList$ === void 0 ? void 0 : _routerList$._def._config.$types
   })(record2);
-  return router3;
+  return router4;
 }
 var trackedSymbol = Symbol();
 function isTrackedEnvelope(value) {
@@ -31396,7 +31396,7 @@ function initResponse(initOpts) {
   return { status };
 }
 function caughtErrorToData(cause, errorOpts) {
-  const { router: router3, req, onError } = errorOpts.opts;
+  const { router: router4, req, onError } = errorOpts.opts;
   const error46 = getTRPCErrorFromUnknown(cause);
   onError === null || onError === void 0 || onError({
     error: error46,
@@ -31407,14 +31407,14 @@ function caughtErrorToData(cause, errorOpts) {
     req
   });
   const untransformedJSON = { error: getErrorShape({
-    config: router3._def._config,
+    config: router4._def._config,
     error: error46,
     type: errorOpts.type,
     path: errorOpts.path,
     input: errorOpts.input,
     ctx: errorOpts.ctx
   }) };
-  const transformedJSON = transformTRPCResponse(router3._def._config, untransformedJSON);
+  const transformedJSON = transformTRPCResponse(router4._def._config, untransformedJSON);
   const body = JSON.stringify(transformedJSON);
   return {
     error: error46,
@@ -31429,9 +31429,9 @@ function isDataStream(v) {
 }
 async function resolveResponse(opts) {
   var _ref, _opts$allowBatching, _opts$batching, _opts$allowMethodOver, _config$sse$enabled, _config$sse;
-  const { router: router3, req } = opts;
+  const { router: router4, req } = opts;
   const headers = new Headers([["vary", "trpc-accept"]]);
-  const config2 = router3._def._config;
+  const config2 = router4._def._config;
   const url2 = new URL(req.url);
   if (req.method === "HEAD") return new Response(null, { status: 204 });
   const allowBatching = (_ref = (_opts$allowBatching = opts.allowBatching) !== null && _opts$allowBatching !== void 0 ? _opts$allowBatching : (_opts$batching = opts.batching) === null || _opts$batching === void 0 ? void 0 : _opts$batching.enabled) !== null && _ref !== void 0 ? _ref : true;
@@ -31441,7 +31441,7 @@ async function resolveResponse(opts) {
       return [void 0, await getRequestInfo({
         req,
         path: decodeURIComponent(opts.path),
-        router: router3,
+        router: router4,
         searchParams: url2.searchParams,
         headers: opts.req.headers,
         url: url2
@@ -41183,7 +41183,21 @@ async function ensureTables(pool2) {
     `CREATE INDEX IF NOT EXISTS "idx_trackedSales_companyId" ON "trackedSales"("companyId")`,
     `CREATE INDEX IF NOT EXISTS "idx_trackedSales_trackingId" ON "trackedSales"("trackingId")`,
     `CREATE INDEX IF NOT EXISTS "idx_trackedSales_saleDate" ON "trackedSales"("saleDate")`,
-    `CREATE INDEX IF NOT EXISTS "idx_webhookConfigs_companyId" ON "webhookConfigs"("companyId")`
+    `CREATE INDEX IF NOT EXISTS "idx_webhookConfigs_companyId" ON "webhookConfigs"("companyId")`,
+    // Credenciais de API para integração com plataformas externas
+    `CREATE TABLE IF NOT EXISTS "apiCredentials" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "companyId" integer NOT NULL,
+      "userId" integer NOT NULL,
+      "name" varchar(255) NOT NULL,
+      "tokenHash" varchar(255) NOT NULL,
+      "platform" varchar(64) NOT NULL,
+      "status" varchar(64) DEFAULT 'active',
+      "lastUsedAt" timestamp,
+      "createdAt" timestamp DEFAULT now() NOT NULL,
+      "updatedAt" timestamp DEFAULT now() NOT NULL
+    )`,
+    `CREATE INDEX IF NOT EXISTS "idx_apiCredentials_companyId" ON "apiCredentials"("companyId")`
   ];
   try {
     for (const sql2 of statements) {
@@ -41380,6 +41394,20 @@ async function deleteReport(id) {
 async function updateReportAiAnalysis(id, aiAnalysis) {
   const db = await getDb();
   await db.update(reports).set({ aiAnalysis }).where(eq(reports.id, id));
+}
+async function getTrackedSalesSummary(companyId, startDate, endDate) {
+  const pool2 = await getRawPool();
+  if (!pool2) return { revenue: 0, count: 0 };
+  const result = await pool2.query(
+    `SELECT COUNT(*) AS count, COALESCE(SUM("orderValue"), 0) AS revenue
+     FROM "trackedSales"
+     WHERE "companyId" = $1 AND "saleDate"::date BETWEEN $2 AND $3`,
+    [companyId, startDate, endDate]
+  );
+  return {
+    revenue: parseFloat(result.rows[0]?.revenue || "0"),
+    count: parseInt(result.rows[0]?.count || "0")
+  };
 }
 async function getMetricsByReportId(reportId) {
   const db = await getDb();
@@ -54735,6 +54763,109 @@ var utmRouter = router({
     };
   }),
   /**
+   * Registrar venda MANUAL (ex.: fechada no WhatsApp/Direct).
+   * Opcionalmente vinculada a uma campanha (utm_campaign) para casar ROAS.
+   */
+  recordManualSale: protectedProcedure.input(
+    external_exports.object({
+      companyId: external_exports.number().int().positive(),
+      orderValue: external_exports.number().positive(),
+      orderId: external_exports.string().optional(),
+      utmCampaign: external_exports.string().optional(),
+      utmSource: external_exports.string().optional(),
+      customerName: external_exports.string().optional(),
+      customerPhone: external_exports.string().optional(),
+      saleDate: external_exports.string().optional()
+      // YYYY-MM-DD
+    })
+  ).mutation(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado \xE0 empresa" });
+    }
+    let trackingId = null;
+    if (input.utmCampaign) {
+      const tr = await executeQuery(
+        `SELECT id FROM "utmTracking"
+           WHERE "companyId" = $1 AND lower(trim("utmCampaign")) = lower(trim($2))
+           ORDER BY "createdAt" DESC LIMIT 1`,
+        [input.companyId, input.utmCampaign]
+      );
+      if (tr.rows.length > 0) {
+        trackingId = tr.rows[0].id;
+        await executeQuery(
+          `UPDATE "utmTracking" SET "conversionCount" = "conversionCount" + 1 WHERE "id" = $1`,
+          [trackingId]
+        );
+      }
+    }
+    const orderId = input.orderId || `manual-${nanoid(8)}`;
+    const saleDate = input.saleDate ? `${input.saleDate} 12:00:00` : null;
+    const result = await executeQuery(
+      `INSERT INTO "trackedSales" (
+          "companyId", "userId", "trackingId", "orderId", "orderValue",
+          "utmSource", "utmCampaign", "customerPhone", "source", "saleDate"
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'manual', COALESCE($9::timestamp, NOW()))
+        RETURNING *`,
+      [
+        input.companyId,
+        userId,
+        trackingId,
+        orderId,
+        input.orderValue,
+        input.utmSource || null,
+        input.utmCampaign || null,
+        input.customerPhone || null,
+        saleDate
+      ]
+    );
+    return { success: true, sale: result.rows[0], trackingFound: !!trackingId };
+  }),
+  /**
+   * Listar vendas (trackedSales) de uma empresa, com resumo e filtro de período.
+   */
+  listSales: protectedProcedure.input(
+    external_exports.object({
+      companyId: external_exports.number().int().positive(),
+      startDate: external_exports.string().optional(),
+      endDate: external_exports.string().optional()
+    })
+  ).query(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+    const params = [input.companyId];
+    let dateFilter = "";
+    if (input.startDate && input.endDate) {
+      dateFilter = `AND "saleDate"::date BETWEEN $2 AND $3`;
+      params.push(input.startDate, input.endDate);
+    }
+    const sales = await executeQuery(
+      `SELECT id, "orderId", "orderValue", "utmCampaign", "utmSource",
+                "customerPhone", "source", "saleDate", "trackingId"
+         FROM "trackedSales"
+         WHERE "companyId" = $1 ${dateFilter}
+         ORDER BY "saleDate" DESC
+         LIMIT 500`,
+      params
+    );
+    const summary = await executeQuery(
+      `SELECT COUNT(*) AS count, COALESCE(SUM("orderValue"), 0) AS revenue
+         FROM "trackedSales" WHERE "companyId" = $1 ${dateFilter}`,
+      params
+    );
+    return {
+      sales: sales.rows,
+      totalCount: parseInt(summary.rows[0]?.count || "0"),
+      totalRevenue: parseFloat(summary.rows[0]?.revenue || "0")
+    };
+  }),
+  /**
    * Obter estatísticas de rastreamento (ROAS, conversões, etc)
    */
   getStats: protectedProcedure.input(
@@ -55456,6 +55587,69 @@ var campaignsRouter = router({
       ctr: parseFloat(row.ctr || "0"),
       cpm: parseFloat(row.cpm || "0")
     }));
+  }),
+  /**
+   * Receita/cliques rastreados por NOME de campanha (link UTM → venda real).
+   * Junta os links de `utmTracking` (cliques) com as vendas de `trackedSales`
+   * agrupando por `utmCampaign`. A chave de casamento é o nome da campanha
+   * (lowercase/trim) — bate com o nome da campanha do Meta na tela.
+   */
+  trackedByCampaign: protectedProcedure.input(
+    external_exports.object({
+      companyId: external_exports.number().int().positive(),
+      startDate: external_exports.string().optional(),
+      endDate: external_exports.string().optional()
+    })
+  ).query(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+    const linksResult = await executeQuery4(
+      `SELECT lower(trim("utmCampaign")) AS key,
+                MAX("utmCampaign") AS name,
+                COUNT(*) AS link_count,
+                COALESCE(SUM("clickCount"), 0) AS clicks
+         FROM "utmTracking"
+         WHERE "companyId" = $1 AND "utmCampaign" IS NOT NULL AND trim("utmCampaign") <> ''
+         GROUP BY lower(trim("utmCampaign"))`,
+      [input.companyId]
+    );
+    const params = [input.companyId];
+    let dateFilter = "";
+    if (input.startDate && input.endDate) {
+      dateFilter = `AND "saleDate"::date BETWEEN $2 AND $3`;
+      params.push(input.startDate, input.endDate);
+    }
+    const salesResult = await executeQuery4(
+      `SELECT lower(trim("utmCampaign")) AS key,
+                COUNT(*) AS sales_count,
+                COALESCE(SUM("orderValue"), 0) AS revenue
+         FROM "trackedSales"
+         WHERE "companyId" = $1 AND "utmCampaign" IS NOT NULL AND trim("utmCampaign") <> '' ${dateFilter}
+         GROUP BY lower(trim("utmCampaign"))`,
+      params
+    );
+    const map2 = {};
+    for (const r of linksResult.rows) {
+      map2[r.key] = {
+        key: r.key,
+        name: r.name,
+        linkCount: parseInt(r.link_count || "0"),
+        clicks: parseInt(r.clicks || "0"),
+        salesCount: 0,
+        revenue: 0
+      };
+    }
+    for (const r of salesResult.rows) {
+      const existing = map2[r.key] || { key: r.key, name: r.key, linkCount: 0, clicks: 0 };
+      existing.salesCount = parseInt(r.sales_count || "0");
+      existing.revenue = parseFloat(r.revenue || "0");
+      map2[r.key] = existing;
+    }
+    return Object.values(map2);
   }),
   /**
    * Detalhes de uma campanha com seus adsets e anúncios
@@ -65085,13 +65279,25 @@ OpenAI.Skills = Skills;
 OpenAI.Videos = Videos;
 
 // server/ai-analysis.router.ts
+var _keyIndex = 0;
+function getGeminiKeys() {
+  const keys = [
+    process.env.GEMINI_API_KEY,
+    process.env.GEMINI_API_KEY_2,
+    process.env.GEMINI_API_KEY_3,
+    process.env.GOOGLE_API_KEY
+  ].filter(Boolean);
+  if (keys.length === 0) throw new Error("Nenhuma GEMINI_API_KEY configurada");
+  return keys;
+}
+function pickKey(keys) {
+  _keyIndex = (_keyIndex + 1) % keys.length;
+  return keys[_keyIndex];
+}
 async function generateAiAnalysis(input) {
-  const apiKey = process.env.ZAI_API_KEY;
-  if (!apiKey) throw new Error("ZAI_API_KEY n\xE3o configurada");
-  const client = new OpenAI({
-    apiKey,
-    baseURL: "https://api.z.ai/v1"
-  });
+  const keys = getGeminiKeys();
+  const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  const BASE = "https://generativelanguage.googleapis.com/v1beta/openai/";
   const brl = (v) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   const num = (v) => v.toLocaleString("pt-BR");
   const pct = (v) => `${v.toFixed(2)}%`;
@@ -65150,13 +65356,37 @@ Responda SOMENTE com JSON v\xE1lido (sem markdown, sem texto extra):
 }
 
 REGRAS: m\xE1ximo 4 itens por lista | cada item = 1 frase com o n\xFAmero real | se ROAS >= 3x destaque como ponto principal | listas podem ser vazias []`;
-  const response = await client.chat.completions.create({
-    model: "glm-4-flash",
-    messages: [{ role: "user", content: prompt }],
-    max_tokens: 1024,
-    temperature: 0.7
-  });
-  const text2 = response.choices[0]?.message?.content?.trim() ?? "";
+  let lastError;
+  let text2 = "";
+  for (let attempt = 0; attempt < keys.length; attempt++) {
+    const apiKey = pickKey(keys);
+    const client = new OpenAI({ apiKey, baseURL: BASE });
+    try {
+      const response = await client.chat.completions.create({
+        model: MODEL,
+        messages: [{ role: "user", content: prompt }],
+        // gemini-2.5-flash é "thinking" — desligar raciocínio evita JSON cortado
+        max_tokens: 4096,
+        temperature: 0.7,
+        response_format: { type: "json_object" },
+        reasoning_effort: "none"
+      });
+      text2 = response.choices[0]?.message?.content?.trim() ?? "";
+      console.log(`[AI] chave ${attempt + 1}/${keys.length} (idx ${_keyIndex}) OK`);
+      break;
+    } catch (err) {
+      lastError = err;
+      const status = err?.status ?? err?.response?.status;
+      if (status === 429) {
+        console.warn(`[AI] chave idx ${_keyIndex} atingiu limite (429), tentando pr\xF3xima...`);
+        continue;
+      }
+      throw err;
+    }
+  }
+  if (!text2) {
+    throw lastError ?? new Error("Todas as chaves Gemini atingiram o limite de taxa");
+  }
   const jsonMatch = text2.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error("Resposta inv\xE1lida da IA");
   const parsed = JSON.parse(jsonMatch[0]);
@@ -65564,6 +65794,7 @@ var appRouter = router({
             costPerProfileVisit: input.metrics.costPerProfileVisit.toString()
           });
         }
+        await updateReportAiAnalysis(input.id, null);
       }
       return updated;
     }),
@@ -65599,6 +65830,11 @@ var appRouter = router({
       }
       const metrics = await getMetricsByReportId(report.id);
       const company = await getCompanyById(report.companyId);
+      const tracked2 = await getTrackedSalesSummary(
+        report.companyId,
+        String(report.startDate),
+        String(report.endDate)
+      );
       if (!report.aiAnalysis && metrics) {
         try {
           const dm = deriveMetrics({
@@ -65643,12 +65879,12 @@ var appRouter = router({
           });
           const aiJson = JSON.stringify(aiResult);
           await updateReportAiAnalysis(report.id, aiJson);
-          return { report: { ...report, aiAnalysis: aiJson }, metrics, company };
+          return { report: { ...report, aiAnalysis: aiJson }, metrics, company, tracked: tracked2 };
         } catch (err) {
           console.error("[AI] getBySlug lazy generation falhou:", err);
         }
       }
-      return { report, metrics, company };
+      return { report, metrics, company, tracked: tracked2 };
     })
   }),
   // ── Meta Marketing API ────────────────────────────────────────────────────
@@ -66149,17 +66385,62 @@ router2.post("/webhook/test", (req, res) => {
 });
 var webhookRoutes_default = router2;
 
+// server/shortlinkRoutes.ts
+var import_express2 = __toESM(require_express2(), 1);
+var router3 = (0, import_express2.Router)();
+router3.get("/r/:code", async (req, res) => {
+  const code = req.params.code;
+  try {
+    const pool2 = await getRawPool();
+    if (!pool2) return res.status(500).send("Database connection failed");
+    const result = await pool2.query(
+      `SELECT * FROM "utmTracking" WHERE "shortCode" = $1 OR "id"::text = $1 LIMIT 1`,
+      [code]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).send("Link de rastreamento n\xE3o encontrado.");
+    }
+    const tracking = result.rows[0];
+    try {
+      await pool2.query(
+        `INSERT INTO "utmSessions" ("trackingId", "sessionId", "ipAddress", "userAgent", "referrer")
+         VALUES ($1, $2, $3, $4, $5)`,
+        [
+          tracking.id,
+          nanoid(),
+          req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.ip || null,
+          req.headers["user-agent"] || null,
+          req.headers["referer"] || null
+        ]
+      );
+      await pool2.query(
+        `UPDATE "utmTracking" SET "clickCount" = "clickCount" + 1 WHERE "id" = $1`,
+        [tracking.id]
+      );
+    } catch (e) {
+      console.error("[Shortlink] falha ao registrar clique:", e?.message || e);
+    }
+    const dest = tracking.trackingUrl || tracking.baseUrl;
+    return res.redirect(302, dest);
+  } catch (err) {
+    console.error("[Shortlink] erro:", err?.message || err);
+    return res.status(500).send("Erro ao processar link.");
+  }
+});
+var shortlinkRoutes_default = router3;
+
 // server/vercelEntry.ts
-var app = (0, import_express2.default)();
-app.use(import_express2.default.json({
+var app = (0, import_express3.default)();
+app.use(import_express3.default.json({
   limit: "50mb",
   verify: (req, _res, buf) => {
     req.rawBody = buf?.toString("utf8");
   }
 }));
-app.use(import_express2.default.urlencoded({ limit: "50mb", extended: true }));
+app.use(import_express3.default.urlencoded({ limit: "50mb", extended: true }));
 registerOAuthRoutes(app);
 app.use(webhookRoutes_default);
+app.use(shortlinkRoutes_default);
 app.use(
   "/api/trpc",
   createExpressMiddleware({
