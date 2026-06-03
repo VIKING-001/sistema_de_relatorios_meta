@@ -207,3 +207,90 @@ body {
     }
   }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   IMPRESSÃO / EXPORTAÇÃO PDF — relatório do cliente em A4 claro
+   Converte o tema dark/glass em um documento branco e legível.
+   Acionado por window.print() no botão "Baixar PDF".
+   ════════════════════════════════════════════════════════════════ */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  /* Esconde elementos não imprimíveis (botões, header sticky, glows, footer) */
+  .no-print { display: none !important; }
+
+  /* Garante fundo branco na página inteira */
+  html, body { background: #ffffff !important; }
+
+  /* Container do relatório: fundo branco, sem sombras/blur */
+  .print-report {
+    background: #ffffff !important;
+    min-height: 0 !important;
+  }
+  .print-report *,
+  .print-report *::before,
+  .print-report *::after {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    animation: none !important;
+  }
+
+  /* Texto branco/claro vira escuro e legível */
+  .print-report [class*="text-white"] { color: #1f2937 !important; }
+
+  /* Cores de destaque (números/títulos) — versões escuras p/ fundo branco */
+  .print-report [class*="text-blue-3"]    { color: #1d4ed8 !important; }
+  .print-report [class*="text-violet-3"]  { color: #6d28d9 !important; }
+  .print-report [class*="text-amber-3"],
+  .print-report [class*="text-yellow-4"]  { color: #b45309 !important; }
+  .print-report [class*="text-pink-3"]    { color: #be185d !important; }
+  .print-report [class*="text-emerald-3"] { color: #047857 !important; }
+  .print-report [class*="text-cyan-3"]    { color: #0e7490 !important; }
+
+  /* Fundos translúcidos e gradientes escuros viram branco/clarinho */
+  .print-report [class*="bg-white/"],
+  .print-report [class*="bg-black/"],
+  .print-report [class*="bg-gradient"],
+  .print-report [class*="from-"] {
+    background: #ffffff !important;
+    background-image: none !important;
+  }
+
+  /* Cards translúcidos ganham contorno cinza-claro p/ continuar com "caixas" */
+  .print-report [class*="rounded-2xl"],
+  .print-report [class*="rounded-xl"] {
+    border: 1px solid #e5e7eb !important;
+    background: #ffffff !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Bordas escuras viram cinza-claro */
+  .print-report [class*="border-white"] { border-color: #e5e7eb !important; }
+
+  /* Mantém as barrinhas de acento coloridas (não deixar virar branco) */
+  .print-report [class*="bg-blue-4"]    { background: #3b82f6 !important; }
+  .print-report [class*="bg-violet-4"]  { background: #8b5cf6 !important; }
+  .print-report [class*="bg-amber-4"],
+  .print-report [class*="bg-yellow-4"]  { background: #f59e0b !important; }
+  .print-report [class*="bg-pink-4"]    { background: #ec4899 !important; }
+  .print-report [class*="bg-emerald-4"] { background: #10b981 !important; }
+  .print-report [class*="bg-cyan-4"]    { background: #06b6d4 !important; }
+
+  /* Evita cortar título/seções no meio da página */
+  .print-report h1, .print-report h2 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  /* Garante que as cores acima sejam realmente impressas */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

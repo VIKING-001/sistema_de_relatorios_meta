@@ -154,6 +154,16 @@ export default function PublicReport() {
     toast.success("Link copiado!");
   };
 
+  // Abre o diálogo de impressão do navegador → "Salvar como PDF".
+  // O CSS @media print (index.css) converte o tema dark em A4 branco e limpo.
+  const handleDownloadPdf = () => {
+    const prevTitle = document.title;
+    // Define o nome sugerido do arquivo PDF
+    document.title = `Relatorio - ${company?.name ?? "Meta Ads"} - ${displayDate(report.startDate)} a ${displayDate(report.endDate)}`;
+    window.print();
+    setTimeout(() => { document.title = prevTitle; }, 500);
+  };
+
   const m = metrics as any;
 
   // Constrói objeto numérico e preenche os custos derivados automaticamente
@@ -195,10 +205,10 @@ export default function PublicReport() {
   const roas            = totalSpent > 0 && purchaseValue > 0 ? (purchaseValue / totalSpent).toFixed(2) : null;
 
   return (
-    <div className="min-h-screen relative" style={{ background: "linear-gradient(135deg, #030509 0%, #0B0F19 50%, #030509 100%)" }}>
+    <div className="print-report min-h-screen relative" style={{ background: "linear-gradient(135deg, #030509 0%, #0B0F19 50%, #030509 100%)" }}>
 
       {/* Glows de fundo */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+      <div className="no-print fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-10%] left-[10%] w-[500px] h-[500px] rounded-full opacity-[0.04]"
           style={{ background: "radial-gradient(circle, #FFB81A, transparent)" }} />
         <div className="absolute bottom-[10%] right-[5%] w-[400px] h-[400px] rounded-full opacity-[0.04]"
@@ -206,7 +216,7 @@ export default function PublicReport() {
       </div>
 
       {/* ── Header sticky ── */}
-      <header className="sticky top-0 z-50 border-b border-white/6 bg-black/50 backdrop-blur-xl">
+      <header className="no-print sticky top-0 z-50 border-b border-white/6 bg-black/50 backdrop-blur-xl">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-4">
           <div className="min-w-0">
             <h1 className="text-base sm:text-lg font-black text-white truncate leading-tight">
@@ -225,6 +235,14 @@ export default function PublicReport() {
             >
               <Copy className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Copiar Link</span>
+            </Button>
+            <Button
+              onClick={handleDownloadPdf}
+              size="sm"
+              className="bg-yellow-400 hover:bg-yellow-300 text-black font-semibold h-8 text-xs gap-1.5"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Baixar PDF</span>
             </Button>
           </div>
         </div>
@@ -441,7 +459,7 @@ export default function PublicReport() {
       </main>
 
       {/* ── Footer ── */}
-      <footer className="border-t border-white/6 bg-black/30 backdrop-blur-md mt-16 py-8">
+      <footer className="no-print border-t border-white/6 bg-black/30 backdrop-blur-md mt-16 py-8">
         <div className="max-w-5xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-white/25 text-xs">
           <p>Relatório gerado em {new Date().toLocaleDateString("pt-BR")}</p>
           <p>{company?.name} · {report.title}</p>
