@@ -40755,7 +40755,8 @@ var trackedSales = pgTable("trackedSales", {
   currency: varchar("currency", { length: 3 }).default("BRL"),
   /** Marca de tempo da venda */
   saleDate: timestamp("saleDate").notNull(),
-  /** Dados do cliente (anonimizados) */
+  /** Dados do cliente */
+  customerName: varchar("customerName", { length: 255 }),
   customerEmail: varchar("customerEmail", { length: 320 }),
   customerPhone: varchar("customerPhone", { length: 20 }),
   /** Qual plataforma capturou (webhook Shopify, webhook custom, Meta API, etc) */
@@ -41139,6 +41140,7 @@ async function ensureTables(pool2) {
       "orderValue" numeric(12, 2) NOT NULL,
       "currency" varchar(3) DEFAULT 'BRL',
       "saleDate" timestamp NOT NULL,
+      "customerName" varchar(255),
       "customerEmail" varchar(320),
       "customerPhone" varchar(20),
       "source" varchar(64) NOT NULL,
@@ -41162,6 +41164,8 @@ async function ensureTables(pool2) {
     )`,
     // Garante coluna de health check em webhooks já existentes
     `ALTER TABLE "webhookConfigs" ADD COLUMN IF NOT EXISTS "lastHealthCheck" timestamp`,
+    // Garante coluna de nome do cliente em vendas já existentes
+    `ALTER TABLE "trackedSales" ADD COLUMN IF NOT EXISTS "customerName" varchar(255)`,
     // Log de cada chamada de webhook recebida (para status "Recebendo ✓" e debug)
     `CREATE TABLE IF NOT EXISTS "webhookEvents" (
       "id" serial PRIMARY KEY NOT NULL,
@@ -41408,6 +41412,26 @@ async function getTrackedSalesSummary(companyId, startDate, endDate) {
     revenue: parseFloat(result.rows[0]?.revenue || "0"),
     count: parseInt(result.rows[0]?.count || "0")
   };
+}
+async function getTrackedSalesList(companyId, startDate, endDate) {
+  const pool2 = await getRawPool();
+  if (!pool2) return [];
+  const result = await pool2.query(
+    `SELECT "saleDate", "customerName", "customerPhone", "utmCampaign", "orderValue", "source"
+     FROM "trackedSales"
+     WHERE "companyId" = $1 AND "saleDate"::date BETWEEN $2 AND $3
+     ORDER BY "saleDate" ASC
+     LIMIT 200`,
+    [companyId, startDate, endDate]
+  );
+  return result.rows.map((r) => ({
+    saleDate: r.saleDate,
+    customerName: r.customerName ?? null,
+    customerPhone: r.customerPhone ?? null,
+    utmCampaign: r.utmCampaign ?? null,
+    orderValue: parseFloat(r.orderValue || "0"),
+    source: r.source ?? "manual"
+  }));
 }
 async function getMetricsByReportId(reportId) {
   const db = await getDb();
@@ -54806,8 +54830,8 @@ var utmRouter = router({
     const result = await executeQuery(
       `INSERT INTO "trackedSales" (
           "companyId", "userId", "trackingId", "orderId", "orderValue",
-          "utmSource", "utmCampaign", "customerPhone", "source", "saleDate"
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'manual', COALESCE($9::timestamp, NOW()))
+          "utmSource", "utmCampaign", "customerName", "customerPhone", "source", "saleDate"
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'manual', COALESCE($10::timestamp, NOW()))
         RETURNING *`,
       [
         input.companyId,
@@ -54817,6 +54841,7 @@ var utmRouter = router({
         input.orderValue,
         input.utmSource || null,
         input.utmCampaign || null,
+        input.customerName || null,
         input.customerPhone || null,
         saleDate
       ]
@@ -54847,7 +54872,7 @@ var utmRouter = router({
     }
     const sales = await executeQuery(
       `SELECT id, "orderId", "orderValue", "utmCampaign", "utmSource",
-                "customerPhone", "source", "saleDate", "trackingId"
+                "customerName", "customerPhone", "source", "saleDate", "trackingId"
          FROM "trackedSales"
          WHERE "companyId" = $1 ${dateFilter}
          ORDER BY "saleDate" DESC
@@ -65835,6 +65860,11 @@ var appRouter = router({
         String(report.startDate),
         String(report.endDate)
       );
+      const trackedList = await getTrackedSalesList(
+        report.companyId,
+        String(report.startDate),
+        String(report.endDate)
+      );
       if (!report.aiAnalysis && metrics) {
         try {
           const dm = deriveMetrics({
@@ -65879,12 +65909,12 @@ var appRouter = router({
           });
           const aiJson = JSON.stringify(aiResult);
           await updateReportAiAnalysis(report.id, aiJson);
-          return { report: { ...report, aiAnalysis: aiJson }, metrics, company, tracked: tracked2 };
+          return { report: { ...report, aiAnalysis: aiJson }, metrics, company, tracked: tracked2, trackedList };
         } catch (err) {
           console.error("[AI] getBySlug lazy generation falhou:", err);
         }
       }
-      return { report, metrics, company, tracked: tracked2 };
+      return { report, metrics, company, tracked: tracked2, trackedList };
     })
   }),
   // ── Meta Marketing API ────────────────────────────────────────────────────

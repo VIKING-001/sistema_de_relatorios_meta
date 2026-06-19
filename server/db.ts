@@ -136,6 +136,7 @@ async function ensureTables(pool: InstanceType<typeof Pool>) {
       "orderValue" numeric(12, 2) NOT NULL,
       "currency" varchar(3) DEFAULT 'BRL',
       "saleDate" timestamp NOT NULL,
+      "customerName" varchar(255),
       "customerEmail" varchar(320),
       "customerPhone" varchar(20),
       "source" varchar(64) NOT NULL,
@@ -159,6 +160,8 @@ async function ensureTables(pool: InstanceType<typeof Pool>) {
     )`,
     // Garante coluna de health check em webhooks já existentes
     `ALTER TABLE "webhookConfigs" ADD COLUMN IF NOT EXISTS "lastHealthCheck" timestamp`,
+    // Garante coluna de nome do cliente em vendas já existentes
+    `ALTER TABLE "trackedSales" ADD COLUMN IF NOT EXISTS "customerName" varchar(255)`,
     // Log de cada chamada de webhook recebida (para status "Recebendo ✓" e debug)
     `CREATE TABLE IF NOT EXISTS "webhookEvents" (
       "id" serial PRIMARY KEY NOT NULL,
@@ -506,6 +509,35 @@ export async function getTrackedSalesSummary(
     revenue: parseFloat(result.rows[0]?.revenue || "0"),
     count: parseInt(result.rows[0]?.count || "0"),
   };
+}
+
+/**
+ * Lista detalhada das vendas rastreadas de uma empresa no período do relatório.
+ * Usado para mostrar a tabela de vendas (data, cliente, valor) no relatório do cliente.
+ */
+export async function getTrackedSalesList(
+  companyId: number,
+  startDate: string,
+  endDate: string
+): Promise<Array<{ saleDate: string; customerName: string | null; customerPhone: string | null; utmCampaign: string | null; orderValue: number; source: string }>> {
+  const pool = await getRawPool();
+  if (!pool) return [];
+  const result = await pool.query(
+    `SELECT "saleDate", "customerName", "customerPhone", "utmCampaign", "orderValue", "source"
+     FROM "trackedSales"
+     WHERE "companyId" = $1 AND "saleDate"::date BETWEEN $2 AND $3
+     ORDER BY "saleDate" ASC
+     LIMIT 200`,
+    [companyId, startDate, endDate]
+  );
+  return result.rows.map((r: any) => ({
+    saleDate: r.saleDate,
+    customerName: r.customerName ?? null,
+    customerPhone: r.customerPhone ?? null,
+    utmCampaign: r.utmCampaign ?? null,
+    orderValue: parseFloat(r.orderValue || "0"),
+    source: r.source ?? "manual",
+  }));
 }
 
 // Metrics queries

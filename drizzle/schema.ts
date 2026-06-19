@@ -211,7 +211,8 @@ export const trackedSales = pgTable("trackedSales", {
   currency: varchar("currency", { length: 3 }).default("BRL"),
   /** Marca de tempo da venda */
   saleDate: timestamp("saleDate").notNull(),
-  /** Dados do cliente (anonimizados) */
+  /** Dados do cliente */
+  customerName: varchar("customerName", { length: 255 }),
   customerEmail: varchar("customerEmail", { length: 320 }),
   customerPhone: varchar("customerPhone", { length: 20 }),
   /** Qual plataforma capturou (webhook Shopify, webhook custom, Meta API, etc) */

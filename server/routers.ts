@@ -597,6 +597,12 @@ export const appRouter = router({
           String(report.startDate),
           String(report.endDate)
         );
+        // Lista detalhada das vendas (data, cliente, valor) para a tabela do relatório
+        const trackedList = await db.getTrackedSalesList(
+          report.companyId,
+          String(report.startDate),
+          String(report.endDate)
+        );
 
         // Gerar análise IA se ainda não existir (lazy — roda uma única vez, salva no banco)
         if (!report.aiAnalysis && metrics) {
@@ -648,13 +654,13 @@ export const appRouter = router({
             const aiJson = JSON.stringify(aiResult);
             await db.updateReportAiAnalysis(report.id, aiJson);
             // Retorna com análise recém-gerada
-            return { report: { ...report, aiAnalysis: aiJson }, metrics, company, tracked };
+            return { report: { ...report, aiAnalysis: aiJson }, metrics, company, tracked, trackedList };
           } catch (err) {
             console.error("[AI] getBySlug lazy generation falhou:", err);
           }
         }
 
-        return { report, metrics, company, tracked };
+        return { report, metrics, company, tracked, trackedList };
       }),
   }),
 

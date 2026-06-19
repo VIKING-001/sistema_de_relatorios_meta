@@ -429,6 +429,49 @@ export default function PublicReport() {
               purchaseValue={purchaseValue}
             />
 
+            {/* ── Vendas Rastreadas (lista detalhada) ── */}
+            {Array.isArray((data as any).trackedList) && (data as any).trackedList.length > 0 && (
+              <>
+                <Divider />
+                <div className="mb-3 sm:mb-5">
+                  <SectionHeader icon={ShoppingBag} title="Vendas Rastreadas" accent="emerald" />
+                </div>
+                <div className="rounded-2xl border border-emerald-500/15 bg-emerald-950/10 overflow-hidden">
+                  <div className="hidden sm:flex items-center gap-2 px-4 py-2.5 bg-black/20 border-b border-white/8 text-[10px] text-white/30 uppercase tracking-widest font-bold">
+                    <div className="w-[90px]">Data</div>
+                    <div className="flex-1">Cliente</div>
+                    <div className="w-[150px]">Campanha</div>
+                    <div className="w-[110px] text-right">Valor</div>
+                  </div>
+                  {(data as any).trackedList.map((s: any, i: number) => (
+                    <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 px-4 py-3 border-b border-white/6 last:border-0">
+                      <div className="w-[90px] text-xs text-white/50 tabular-nums">
+                        {s.saleDate ? new Date(s.saleDate).toLocaleDateString("pt-BR") : "—"}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-white/90 truncate">{s.customerName || "Cliente"}</p>
+                        {s.customerPhone && <p className="text-[11px] text-white/35">{s.customerPhone}</p>}
+                      </div>
+                      <div className="w-[150px] min-w-0 text-[11px] text-cyan-300/80 truncate">
+                        {s.utmCampaign || "—"}
+                      </div>
+                      <div className="w-[110px] text-right text-sm font-bold text-emerald-400 tabular-nums">
+                        {formatCurrency(Number(s.orderValue) || 0)}
+                      </div>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between px-4 py-3 bg-emerald-500/5 border-t border-emerald-500/20">
+                    <span className="text-xs font-bold uppercase tracking-wider text-white/50">
+                      Total · {(data as any).trackedList.length} venda{(data as any).trackedList.length !== 1 ? "s" : ""}
+                    </span>
+                    <span className="text-base font-black text-emerald-400 tabular-nums">
+                      {formatCurrency((data as any).trackedList.reduce((acc: number, s: any) => acc + (Number(s.orderValue) || 0), 0))}
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
+
             {/* ── Análise de Performance (gerada pelo z.ai no momento da criação) ── */}
             <Divider />
             <ConsultiveReport

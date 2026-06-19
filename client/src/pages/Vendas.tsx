@@ -173,8 +173,12 @@ export default function Vendas() {
             {sales.map((s: any) => (
               <div key={s.id} className="flex items-center gap-2 px-4 py-3 border-b border-white/8 last:border-0 hover:bg-white/[0.03] transition-colors">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white/90 truncate">{s.orderId}</p>
-                  {s.customerPhone && <p className="text-[11px] text-white/40 truncate">{s.customerPhone}</p>}
+                  <p className="text-sm font-medium text-white/90 truncate">
+                    {s.customerName || s.orderId}
+                  </p>
+                  <p className="text-[11px] text-white/40 truncate">
+                    {[s.customerName ? s.orderId : null, s.customerPhone].filter(Boolean).join(" · ") || "—"}
+                  </p>
                 </div>
                 <div className="w-[140px] min-w-0">
                   {s.utmCampaign
@@ -207,11 +211,22 @@ export default function Vendas() {
 }
 
 // ─── Formulário de venda manual ───────────────────────────────────────────────
+const MANUAL_CAMPAIGN = "__manual__";
+
 function ManualSaleForm({ companyId, onClose, onSaved }: { companyId: number; onClose: () => void; onSaved: () => void }) {
   const [orderValue, setOrderValue] = useState("");
-  const [utmCampaign, setUtmCampaign] = useState("");
+  const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [saleDate, setSaleDate] = useState(localDateStr(new Date()));
+  // Campanha: escolhe da lista real OU digita manualmente
+  const [campaignChoice, setCampaignChoice] = useState<string>("");   // "" = sem campanha
+  const [campaignManual, setCampaignManual] = useState("");
+
+  // Campanhas reais da empresa (sincronizadas do Meta) — garante o nome exato p/ casar ROAS
+  const { data: campaigns } = trpc.campaigns.list.useQuery(
+    { companyId },
+    { enabled: !!companyId }
+  );
 
   const mut = trpc.utm.recordManualSale.useMutation({
     onSuccess: (res) => {
@@ -224,10 +239,15 @@ function ManualSaleForm({ companyId, onClose, onSaved }: { companyId: number; on
   const submit = () => {
     const val = parseFloat(orderValue.replace(",", "."));
     if (!val || val <= 0) { toast.error("Informe um valor de venda válido."); return; }
+    const utmCampaign =
+      campaignChoice === MANUAL_CAMPAIGN
+        ? campaignManual.trim()
+        : campaignChoice.trim();
     mut.mutate({
       companyId,
       orderValue: val,
-      utmCampaign: utmCampaign.trim() || undefined,
+      utmCampaign: utmCampaign || undefined,
+      customerName: customerName.trim() || undefined,
       customerPhone: customerPhone.trim() || undefined,
       saleDate,
     });
@@ -235,29 +255,19 @@ function ManualSaleForm({ companyId, onClose, onSaved }: { companyId: number; on
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="glass-card border border-white/15 rounded-2xl w-full max-w-md p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+      <div className="glass-card border border-white/15 rounded-2xl w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold flex items-center gap-2"><Plus className="h-5 w-5 text-primary" /> Registrar venda</h2>
           <button onClick={onClose} className="text-white/40 hover:text-white"><X className="h-5 w-5" /></button>
         </div>
         <p className="text-xs text-muted-foreground">
-          Use para vendas fechadas no WhatsApp/Direct. Informe a campanha (mesmo nome do utm_campaign) para casar o ROAS.
+          Use para vendas fechadas no WhatsApp/Direct. Escolha a campanha para a venda somar no ROAS real daquela campanha e no relatório.
         </p>
 
-        <div>
-          <Label className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">Valor da venda (R$) *</Label>
-          <Input value={orderValue} onChange={(e) => setOrderValue(e.target.value)} placeholder="199,90"
-            className="bg-white/5 border-white/10 rounded-xl" />
-        </div>
-        <div>
-          <Label className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">Campanha (opcional)</Label>
-          <Input value={utmCampaign} onChange={(e) => setUtmCampaign(e.target.value)} placeholder="ex: PROMO_VERAO (mesmo nome da campanha)"
-            className="bg-white/5 border-white/10 rounded-xl font-mono text-sm" />
-        </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <Label className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">Telefone (opcional)</Label>
-            <Input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="(11) 9..."
+            <Label className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">Valor da venda (R$) *</Label>
+            <Input value={orderValue} onChange={(e) => setOrderValue(e.target.value)} placeholder="199,90"
               className="bg-white/5 border-white/10 rounded-xl" />
           </div>
           <div>
@@ -265,6 +275,45 @@ function ManualSaleForm({ companyId, onClose, onSaved }: { companyId: number; on
             <Input type="date" value={saleDate} onChange={(e) => setSaleDate(e.target.value)}
               className="bg-white/5 border-white/10 rounded-xl" />
           </div>
+        </div>
+
+        <div>
+          <Label className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">Nome do cliente (opcional)</Label>
+          <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="ex: Maria Silva"
+            className="bg-white/5 border-white/10 rounded-xl" />
+        </div>
+        <div>
+          <Label className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">Telefone / WhatsApp (opcional)</Label>
+          <Input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="(11) 9..."
+            className="bg-white/5 border-white/10 rounded-xl" />
+        </div>
+
+        <div>
+          <Label className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">Campanha (para casar o ROAS)</Label>
+          <select
+            value={campaignChoice}
+            onChange={(e) => setCampaignChoice(e.target.value)}
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white/90 focus:outline-none focus:border-primary/50"
+          >
+            <option value="" className="bg-zinc-900">Sem campanha</option>
+            {(campaigns ?? []).map((c: any) => (
+              <option key={c.id} value={c.name} className="bg-zinc-900">{c.name}</option>
+            ))}
+            <option value={MANUAL_CAMPAIGN} className="bg-zinc-900">✏️ Digitar nome da campanha…</option>
+          </select>
+          {campaignChoice === MANUAL_CAMPAIGN && (
+            <Input
+              value={campaignManual}
+              onChange={(e) => setCampaignManual(e.target.value)}
+              placeholder="Nome EXATO da campanha no Meta"
+              className="bg-white/5 border-white/10 rounded-xl font-mono text-sm mt-2"
+            />
+          )}
+          {(campaigns?.length ?? 0) === 0 && (
+            <p className="text-[10px] text-amber-400/70 mt-1.5">
+              Nenhuma campanha sincronizada. Use "Digitar nome da campanha" com o nome exato do Meta.
+            </p>
+          )}
         </div>
 
         <div className="flex gap-3 pt-2">

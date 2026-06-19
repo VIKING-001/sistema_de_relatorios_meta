@@ -297,8 +297,8 @@ export const utmRouter = router({
       const result = await executeQuery(
         `INSERT INTO "trackedSales" (
           "companyId", "userId", "trackingId", "orderId", "orderValue",
-          "utmSource", "utmCampaign", "customerPhone", "source", "saleDate"
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'manual', COALESCE($9::timestamp, NOW()))
+          "utmSource", "utmCampaign", "customerName", "customerPhone", "source", "saleDate"
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'manual', COALESCE($10::timestamp, NOW()))
         RETURNING *`,
         [
           input.companyId,
@@ -308,6 +308,7 @@ export const utmRouter = router({
           input.orderValue,
           input.utmSource || null,
           input.utmCampaign || null,
+          input.customerName || null,
           input.customerPhone || null,
           saleDate,
         ]
@@ -345,7 +346,7 @@ export const utmRouter = router({
 
       const sales = await executeQuery(
         `SELECT id, "orderId", "orderValue", "utmCampaign", "utmSource",
-                "customerPhone", "source", "saleDate", "trackingId"
+                "customerName", "customerPhone", "source", "saleDate", "trackingId"
          FROM "trackedSales"
          WHERE "companyId" = $1 ${dateFilter}
          ORDER BY "saleDate" DESC
