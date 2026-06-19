@@ -34,6 +34,7 @@ import {
   User,
   Zap,
   Globe,
+  MessageCircle,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -46,6 +47,7 @@ const mainNav = [
   { icon: Megaphone,    label: "Contas de Anúncio", path: "/contas" },
   { icon: Zap,          label: "Campanhas",          path: "/campanhas" },
   { icon: ShoppingCart, label: "Compras",            path: "/compras" },
+  { icon: MessageCircle, label: "Conversas",          path: "/conversas" },
 ];
 
 const toolsNav = [

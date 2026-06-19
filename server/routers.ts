@@ -14,6 +14,7 @@ import { apiCredentialsRouter } from "./api-credentials.router";
 import { campaignsRouter } from "./campaigns.router";
 import { metaSyncRouter } from "./meta-sync.router";
 import { aiAnalysisRouter, generateAiAnalysis } from "./ai-analysis.router";
+import { whatsappRouter } from "./whatsapp.router";
 
 // Validação de entrada para empresa
 const createCompanySchema = z.object({
@@ -1035,6 +1036,9 @@ export const appRouter = router({
 
   // ── Rastreamento de UTMs e Vendas ─────────────────────────────────────────
   utm: utmRouter,
+
+  // ── WhatsApp Cloud API (conversas + atribuição CTWA) ──────────────────────
+  whatsapp: whatsappRouter,
 
   // ── Configuração de Webhooks ──────────────────────────────────────────────
   webhook: webhookRouter,

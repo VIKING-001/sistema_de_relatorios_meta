@@ -314,7 +314,35 @@ export const utmRouter = router({
         ]
       );
 
-      return { success: true, sale: result.rows[0], trackingFound: !!trackingId };
+      const sale = result.rows[0];
+
+      // Atribuição por conversa de WhatsApp: se a venda tem telefone, tenta casar
+      // com uma conversa rastreada (CTWA). Se a conversa veio de uma campanha e a
+      // venda ainda não tinha campanha, a venda HERDA a campanha automaticamente.
+      let conversationMatched = false;
+      if (input.customerPhone) {
+        try {
+          const attr = await db.attributeSaleToConversation(
+            input.companyId,
+            input.customerPhone,
+            sale.id
+          );
+          if (attr) {
+            conversationMatched = true;
+            if (attr.campaignName && !input.utmCampaign) {
+              await executeQuery(
+                `UPDATE "trackedSales" SET "utmCampaign" = $2, "updatedAt" = NOW() WHERE id = $1`,
+                [sale.id, attr.campaignName]
+              );
+              sale.utmCampaign = attr.campaignName;
+            }
+          }
+        } catch (err: any) {
+          console.warn("[Venda] atribuição por conversa falhou:", err?.message || err);
+        }
+      }
+
+      return { success: true, sale, trackingFound: !!trackingId || conversationMatched };
     }),
 
   /**

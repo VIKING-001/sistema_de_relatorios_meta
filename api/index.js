@@ -18297,17 +18297,17 @@ var require_router = __commonJS({
     var toString = Object.prototype.toString;
     var proto = module2.exports = function(options) {
       var opts = options || {};
-      function router4(req, res, next) {
-        router4.handle(req, res, next);
+      function router5(req, res, next) {
+        router5.handle(req, res, next);
       }
-      setPrototypeOf(router4, proto);
-      router4.params = {};
-      router4._params = [];
-      router4.caseSensitive = opts.caseSensitive;
-      router4.mergeParams = opts.mergeParams;
-      router4.strict = opts.strict;
-      router4.stack = [];
-      return router4;
+      setPrototypeOf(router5, proto);
+      router5.params = {};
+      router5._params = [];
+      router5.caseSensitive = opts.caseSensitive;
+      router5.mergeParams = opts.mergeParams;
+      router5.strict = opts.strict;
+      router5.stack = [];
+      return router5;
     };
     proto.param = function param(name, fn) {
       if (typeof name === "function") {
@@ -20913,7 +20913,7 @@ var require_application = __commonJS({
   "node_modules/.pnpm/express@4.21.2/node_modules/express/lib/application.js"(exports2, module2) {
     "use strict";
     var finalhandler = require_finalhandler();
-    var Router3 = require_router();
+    var Router4 = require_router();
     var methods = require_methods();
     var middleware = require_init();
     var query = require_query();
@@ -20978,7 +20978,7 @@ var require_application = __commonJS({
     };
     app2.lazyrouter = function lazyrouter() {
       if (!this._router) {
-        this._router = new Router3({
+        this._router = new Router4({
           caseSensitive: this.enabled("case sensitive routing"),
           strict: this.enabled("strict routing")
         });
@@ -20987,17 +20987,17 @@ var require_application = __commonJS({
       }
     };
     app2.handle = function handle(req, res, callback) {
-      var router4 = this._router;
+      var router5 = this._router;
       var done = callback || finalhandler(req, res, {
         env: this.get("env"),
         onerror: logerror.bind(this)
       });
-      if (!router4) {
+      if (!router5) {
         debug("no routes defined on app");
         done();
         return;
       }
-      router4.handle(req, res, done);
+      router5.handle(req, res, done);
     };
     app2.use = function use(fn) {
       var offset = 0;
@@ -21017,15 +21017,15 @@ var require_application = __commonJS({
         throw new TypeError("app.use() requires a middleware function");
       }
       this.lazyrouter();
-      var router4 = this._router;
+      var router5 = this._router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router4.use(path2, fn2);
+          return router5.use(path2, fn2);
         }
         debug(".use app under %s", path2);
         fn2.mountpath = path2;
         fn2.parent = this;
-        router4.use(path2, function mounted_app(req, res, next) {
+        router5.use(path2, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             setPrototypeOf(req, orig.request);
@@ -22841,7 +22841,7 @@ var require_express = __commonJS({
     var mixin = require_merge_descriptors();
     var proto = require_application();
     var Route = require_route();
-    var Router3 = require_router();
+    var Router4 = require_router();
     var req = require_request();
     var res = require_response();
     exports2 = module2.exports = createApplication;
@@ -22864,7 +22864,7 @@ var require_express = __commonJS({
     exports2.request = req;
     exports2.response = res;
     exports2.Route = Route;
-    exports2.Router = Router3;
+    exports2.Router = Router4;
     exports2.json = bodyParser.json;
     exports2.query = require_query();
     exports2.raw = bodyParser.raw;
@@ -29523,7 +29523,7 @@ module.exports = __toCommonJS(vercelEntry_exports);
 })();
 
 // server/vercelEntry.ts
-var import_express3 = __toESM(require_express2(), 1);
+var import_express4 = __toESM(require_express2(), 1);
 
 // node_modules/.pnpm/@trpc+server@11.6.0_typescript@5.9.3/node_modules/@trpc/server/dist/utils-CLZnJdb_.mjs
 var TRPC_ERROR_CODES_BY_KEY = {
@@ -29948,19 +29948,19 @@ function createRouterFactory(config2) {
       procedures,
       lazy: lazy$1
     }, emptyRouter), {}, { record: record2 });
-    const router4 = (0, import_objectSpread22.default)((0, import_objectSpread22.default)({}, record2), {}, {
+    const router5 = (0, import_objectSpread22.default)((0, import_objectSpread22.default)({}, record2), {}, {
       _def,
       createCaller: createCallerFactory()({ _def })
     });
-    return router4;
+    return router5;
   }
   return createRouterInner;
 }
 function isProcedure(procedureOrRouter) {
   return typeof procedureOrRouter === "function";
 }
-async function getProcedureAtPath(router4, path2) {
-  const { _def } = router4;
+async function getProcedureAtPath(router5, path2) {
+  const { _def } = router5;
   let procedure = _def.procedures[path2];
   while (!procedure) {
     const key = Object.keys(_def.lazy).find((key$1) => path2.startsWith(key$1));
@@ -29972,14 +29972,14 @@ async function getProcedureAtPath(router4, path2) {
   return procedure;
 }
 function createCallerFactory() {
-  return function createCallerInner(router4) {
-    const { _def } = router4;
+  return function createCallerInner(router5) {
+    const { _def } = router5;
     return function createCaller(ctxOrCallback, opts) {
       return createRecursiveProxy(async (innerOpts) => {
         const { path: path2, args } = innerOpts;
         const fullPath = path2.join(".");
         if (path2.length === 1 && path2[0] === "_def") return _def;
-        const procedure = await getProcedureAtPath(router4, fullPath);
+        const procedure = await getProcedureAtPath(router5, fullPath);
         let ctx = void 0;
         try {
           if (!procedure) throw new TRPCError({
@@ -30026,7 +30026,7 @@ function mergeRouters(...routerList) {
     }
     return prev;
   }, defaultTransformer);
-  const router4 = createRouterFactory({
+  const router5 = createRouterFactory({
     errorFormatter,
     transformer,
     isDev: routerList.every((r) => r._def._config.isDev),
@@ -30034,7 +30034,7 @@ function mergeRouters(...routerList) {
     isServer: routerList.every((r) => r._def._config.isServer),
     $types: (_routerList$ = routerList[0]) === null || _routerList$ === void 0 ? void 0 : _routerList$._def._config.$types
   })(record2);
-  return router4;
+  return router5;
 }
 var trackedSymbol = Symbol();
 function isTrackedEnvelope(value) {
@@ -31396,7 +31396,7 @@ function initResponse(initOpts) {
   return { status };
 }
 function caughtErrorToData(cause, errorOpts) {
-  const { router: router4, req, onError } = errorOpts.opts;
+  const { router: router5, req, onError } = errorOpts.opts;
   const error46 = getTRPCErrorFromUnknown(cause);
   onError === null || onError === void 0 || onError({
     error: error46,
@@ -31407,14 +31407,14 @@ function caughtErrorToData(cause, errorOpts) {
     req
   });
   const untransformedJSON = { error: getErrorShape({
-    config: router4._def._config,
+    config: router5._def._config,
     error: error46,
     type: errorOpts.type,
     path: errorOpts.path,
     input: errorOpts.input,
     ctx: errorOpts.ctx
   }) };
-  const transformedJSON = transformTRPCResponse(router4._def._config, untransformedJSON);
+  const transformedJSON = transformTRPCResponse(router5._def._config, untransformedJSON);
   const body = JSON.stringify(transformedJSON);
   return {
     error: error46,
@@ -31429,9 +31429,9 @@ function isDataStream(v) {
 }
 async function resolveResponse(opts) {
   var _ref, _opts$allowBatching, _opts$batching, _opts$allowMethodOver, _config$sse$enabled, _config$sse;
-  const { router: router4, req } = opts;
+  const { router: router5, req } = opts;
   const headers = new Headers([["vary", "trpc-accept"]]);
-  const config2 = router4._def._config;
+  const config2 = router5._def._config;
   const url2 = new URL(req.url);
   if (req.method === "HEAD") return new Response(null, { status: 204 });
   const allowBatching = (_ref = (_opts$allowBatching = opts.allowBatching) !== null && _opts$allowBatching !== void 0 ? _opts$allowBatching : (_opts$batching = opts.batching) === null || _opts$batching === void 0 ? void 0 : _opts$batching.enabled) !== null && _ref !== void 0 ? _ref : true;
@@ -31441,7 +31441,7 @@ async function resolveResponse(opts) {
       return [void 0, await getRequestInfo({
         req,
         path: decodeURIComponent(opts.path),
-        router: router4,
+        router: router5,
         searchParams: url2.searchParams,
         headers: opts.req.headers,
         url: url2
@@ -41201,7 +41201,47 @@ async function ensureTables(pool2) {
       "createdAt" timestamp DEFAULT now() NOT NULL,
       "updatedAt" timestamp DEFAULT now() NOT NULL
     )`,
-    `CREATE INDEX IF NOT EXISTS "idx_apiCredentials_companyId" ON "apiCredentials"("companyId")`
+    `CREATE INDEX IF NOT EXISTS "idx_apiCredentials_companyId" ON "apiCredentials"("companyId")`,
+    // WhatsApp Cloud API — config por empresa (mapeia phoneNumberId → empresa)
+    `CREATE TABLE IF NOT EXISTS "whatsappConfigs" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "companyId" integer NOT NULL,
+      "userId" integer NOT NULL,
+      "phoneNumberId" varchar(64) NOT NULL,
+      "wabaId" varchar(64),
+      "displayPhone" varchar(32),
+      "accessToken" text,
+      "verifyToken" varchar(255),
+      "status" varchar(32) DEFAULT 'active',
+      "createdAt" timestamp DEFAULT now() NOT NULL,
+      "updatedAt" timestamp DEFAULT now() NOT NULL,
+      CONSTRAINT "whatsappConfigs_phoneNumberId_unique" UNIQUE("phoneNumberId")
+    )`,
+    // WhatsApp — conversas iniciadas (atribuídas à campanha via CTWA referral)
+    `CREATE TABLE IF NOT EXISTS "whatsappConversations" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "companyId" integer NOT NULL,
+      "waId" varchar(32) NOT NULL,
+      "customerName" varchar(255),
+      "sourceType" varchar(20) DEFAULT 'organic',
+      "campaignName" varchar(255),
+      "adId" varchar(64),
+      "adHeadline" text,
+      "ctwaClid" varchar(255),
+      "sourceUrl" text,
+      "firstMessageAt" timestamp DEFAULT now() NOT NULL,
+      "lastMessageAt" timestamp DEFAULT now() NOT NULL,
+      "lastMessageText" text,
+      "messageCount" integer DEFAULT 0 NOT NULL,
+      "status" varchar(20) DEFAULT 'open',
+      "saleId" integer,
+      "createdAt" timestamp DEFAULT now() NOT NULL,
+      "updatedAt" timestamp DEFAULT now() NOT NULL,
+      CONSTRAINT "whatsappConversations_company_wa_unique" UNIQUE("companyId", "waId")
+    )`,
+    `CREATE INDEX IF NOT EXISTS "idx_whatsappConversations_companyId" ON "whatsappConversations"("companyId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_whatsappConversations_waId" ON "whatsappConversations"("waId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_whatsappConfigs_companyId" ON "whatsappConfigs"("companyId")`
   ];
   try {
     for (const sql2 of statements) {
@@ -41451,6 +41491,125 @@ async function updateReportMetrics(reportId, metrics) {
 async function deleteReportMetrics(reportId) {
   const db = await getDb();
   await db.delete(reportMetrics).where(eq(reportMetrics.reportId, reportId));
+}
+async function getWhatsappConfigByPhoneNumberId(phoneNumberId) {
+  const pool2 = await getRawPool();
+  if (!pool2) return null;
+  const r = await pool2.query(
+    `SELECT * FROM "whatsappConfigs" WHERE "phoneNumberId" = $1 LIMIT 1`,
+    [phoneNumberId]
+  );
+  return r.rows[0] ?? null;
+}
+async function whatsappVerifyTokenMatches(token) {
+  const pool2 = await getRawPool();
+  if (!pool2) return false;
+  const r = await pool2.query(
+    `SELECT 1 FROM "whatsappConfigs" WHERE "verifyToken" = $1 LIMIT 1`,
+    [token]
+  );
+  return r.rows.length > 0;
+}
+async function upsertWhatsappConfig(cfg) {
+  const pool2 = await getRawPool();
+  if (!pool2) return null;
+  const r = await pool2.query(
+    `INSERT INTO "whatsappConfigs"
+       ("companyId", "userId", "phoneNumberId", "wabaId", "displayPhone", "accessToken", "verifyToken")
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     ON CONFLICT ("phoneNumberId") DO UPDATE SET
+       "companyId" = EXCLUDED."companyId",
+       "wabaId" = EXCLUDED."wabaId",
+       "displayPhone" = EXCLUDED."displayPhone",
+       "accessToken" = COALESCE(EXCLUDED."accessToken", "whatsappConfigs"."accessToken"),
+       "verifyToken" = EXCLUDED."verifyToken",
+       "updatedAt" = NOW()
+     RETURNING *`,
+    [
+      cfg.companyId,
+      cfg.userId,
+      cfg.phoneNumberId,
+      cfg.wabaId ?? null,
+      cfg.displayPhone ?? null,
+      cfg.accessToken ?? null,
+      cfg.verifyToken ?? null
+    ]
+  );
+  return r.rows[0] ?? null;
+}
+async function getWhatsappConfigByCompany(companyId) {
+  const pool2 = await getRawPool();
+  if (!pool2) return null;
+  const r = await pool2.query(
+    `SELECT * FROM "whatsappConfigs" WHERE "companyId" = $1 ORDER BY "updatedAt" DESC LIMIT 1`,
+    [companyId]
+  );
+  return r.rows[0] ?? null;
+}
+async function upsertWhatsappConversation(c) {
+  const pool2 = await getRawPool();
+  if (!pool2) return null;
+  const when = c.messageTime ?? /* @__PURE__ */ new Date();
+  const r = await pool2.query(
+    `INSERT INTO "whatsappConversations"
+       ("companyId", "waId", "customerName", "sourceType", "campaignName", "adId",
+        "adHeadline", "ctwaClid", "sourceUrl", "firstMessageAt", "lastMessageAt",
+        "lastMessageText", "messageCount")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10, $11, 1)
+     ON CONFLICT ("companyId", "waId") DO UPDATE SET
+       "customerName"   = COALESCE("whatsappConversations"."customerName", EXCLUDED."customerName"),
+       "lastMessageAt"  = EXCLUDED."lastMessageAt",
+       "lastMessageText"= EXCLUDED."lastMessageText",
+       "messageCount"   = "whatsappConversations"."messageCount" + 1,
+       -- s\xF3 preenche atribui\xE7\xE3o se ainda n\xE3o houver e veio referral agora
+       "sourceType"  = CASE WHEN "whatsappConversations"."campaignName" IS NULL AND EXCLUDED."campaignName" IS NOT NULL THEN EXCLUDED."sourceType" ELSE "whatsappConversations"."sourceType" END,
+       "campaignName"= COALESCE("whatsappConversations"."campaignName", EXCLUDED."campaignName"),
+       "adId"        = COALESCE("whatsappConversations"."adId", EXCLUDED."adId"),
+       "adHeadline"  = COALESCE("whatsappConversations"."adHeadline", EXCLUDED."adHeadline"),
+       "ctwaClid"    = COALESCE("whatsappConversations"."ctwaClid", EXCLUDED."ctwaClid"),
+       "sourceUrl"   = COALESCE("whatsappConversations"."sourceUrl", EXCLUDED."sourceUrl"),
+       "updatedAt"   = NOW()
+     RETURNING *`,
+    [
+      c.companyId,
+      c.waId,
+      c.customerName ?? null,
+      c.campaignName ? c.sourceType ?? "ctwa" : c.sourceType ?? "organic",
+      c.campaignName ?? null,
+      c.adId ?? null,
+      c.adHeadline ?? null,
+      c.ctwaClid ?? null,
+      c.sourceUrl ?? null,
+      when,
+      c.lastMessageText ?? null
+    ]
+  );
+  return r.rows[0] ?? null;
+}
+async function listWhatsappConversations(companyId, limit2 = 200) {
+  const pool2 = await getRawPool();
+  if (!pool2) return [];
+  const r = await pool2.query(
+    `SELECT * FROM "whatsappConversations" WHERE "companyId" = $1 ORDER BY "lastMessageAt" DESC LIMIT $2`,
+    [companyId, limit2]
+  );
+  return r.rows;
+}
+async function attributeSaleToConversation(companyId, phone, saleId) {
+  const pool2 = await getRawPool();
+  if (!pool2 || !phone) return null;
+  const digits = phone.replace(/\D/g, "");
+  if (!digits) return null;
+  const r = await pool2.query(
+    `UPDATE "whatsappConversations"
+       SET "status" = 'converted', "saleId" = $3, "updatedAt" = NOW()
+     WHERE "companyId" = $1
+       AND regexp_replace("waId", '\\D', '', 'g') LIKE '%' || $2
+     RETURNING "campaignName"`,
+    [companyId, digits.slice(-8), saleId]
+  );
+  if (r.rows.length === 0) return null;
+  return { campaignName: r.rows[0].campaignName ?? null };
 }
 
 // server/_core/cookies.ts
@@ -54846,7 +55005,30 @@ var utmRouter = router({
         saleDate
       ]
     );
-    return { success: true, sale: result.rows[0], trackingFound: !!trackingId };
+    const sale = result.rows[0];
+    let conversationMatched = false;
+    if (input.customerPhone) {
+      try {
+        const attr = await attributeSaleToConversation(
+          input.companyId,
+          input.customerPhone,
+          sale.id
+        );
+        if (attr) {
+          conversationMatched = true;
+          if (attr.campaignName && !input.utmCampaign) {
+            await executeQuery(
+              `UPDATE "trackedSales" SET "utmCampaign" = $2, "updatedAt" = NOW() WHERE id = $1`,
+              [sale.id, attr.campaignName]
+            );
+            sale.utmCampaign = attr.campaignName;
+          }
+        }
+      } catch (err) {
+        console.warn("[Venda] atribui\xE7\xE3o por conversa falhou:", err?.message || err);
+      }
+    }
+    return { success: true, sale, trackingFound: !!trackingId || conversationMatched };
   }),
   /**
    * Listar vendas (trackedSales) de uma empresa, com resumo e filtro de período.
@@ -65423,6 +65605,67 @@ REGRAS: m\xE1ximo 4 itens por lista | cada item = 1 frase com o n\xFAmero real |
 }
 var aiAnalysisRouter = router({});
 
+// server/whatsapp.router.ts
+var whatsappRouter = router({
+  saveConfig: protectedProcedure.input(
+    external_exports.object({
+      companyId: external_exports.number().int().positive(),
+      phoneNumberId: external_exports.string().min(3),
+      wabaId: external_exports.string().optional(),
+      displayPhone: external_exports.string().optional(),
+      accessToken: external_exports.string().optional(),
+      verifyToken: external_exports.string().min(4)
+    })
+  ).mutation(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado \xE0 empresa" });
+    }
+    const saved = await upsertWhatsappConfig({
+      companyId: input.companyId,
+      userId,
+      phoneNumberId: input.phoneNumberId.trim(),
+      wabaId: input.wabaId?.trim() || null,
+      displayPhone: input.displayPhone?.trim() || null,
+      accessToken: input.accessToken?.trim() || null,
+      verifyToken: input.verifyToken.trim()
+    });
+    return { success: true, config: { id: saved?.id, phoneNumberId: saved?.phoneNumberId } };
+  }),
+  getConfig: protectedProcedure.input(external_exports.object({ companyId: external_exports.number().int().positive() })).query(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) throw new TRPCError({ code: "FORBIDDEN" });
+    const cfg = await getWhatsappConfigByCompany(input.companyId);
+    if (!cfg) return null;
+    return {
+      phoneNumberId: cfg.phoneNumberId,
+      wabaId: cfg.wabaId,
+      displayPhone: cfg.displayPhone,
+      verifyToken: cfg.verifyToken,
+      hasToken: !!cfg.accessToken,
+      status: cfg.status
+    };
+  }),
+  listConversations: protectedProcedure.input(external_exports.object({ companyId: external_exports.number().int().positive() })).query(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) throw new TRPCError({ code: "FORBIDDEN" });
+    const rows = await listWhatsappConversations(input.companyId);
+    const total = rows.length;
+    const attributed = rows.filter((r) => r.campaignName).length;
+    const converted = rows.filter((r) => r.status === "converted").length;
+    return {
+      conversations: rows,
+      summary: { total, attributed, converted }
+    };
+  })
+});
+
 // server/routers.ts
 var createCompanySchema = external_exports.object({
   name: external_exports.string().min(1, "Nome da empresa \xE9 obrigat\xF3rio"),
@@ -66209,6 +66452,8 @@ var appRouter = router({
   }),
   // ── Rastreamento de UTMs e Vendas ─────────────────────────────────────────
   utm: utmRouter,
+  // ── WhatsApp Cloud API (conversas + atribuição CTWA) ──────────────────────
+  whatsapp: whatsappRouter,
   // ── Configuração de Webhooks ──────────────────────────────────────────────
   webhook: webhookRouter,
   // ── Credenciais de API ────────────────────────────────────────────────────
@@ -66459,18 +66704,94 @@ router3.get("/r/:code", async (req, res) => {
 });
 var shortlinkRoutes_default = router3;
 
+// server/whatsappRoutes.ts
+var import_express3 = __toESM(require_express2(), 1);
+var router4 = (0, import_express3.Router)();
+router4.get("/webhook/whatsapp", async (req, res) => {
+  const mode = req.query["hub.mode"];
+  const token = String(req.query["hub.verify_token"] ?? "");
+  const challenge = req.query["hub.challenge"];
+  const envToken = process.env.WHATSAPP_VERIFY_TOKEN || "";
+  const ok = mode === "subscribe" && token.length > 0 && (token === envToken || await whatsappVerifyTokenMatches(token));
+  if (ok) {
+    console.log("[WhatsApp] Webhook verificado com sucesso.");
+    return res.status(200).send(challenge);
+  }
+  console.warn("[WhatsApp] Falha na verifica\xE7\xE3o do webhook (token n\xE3o confere).");
+  return res.sendStatus(403);
+});
+router4.post("/webhook/whatsapp", async (req, res) => {
+  res.sendStatus(200);
+  try {
+    const body = req.body;
+    if (body?.object !== "whatsapp_business_account") return;
+    for (const entry of body.entry ?? []) {
+      for (const change of entry.changes ?? []) {
+        const value = change.value ?? {};
+        const phoneNumberId = value?.metadata?.phone_number_id;
+        const messages = value.messages ?? [];
+        if (!phoneNumberId || messages.length === 0) continue;
+        const cfg = await getWhatsappConfigByPhoneNumberId(phoneNumberId);
+        if (!cfg) {
+          console.warn(`[WhatsApp] phone_number_id ${phoneNumberId} sem empresa configurada.`);
+          continue;
+        }
+        const contactName = /* @__PURE__ */ new Map();
+        for (const c of value.contacts ?? []) {
+          if (c?.wa_id) contactName.set(c.wa_id, c?.profile?.name ?? "");
+        }
+        for (const msg of messages) {
+          const waId = msg.from;
+          const ts = msg.timestamp ? new Date(Number(msg.timestamp) * 1e3) : /* @__PURE__ */ new Date();
+          const text2 = msg.text?.body ?? msg.button?.text ?? msg.interactive?.button_reply?.title ?? `[${msg.type}]`;
+          const ref = msg.referral;
+          const campaignName = ref?.source_type === "ad" || ref?.source_id ? ref?.headline || ref?.source_id || "An\xFAncio WhatsApp" : null;
+          const conv = await upsertWhatsappConversation({
+            companyId: cfg.companyId,
+            waId,
+            customerName: contactName.get(waId) || null,
+            sourceType: campaignName ? "ctwa" : "organic",
+            campaignName,
+            adId: ref?.source_id ?? null,
+            adHeadline: ref?.headline ?? null,
+            ctwaClid: ref?.ctwa_clid ?? null,
+            sourceUrl: ref?.source_url ?? null,
+            lastMessageText: text2,
+            messageTime: ts
+          });
+          await logWebhookEvent({
+            companyId: cfg.companyId,
+            platform: "whatsapp",
+            success: true,
+            trackingFound: !!campaignName,
+            message: campaignName ? `Conversa de ${waId} via an\xFAncio: ${campaignName}` : `Conversa de ${waId} (org\xE2nica)`,
+            payloadSummary: text2?.slice(0, 200) ?? null
+          });
+          console.log(
+            `[WhatsApp] Conversa ${conv?.id} (${waId}) ${campaignName ? "ATRIBU\xCDDA \u2192 " + campaignName : "org\xE2nica"}`
+          );
+        }
+      }
+    }
+  } catch (err) {
+    console.error("[WhatsApp] Erro processando webhook:", err?.message || err);
+  }
+});
+var whatsappRoutes_default = router4;
+
 // server/vercelEntry.ts
-var app = (0, import_express3.default)();
-app.use(import_express3.default.json({
+var app = (0, import_express4.default)();
+app.use(import_express4.default.json({
   limit: "50mb",
   verify: (req, _res, buf) => {
     req.rawBody = buf?.toString("utf8");
   }
 }));
-app.use(import_express3.default.urlencoded({ limit: "50mb", extended: true }));
+app.use(import_express4.default.urlencoded({ limit: "50mb", extended: true }));
 registerOAuthRoutes(app);
 app.use(webhookRoutes_default);
 app.use(shortlinkRoutes_default);
+app.use(whatsappRoutes_default);
 app.use(
   "/api/trpc",
   createExpressMiddleware({

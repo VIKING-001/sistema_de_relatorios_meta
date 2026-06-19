@@ -6,6 +6,7 @@ import { appRouter } from "./routers";
 import { createContext } from "./_core/context";
 import webhookRoutes from "./webhookRoutes";
 import shortlinkRoutes from "./shortlinkRoutes";
+import whatsappRoutes from "./whatsappRoutes";
 
 const app = express();
 
@@ -25,6 +26,9 @@ app.use(webhookRoutes);
 
 // Links curtos de rastreamento UTM em /r/* (conta cliques e redireciona)
 app.use(shortlinkRoutes);
+
+// Webhook da WhatsApp Cloud API em /webhook/whatsapp (conversas + atribuição CTWA)
+app.use(whatsappRoutes);
 
 // tRPC API
 app.use(

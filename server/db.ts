@@ -198,6 +198,46 @@ async function ensureTables(pool: InstanceType<typeof Pool>) {
       "updatedAt" timestamp DEFAULT now() NOT NULL
     )`,
     `CREATE INDEX IF NOT EXISTS "idx_apiCredentials_companyId" ON "apiCredentials"("companyId")`,
+    // WhatsApp Cloud API — config por empresa (mapeia phoneNumberId → empresa)
+    `CREATE TABLE IF NOT EXISTS "whatsappConfigs" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "companyId" integer NOT NULL,
+      "userId" integer NOT NULL,
+      "phoneNumberId" varchar(64) NOT NULL,
+      "wabaId" varchar(64),
+      "displayPhone" varchar(32),
+      "accessToken" text,
+      "verifyToken" varchar(255),
+      "status" varchar(32) DEFAULT 'active',
+      "createdAt" timestamp DEFAULT now() NOT NULL,
+      "updatedAt" timestamp DEFAULT now() NOT NULL,
+      CONSTRAINT "whatsappConfigs_phoneNumberId_unique" UNIQUE("phoneNumberId")
+    )`,
+    // WhatsApp — conversas iniciadas (atribuídas à campanha via CTWA referral)
+    `CREATE TABLE IF NOT EXISTS "whatsappConversations" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "companyId" integer NOT NULL,
+      "waId" varchar(32) NOT NULL,
+      "customerName" varchar(255),
+      "sourceType" varchar(20) DEFAULT 'organic',
+      "campaignName" varchar(255),
+      "adId" varchar(64),
+      "adHeadline" text,
+      "ctwaClid" varchar(255),
+      "sourceUrl" text,
+      "firstMessageAt" timestamp DEFAULT now() NOT NULL,
+      "lastMessageAt" timestamp DEFAULT now() NOT NULL,
+      "lastMessageText" text,
+      "messageCount" integer DEFAULT 0 NOT NULL,
+      "status" varchar(20) DEFAULT 'open',
+      "saleId" integer,
+      "createdAt" timestamp DEFAULT now() NOT NULL,
+      "updatedAt" timestamp DEFAULT now() NOT NULL,
+      CONSTRAINT "whatsappConversations_company_wa_unique" UNIQUE("companyId", "waId")
+    )`,
+    `CREATE INDEX IF NOT EXISTS "idx_whatsappConversations_companyId" ON "whatsappConversations"("companyId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_whatsappConversations_waId" ON "whatsappConversations"("waId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_whatsappConfigs_companyId" ON "whatsappConfigs"("companyId")`,
   ];
   try {
     for (const sql of statements) {
@@ -562,4 +602,158 @@ export async function updateReportMetrics(reportId: number, metrics: Omit<Insert
 export async function deleteReportMetrics(reportId: number) {
   const db = await getDb();
   await db.delete(reportMetrics).where(eq(reportMetrics.reportId, reportId));
+}
+
+// ─── WhatsApp Cloud API ──────────────────────────────────────────────────────
+
+/** Busca a config (e empresa) pelo phoneNumberId que veio no webhook da Meta */
+export async function getWhatsappConfigByPhoneNumberId(phoneNumberId: string) {
+  const pool = await getRawPool();
+  if (!pool) return null;
+  const r = await pool.query(
+    `SELECT * FROM "whatsappConfigs" WHERE "phoneNumberId" = $1 LIMIT 1`,
+    [phoneNumberId]
+  );
+  return r.rows[0] ?? null;
+}
+
+/** Confere se algum verifyToken cadastrado bate (para o GET de verificação do webhook) */
+export async function whatsappVerifyTokenMatches(token: string): Promise<boolean> {
+  const pool = await getRawPool();
+  if (!pool) return false;
+  const r = await pool.query(
+    `SELECT 1 FROM "whatsappConfigs" WHERE "verifyToken" = $1 LIMIT 1`,
+    [token]
+  );
+  return r.rows.length > 0;
+}
+
+/** Salva/atualiza a config de WhatsApp de uma empresa (chave = phoneNumberId) */
+export async function upsertWhatsappConfig(cfg: {
+  companyId: number;
+  userId: number;
+  phoneNumberId: string;
+  wabaId?: string | null;
+  displayPhone?: string | null;
+  accessToken?: string | null;
+  verifyToken?: string | null;
+}) {
+  const pool = await getRawPool();
+  if (!pool) return null;
+  const r = await pool.query(
+    `INSERT INTO "whatsappConfigs"
+       ("companyId", "userId", "phoneNumberId", "wabaId", "displayPhone", "accessToken", "verifyToken")
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     ON CONFLICT ("phoneNumberId") DO UPDATE SET
+       "companyId" = EXCLUDED."companyId",
+       "wabaId" = EXCLUDED."wabaId",
+       "displayPhone" = EXCLUDED."displayPhone",
+       "accessToken" = COALESCE(EXCLUDED."accessToken", "whatsappConfigs"."accessToken"),
+       "verifyToken" = EXCLUDED."verifyToken",
+       "updatedAt" = NOW()
+     RETURNING *`,
+    [cfg.companyId, cfg.userId, cfg.phoneNumberId, cfg.wabaId ?? null,
+     cfg.displayPhone ?? null, cfg.accessToken ?? null, cfg.verifyToken ?? null]
+  );
+  return r.rows[0] ?? null;
+}
+
+export async function getWhatsappConfigByCompany(companyId: number) {
+  const pool = await getRawPool();
+  if (!pool) return null;
+  const r = await pool.query(
+    `SELECT * FROM "whatsappConfigs" WHERE "companyId" = $1 ORDER BY "updatedAt" DESC LIMIT 1`,
+    [companyId]
+  );
+  return r.rows[0] ?? null;
+}
+
+/**
+ * Registra/atualiza uma conversa de WhatsApp.
+ * Idempotente por (companyId, waId): a 1ª mensagem cria; as seguintes só
+ * atualizam o último contato/contador. A atribuição (campanha via CTWA) só é
+ * gravada quando vem no referral e ainda não havia atribuição.
+ */
+export async function upsertWhatsappConversation(c: {
+  companyId: number;
+  waId: string;
+  customerName?: string | null;
+  sourceType?: string;
+  campaignName?: string | null;
+  adId?: string | null;
+  adHeadline?: string | null;
+  ctwaClid?: string | null;
+  sourceUrl?: string | null;
+  lastMessageText?: string | null;
+  messageTime?: Date | null;
+}) {
+  const pool = await getRawPool();
+  if (!pool) return null;
+  const when = c.messageTime ?? new Date();
+  const r = await pool.query(
+    `INSERT INTO "whatsappConversations"
+       ("companyId", "waId", "customerName", "sourceType", "campaignName", "adId",
+        "adHeadline", "ctwaClid", "sourceUrl", "firstMessageAt", "lastMessageAt",
+        "lastMessageText", "messageCount")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10, $11, 1)
+     ON CONFLICT ("companyId", "waId") DO UPDATE SET
+       "customerName"   = COALESCE("whatsappConversations"."customerName", EXCLUDED."customerName"),
+       "lastMessageAt"  = EXCLUDED."lastMessageAt",
+       "lastMessageText"= EXCLUDED."lastMessageText",
+       "messageCount"   = "whatsappConversations"."messageCount" + 1,
+       -- só preenche atribuição se ainda não houver e veio referral agora
+       "sourceType"  = CASE WHEN "whatsappConversations"."campaignName" IS NULL AND EXCLUDED."campaignName" IS NOT NULL THEN EXCLUDED."sourceType" ELSE "whatsappConversations"."sourceType" END,
+       "campaignName"= COALESCE("whatsappConversations"."campaignName", EXCLUDED."campaignName"),
+       "adId"        = COALESCE("whatsappConversations"."adId", EXCLUDED."adId"),
+       "adHeadline"  = COALESCE("whatsappConversations"."adHeadline", EXCLUDED."adHeadline"),
+       "ctwaClid"    = COALESCE("whatsappConversations"."ctwaClid", EXCLUDED."ctwaClid"),
+       "sourceUrl"   = COALESCE("whatsappConversations"."sourceUrl", EXCLUDED."sourceUrl"),
+       "updatedAt"   = NOW()
+     RETURNING *`,
+    [
+      c.companyId, c.waId, c.customerName ?? null,
+      c.campaignName ? (c.sourceType ?? "ctwa") : (c.sourceType ?? "organic"),
+      c.campaignName ?? null, c.adId ?? null, c.adHeadline ?? null,
+      c.ctwaClid ?? null, c.sourceUrl ?? null, when, c.lastMessageText ?? null,
+    ]
+  );
+  return r.rows[0] ?? null;
+}
+
+/** Lista as conversas de WhatsApp de uma empresa (mais recentes primeiro) */
+export async function listWhatsappConversations(companyId: number, limit = 200) {
+  const pool = await getRawPool();
+  if (!pool) return [];
+  const r = await pool.query(
+    `SELECT * FROM "whatsappConversations" WHERE "companyId" = $1 ORDER BY "lastMessageAt" DESC LIMIT $2`,
+    [companyId, limit]
+  );
+  return r.rows;
+}
+
+/**
+ * Tenta atribuir uma venda a uma conversa pelo telefone (waId).
+ * Marca a conversa como 'converted' e devolve a campanha de origem (se houver),
+ * para a venda herdar a atribuição.
+ */
+export async function attributeSaleToConversation(
+  companyId: number,
+  phone: string,
+  saleId: number
+): Promise<{ campaignName: string | null } | null> {
+  const pool = await getRawPool();
+  if (!pool || !phone) return null;
+  // normaliza só dígitos para casar telefones com formatações diferentes
+  const digits = phone.replace(/\D/g, "");
+  if (!digits) return null;
+  const r = await pool.query(
+    `UPDATE "whatsappConversations"
+       SET "status" = 'converted', "saleId" = $3, "updatedAt" = NOW()
+     WHERE "companyId" = $1
+       AND regexp_replace("waId", '\\D', '', 'g') LIKE '%' || $2
+     RETURNING "campaignName"`,
+    [companyId, digits.slice(-8), saleId]
+  );
+  if (r.rows.length === 0) return null;
+  return { campaignName: r.rows[0].campaignName ?? null };
 }
