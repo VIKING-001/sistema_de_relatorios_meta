@@ -65606,6 +65606,36 @@ REGRAS: m\xE1ximo 4 itens por lista | cada item = 1 frase com o n\xFAmero real |
 var aiAnalysisRouter = router({});
 
 // server/whatsapp.router.ts
+var GRAPH = "https://graph.facebook.com/v21.0";
+async function exchangeEmbeddedSignupCode(code) {
+  const url2 = new URL(`${GRAPH}/oauth/access_token`);
+  url2.searchParams.set("client_id", ENV.metaAppId);
+  url2.searchParams.set("client_secret", ENV.metaAppSecret);
+  url2.searchParams.set("code", code);
+  const res = await fetch(url2.toString());
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message || "Falha ao trocar o code do WhatsApp.");
+  return data.access_token;
+}
+async function subscribeAppToWaba(wabaId, token) {
+  const res = await fetch(`${GRAPH}/${wabaId}/subscribed_apps`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message || "Falha ao inscrever o app no WABA.");
+}
+async function getDisplayPhone(phoneNumberId, token) {
+  try {
+    const res = await fetch(`${GRAPH}/${phoneNumberId}?fields=display_phone_number`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json();
+    return data?.display_phone_number ?? null;
+  } catch {
+    return null;
+  }
+}
 var whatsappRouter = router({
   saveConfig: protectedProcedure.input(
     external_exports.object({
@@ -65633,6 +65663,56 @@ var whatsappRouter = router({
       verifyToken: input.verifyToken.trim()
     });
     return { success: true, config: { id: saved?.id, phoneNumberId: saved?.phoneNumberId } };
+  }),
+  /**
+   * Finaliza a conexão "1 clique" (Meta Embedded Signup): troca o code por token,
+   * inscreve o app nos webhooks do WABA e salva a config automaticamente.
+   */
+  finishEmbeddedSignup: protectedProcedure.input(
+    external_exports.object({
+      companyId: external_exports.number().int().positive(),
+      code: external_exports.string().min(5),
+      phoneNumberId: external_exports.string().min(3),
+      wabaId: external_exports.string().min(3)
+    })
+  ).mutation(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado \xE0 empresa" });
+    }
+    if (!ENV.metaAppId || !ENV.metaAppSecret) {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "META_APP_ID/META_APP_SECRET n\xE3o configurados no servidor."
+      });
+    }
+    try {
+      const token = await exchangeEmbeddedSignupCode(input.code);
+      await subscribeAppToWaba(input.wabaId, token);
+      const displayPhone = await getDisplayPhone(input.phoneNumberId, token);
+      const saved = await upsertWhatsappConfig({
+        companyId: input.companyId,
+        userId,
+        phoneNumberId: input.phoneNumberId,
+        wabaId: input.wabaId,
+        displayPhone,
+        accessToken: token,
+        verifyToken: process.env.WHATSAPP_VERIFY_TOKEN || `auto-${input.phoneNumberId}`
+      });
+      console.log(`[WhatsApp] Embedded Signup OK \u2014 empresa ${input.companyId}, n\xFAmero ${input.phoneNumberId}`);
+      return {
+        success: true,
+        config: { phoneNumberId: saved?.phoneNumberId, wabaId: saved?.wabaId, displayPhone }
+      };
+    } catch (err) {
+      console.error("[WhatsApp] Embedded Signup falhou:", err?.message || err);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: err?.message || "Falha ao finalizar a conex\xE3o do WhatsApp."
+      });
+    }
   }),
   getConfig: protectedProcedure.input(external_exports.object({ companyId: external_exports.number().int().positive() })).query(async ({ input, ctx }) => {
     const userId = ctx.user?.id;

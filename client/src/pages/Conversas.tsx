@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
   MessageCircle, Building2, Loader2, Settings2, Copy, Check,
-  Megaphone, CheckCircle2, Phone, Users, Tag, ChevronDown,
+  Megaphone, CheckCircle2, Phone, Users, Tag, Zap,
 } from "lucide-react";
+import { launchWhatsappEmbeddedSignup, WHATSAPP_CONFIG_ID } from "@/lib/facebookSdk";
 
 const WEBHOOK_URL = "https://sistemaderelatoriosmeta.vercel.app/webhook/whatsapp";
 
@@ -24,6 +25,10 @@ export default function Conversas() {
     { companyId: companyId ?? 0 },
     { enabled: !!companyId }
   );
+  const { data: waConfig } = trpc.whatsapp.getConfig.useQuery(
+    { companyId: companyId ?? 0 },
+    { enabled: !!companyId }
+  );
 
   const conversations = convData?.conversations ?? [];
   const summary = convData?.summary ?? { total: 0, attributed: 0, converted: 0 };
@@ -33,8 +38,13 @@ export default function Conversas() {
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2 flex-wrap">
             <MessageCircle className="h-6 w-6 text-primary" /> Conversas WhatsApp
+            {companyId && waConfig && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border text-emerald-300 bg-emerald-400/10 border-emerald-400/25">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> WhatsApp Conectado
+              </span>
+            )}
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Conversas iniciadas pelos anúncios (Click-to-WhatsApp) com atribuição de campanha
@@ -167,6 +177,35 @@ function WhatsappConfig({ companyId }: { companyId: number }) {
     onError: (e) => toast.error(e.message || "Erro ao salvar"),
   });
 
+  // Conexão "1 clique" via Meta Embedded Signup (popup nativo, igual ao Tintim)
+  const [connecting, setConnecting] = useState(false);
+  const finishSignup = trpc.whatsapp.finishEmbeddedSignup.useMutation({
+    onSuccess: () => { toast.success("WhatsApp conectado com sucesso!"); refetch(); },
+    onError: (e) => toast.error(e.message || "Erro ao finalizar conexão"),
+  });
+
+  const connectOneClick = async () => {
+    setConnecting(true);
+    try {
+      const r = await launchWhatsappEmbeddedSignup();
+      if (!r.phoneNumberId || !r.wabaId) {
+        toast.error("A Meta não retornou o número/WABA. Tente novamente ou use o modo manual.");
+        return;
+      }
+      await finishSignup.mutateAsync({
+        companyId,
+        code: r.code,
+        phoneNumberId: r.phoneNumberId,
+        wabaId: r.wabaId,
+      });
+    } catch (e: any) {
+      if (e?.message && !/cancel/i.test(e.message)) toast.error(e.message);
+    } finally {
+      setConnecting(false);
+    }
+  };
+  const [showManual, setShowManual] = useState(false);
+
   const copy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
     setCopied(key);
@@ -190,10 +229,37 @@ function WhatsappConfig({ companyId }: { companyId: number }) {
     <div className="glass-card rounded-xl border border-cyan-500/20 bg-cyan-950/10 p-5 space-y-4">
       <div className="flex items-center gap-2">
         <Settings2 className="h-4 w-4 text-cyan-400" />
-        <h2 className="text-sm font-bold">Conexão WhatsApp Cloud API</h2>
-        {cfg && <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-emerald-300"><CheckCircle2 className="h-3 w-3" /> Configurado</span>}
+        <h2 className="text-sm font-bold">Conexão WhatsApp</h2>
+        {cfg && <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-emerald-300"><CheckCircle2 className="h-3 w-3" /> {cfg.displayPhone || "Conectado"}</span>}
       </div>
 
+      {/* Conexão 1 clique (Embedded Signup) */}
+      {WHATSAPP_CONFIG_ID ? (
+        <div className="rounded-lg bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 border border-emerald-500/20 p-4 space-y-3">
+          <div className="flex items-start gap-2">
+            <Zap className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-white/90">Conectar com 1 clique</p>
+              <p className="text-[11px] text-white/50">Login oficial da Meta — descobre o número e configura tudo sozinho.</p>
+            </div>
+          </div>
+          <Button onClick={connectOneClick} disabled={connecting || finishSignup.isPending}
+            className="w-full rounded-xl gap-2 bg-[#1877F2] hover:bg-[#1466d8] text-white">
+            {connecting || finishSignup.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
+            {cfg ? "Reconectar WhatsApp" : "Conectar WhatsApp"}
+          </Button>
+          <button onClick={() => setShowManual((v) => !v)} className="text-[11px] text-white/40 hover:text-white/70 underline w-full text-center">
+            {showManual ? "Esconder conexão manual" : "Prefiro conectar manualmente"}
+          </button>
+        </div>
+      ) : (
+        <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 text-[11px] text-amber-300/80">
+          Conexão 1 clique indisponível (falta configurar o Embedded Signup na Meta). Use o modo manual abaixo.
+        </div>
+      )}
+
+      {(!WHATSAPP_CONFIG_ID || showManual) && (
+      <>
       {/* Passo a passo da Meta */}
       <div className="rounded-lg bg-black/20 border border-white/8 p-3 text-[11px] text-white/50 space-y-1.5">
         <p className="text-white/70 font-semibold">No painel da Meta (developers.facebook.com → seu app → WhatsApp → Configuration):</p>
@@ -240,6 +306,8 @@ function WhatsappConfig({ companyId }: { companyId: number }) {
         {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
         Salvar conexão
       </Button>
+      </>
+      )}
     </div>
   );
 }
