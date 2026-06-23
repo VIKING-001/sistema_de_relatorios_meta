@@ -100,6 +100,9 @@ router.post("/webhook/whatsapp", async (req: Request, res: Response) => {
             sourceUrl: ref?.source_url ?? null,
             lastMessageText: text,
             messageTime: ts,
+          }).catch((e: any) => {
+            console.error("[WhatsApp] upsertWhatsappConversation ERRO:", e?.message, JSON.stringify(e));
+            return null;
           });
 
           await db.logWebhookEvent({
