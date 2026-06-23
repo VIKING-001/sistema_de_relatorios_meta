@@ -41,13 +41,18 @@ router.post("/webhook/whatsapp", async (req: Request, res: Response) => {
 
   try {
     const body = req.body;
-    if (body?.object !== "whatsapp_business_account") return;
+    console.log("[WhatsApp] Payload recebido:", JSON.stringify(body).slice(0, 500));
+    if (body?.object !== "whatsapp_business_account") {
+      console.log("[WhatsApp] object não é whatsapp_business_account:", body?.object);
+      return;
+    }
 
     for (const entry of body.entry ?? []) {
       for (const change of entry.changes ?? []) {
         const value = change.value ?? {};
         const phoneNumberId: string | undefined = value?.metadata?.phone_number_id;
         const messages = value.messages ?? [];
+        console.log(`[WhatsApp] phoneNumberId=${phoneNumberId} messages=${messages.length} statuses=${(value.statuses ?? []).length}`);
         if (!phoneNumberId || messages.length === 0) continue;
 
         // Descobre a empresa dona deste número
