@@ -450,6 +450,31 @@ export async function updateCompanyMetaOAuth(
   return result;
 }
 
+/**
+ * Reconexão "1 clique": atualiza o token de TODAS as empresas do usuário cujo
+ * metaAdAccountId esteja na lista de contas que o novo token consegue acessar.
+ * Como todas as contas vêm do mesmo login Meta, uma única autorização refresca
+ * todas as contas expiradas de uma vez. Retorna quantas empresas foram atualizadas.
+ */
+export async function refreshUserCompaniesToken(
+  userId: number,
+  accessToken: string,
+  metaTokenExpiresAt: Date,
+  adAccountIds: string[]
+): Promise<number> {
+  const pool = await getRawPool();
+  if (!pool || adAccountIds.length === 0) return 0;
+  // normaliza para garantir o prefixo act_ (a Meta retorna com act_)
+  const ids = adAccountIds.map((id) => (id.startsWith("act_") ? id : `act_${id}`));
+  const r = await pool.query(
+    `UPDATE "companies"
+       SET "metaAccessToken" = $1, "metaTokenExpiresAt" = $2, "updatedAt" = NOW()
+     WHERE "userId" = $3 AND "metaAdAccountId" = ANY($4::text[])`,
+    [accessToken, metaTokenExpiresAt, userId, ids]
+  );
+  return r.rowCount ?? 0;
+}
+
 export async function disconnectCompanyMeta(id: number) {
   const db = await getDb();
   const [result] = await db

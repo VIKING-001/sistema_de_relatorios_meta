@@ -35,6 +35,7 @@ import {
   Zap,
   Globe,
   MessageCircle,
+  MoreHorizontal,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -64,13 +65,21 @@ const MIN_WIDTH = 180;
 const MAX_WIDTH = 320;
 
 // ─── Mobile bottom navigation ────────────────────────────────────────────────
-// Usa apenas os 5 itens principais para não poluir a barra
-const mobileNav = [
+// 4 itens principais fixos na barra + botão "Mais" para todo o resto
+const mobilePrimary = [
   { icon: BarChart3,    label: "Dashboard",  path: "/" },
   { icon: Building2,    label: "Relatórios", path: "/relatorios" },
   { icon: Megaphone,    label: "Contas",     path: "/contas" },
   { icon: Zap,          label: "Campanhas",  path: "/campanhas" },
-  { icon: Settings,     label: "Config",     path: "/configuracoes" },
+];
+
+// Itens secundários acessíveis pelo menu "Mais" no celular
+const mobileMore = [
+  { icon: ShoppingCart,  label: "Compras",       path: "/compras" },
+  { icon: MessageCircle, label: "Conversas",     path: "/conversas" },
+  { icon: Link2,         label: "Gerador de URL", path: "/gerador-url" },
+  { icon: Globe,         label: "Integrações",   path: "/integracoes" },
+  { icon: Settings,      label: "Configurações", path: "/configuracoes" },
 ];
 
 function MobileLayout({ children }: { children: React.ReactNode }) {
@@ -128,7 +137,7 @@ function MobileLayout({ children }: { children: React.ReactNode }) {
       {/* Mobile bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur border-t border-white/5 safe-area-inset-bottom">
         <div className="flex items-center justify-around h-16 px-1">
-          {mobileNav.map(({ icon: Icon, label, path }) => {
+          {mobilePrimary.map(({ icon: Icon, label, path }) => {
             const isActive = location === path || (path !== "/" && location.startsWith(path));
             return (
               <button
@@ -143,6 +152,41 @@ function MobileLayout({ children }: { children: React.ReactNode }) {
               </button>
             );
           })}
+
+          {/* Botão "Mais" — abre menu com todas as outras telas */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-colors min-w-0 flex-1 ${
+                  mobileMore.some(i => location.startsWith(i.path) && i.path !== "/")
+                    ? "text-primary"
+                    : "text-muted-foreground"
+                }`}
+              >
+                <MoreHorizontal className="h-5 w-5 shrink-0" />
+                <span className="text-[9px] font-medium truncate w-full text-center">Mais</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" side="top" className="w-52 mb-2">
+              {mobileMore.map(({ icon: Icon, label, path }) => (
+                <DropdownMenuItem
+                  key={path}
+                  onClick={() => setLocation(path)}
+                  className="cursor-pointer gap-2.5 py-2.5"
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  {label}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="cursor-pointer gap-2.5 py-2.5 text-destructive focus:text-destructive"
+              >
+                <LogOut className="h-4 w-4 shrink-0" /> Sair
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </nav>
     </div>

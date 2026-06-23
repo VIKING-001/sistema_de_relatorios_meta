@@ -57,6 +57,27 @@ export default function ContasAnuncio() {
     [companies]
   );
 
+  // Contas cujo token Meta já expirou (60 dias) — aparecem "conectadas" mas
+  // não trazem dados até reconectar.
+  const expiredCompanies = useMemo(
+    () =>
+      (companies ?? []).filter(
+        (c: any) =>
+          c.metaAccessToken &&
+          c.metaAdAccountId &&
+          c.metaTokenExpiresAt &&
+          new Date(c.metaTokenExpiresAt).getTime() < Date.now()
+      ),
+    [companies]
+  );
+
+  // Reconexão "1 clique": basta reconectar UMA conta — o backend refresca todas
+  // as contas do mesmo login Meta automaticamente.
+  const handleReconnect = () => {
+    const target = expiredCompanies[0] ?? connectedCompanies[0];
+    if (target) window.location.href = `/api/meta/connect?companyId=${target.id}`;
+  };
+
   const fmt = (n: number) => n.toLocaleString("pt-BR");
   const fmtR = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -85,6 +106,29 @@ export default function ContasAnuncio() {
           </Button>
         </div>
       </div>
+
+      {/* Banner de tokens expirados — reconexão de 1 clique */}
+      {expiredCompanies.length > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25">
+          <AlertTriangle className="h-5 w-5 shrink-0 text-amber-400" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-300">
+              {expiredCompanies.length} {expiredCompanies.length === 1 ? "conta precisa" : "contas precisam"} reconectar com a Meta
+            </p>
+            <p className="text-xs text-amber-400/80 mt-0.5">
+              O acesso da Meta expira a cada 60 dias. Clique em reconectar — um único login
+              renova todas as contas de uma vez.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            onClick={handleReconnect}
+            className="shrink-0 rounded-xl bg-[#1877F2] hover:bg-[#1466d8] text-white gap-2"
+          >
+            <Link2 className="h-4 w-4" /> Reconectar todas
+          </Button>
+        </div>
+      )}
 
       {/* Filtros */}
       <div className="flex flex-wrap gap-3 items-center">

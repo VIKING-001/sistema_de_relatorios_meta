@@ -219,7 +219,7 @@ export function registerOAuthRoutes(app: Express) {
         return;
       }
 
-      const { companyId } = stateData;
+      const { companyId, userId } = stateData;
       const redirectUri = `${ENV.appBaseUrl}/api/meta/callback`;
 
       // Troca o código por long-lived token
@@ -231,14 +231,25 @@ export function registerOAuthRoutes(app: Express) {
       // Se tiver apenas uma conta, já salva automaticamente
       const autoAccountId = adAccounts.length === 1 ? adAccounts[0].id : null;
 
-      // Salva no banco
+      // Salva no banco (empresa principal da reconexão)
       await db.updateCompanyMetaOAuth(companyId, access_token, expiresAt, autoAccountId);
 
-      console.log(`[Meta OAuth] Empresa ${companyId} conectada. Contas encontradas: ${adAccounts.length}. Auto-selecionada: ${autoAccountId || "nenhuma"}`);
+      // Reconexão "1 clique": o mesmo login Meta dá acesso a várias contas.
+      // Refresca o token de TODAS as empresas do usuário cujas contas estão
+      // acessíveis por este token — assim 1 clique reconecta tudo que expirou.
+      let refreshedCount = 0;
+      try {
+        const accessibleIds = adAccounts.map((a) => a.id);
+        refreshedCount = await db.refreshUserCompaniesToken(userId, access_token, expiresAt, accessibleIds);
+      } catch (refreshErr: any) {
+        console.error("[Meta OAuth] Falha ao refrescar contas irmãs:", refreshErr?.message || refreshErr);
+      }
+
+      console.log(`[Meta OAuth] Empresa ${companyId} conectada. Contas encontradas: ${adAccounts.length}. Auto-selecionada: ${autoAccountId || "nenhuma"}. Empresas refrescadas: ${refreshedCount}`);
 
       // Redireciona de volta ao frontend principal com sucesso
       const accountsParam = encodeURIComponent(JSON.stringify(adAccounts));
-      res.redirect(302, `${frontendBase}/?meta_connected=1&companyId=${companyId}&accounts=${accountsParam}`);
+      res.redirect(302, `${frontendBase}/?meta_connected=1&companyId=${companyId}&refreshed=${refreshedCount}&accounts=${accountsParam}`);
     } catch (err: any) {
       console.error("[Meta OAuth] Callback error:", err);
       res.redirect(302, `${frontendBase}/?meta_error=` + encodeURIComponent(err?.message || "Erro desconhecido no OAuth do Meta."));

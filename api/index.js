@@ -48485,6 +48485,18 @@ async function updateCompanyMetaOAuth(id, metaAccessToken, metaTokenExpiresAt, m
   const [result] = await db.update(companies).set({ metaAccessToken, metaTokenExpiresAt, ...metaAdAccountId ? { metaAdAccountId } : {} }).where(eq(companies.id, id)).returning();
   return result;
 }
+async function refreshUserCompaniesToken(userId, accessToken, metaTokenExpiresAt, adAccountIds) {
+  const pool2 = await getRawPool();
+  if (!pool2 || adAccountIds.length === 0) return 0;
+  const ids = adAccountIds.map((id) => id.startsWith("act_") ? id : `act_${id}`);
+  const r = await pool2.query(
+    `UPDATE "companies"
+       SET "metaAccessToken" = $1, "metaTokenExpiresAt" = $2, "updatedAt" = NOW()
+     WHERE "userId" = $3 AND "metaAdAccountId" = ANY($4::text[])`,
+    [accessToken, metaTokenExpiresAt, userId, ids]
+  );
+  return r.rowCount ?? 0;
+}
 async function disconnectCompanyMeta(id) {
   const db = await getDb();
   const [result] = await db.update(companies).set({ metaAccessToken: null, metaAdAccountId: null, metaTokenExpiresAt: null }).where(eq(companies.id, id)).returning();
@@ -49203,16 +49215,23 @@ function registerOAuthRoutes(app2) {
         res.redirect(302, `${frontendBase}/?meta_error=` + encodeURIComponent("State inv\xE1lido ou expirado. Tente novamente."));
         return;
       }
-      const { companyId } = stateData;
+      const { companyId, userId } = stateData;
       const redirectUri = `${ENV.appBaseUrl}/api/meta/callback`;
       const { access_token, expires_in } = await exchangeCodeForLongLivedToken(code, redirectUri);
       const expiresAt = new Date(Date.now() + expires_in * 1e3);
       const adAccounts = await getAdAccounts(access_token);
       const autoAccountId = adAccounts.length === 1 ? adAccounts[0].id : null;
       await updateCompanyMetaOAuth(companyId, access_token, expiresAt, autoAccountId);
-      console.log(`[Meta OAuth] Empresa ${companyId} conectada. Contas encontradas: ${adAccounts.length}. Auto-selecionada: ${autoAccountId || "nenhuma"}`);
+      let refreshedCount = 0;
+      try {
+        const accessibleIds = adAccounts.map((a) => a.id);
+        refreshedCount = await refreshUserCompaniesToken(userId, access_token, expiresAt, accessibleIds);
+      } catch (refreshErr) {
+        console.error("[Meta OAuth] Falha ao refrescar contas irm\xE3s:", refreshErr?.message || refreshErr);
+      }
+      console.log(`[Meta OAuth] Empresa ${companyId} conectada. Contas encontradas: ${adAccounts.length}. Auto-selecionada: ${autoAccountId || "nenhuma"}. Empresas refrescadas: ${refreshedCount}`);
       const accountsParam = encodeURIComponent(JSON.stringify(adAccounts));
-      res.redirect(302, `${frontendBase}/?meta_connected=1&companyId=${companyId}&accounts=${accountsParam}`);
+      res.redirect(302, `${frontendBase}/?meta_connected=1&companyId=${companyId}&refreshed=${refreshedCount}&accounts=${accountsParam}`);
     } catch (err) {
       console.error("[Meta OAuth] Callback error:", err);
       res.redirect(302, `${frontendBase}/?meta_error=` + encodeURIComponent(err?.message || "Erro desconhecido no OAuth do Meta."));
