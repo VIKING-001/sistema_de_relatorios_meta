@@ -238,6 +238,21 @@ async function ensureTables(pool: InstanceType<typeof Pool>) {
     `CREATE INDEX IF NOT EXISTS "idx_whatsappConversations_companyId" ON "whatsappConversations"("companyId")`,
     `CREATE INDEX IF NOT EXISTS "idx_whatsappConversations_waId" ON "whatsappConversations"("waId")`,
     `CREATE INDEX IF NOT EXISTS "idx_whatsappConfigs_companyId" ON "whatsappConfigs"("companyId")`,
+    // Mensagens individuais de WhatsApp (uma linha por mensagem recebida)
+    `CREATE TABLE IF NOT EXISTS "whatsappMessages" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "conversationId" integer,
+      "companyId" integer NOT NULL,
+      "waId" varchar(32) NOT NULL,
+      "wamid" text UNIQUE,
+      "direction" varchar(10) NOT NULL DEFAULT 'inbound',
+      "type" varchar(20) DEFAULT 'text',
+      "text" text,
+      "timestamp" timestamptz NOT NULL DEFAULT NOW(),
+      "createdAt" timestamptz DEFAULT NOW()
+    )`,
+    `CREATE INDEX IF NOT EXISTS "idx_whatsappMessages_companyWaId" ON "whatsappMessages"("companyId","waId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_whatsappMessages_conversationId" ON "whatsappMessages"("conversationId")`,
     // ─── PWA Push Notifications ──────────────────────────────────────────────
     // Subscriptions de push por usuário/dispositivo (chave = endpoint da subscription)
     `CREATE TABLE IF NOT EXISTS "pushSubscriptions" (
@@ -776,6 +791,52 @@ export async function listWhatsappConversations(companyId: number, limit = 200) 
   const r = await pool.query(
     `SELECT * FROM "whatsappConversations" WHERE "companyId" = $1 ORDER BY "lastMessageAt" DESC LIMIT $2`,
     [companyId, limit]
+  );
+  return r.rows;
+}
+
+/** Salva uma mensagem individual recebida via webhook */
+export async function saveWhatsappMessage(m: {
+  conversationId?: number | null;
+  companyId: number;
+  waId: string;
+  wamid?: string | null;
+  direction?: string;
+  type?: string;
+  text?: string | null;
+  timestamp: Date;
+}) {
+  const pool = await getRawPool();
+  if (!pool) return null;
+  const r = await pool.query(
+    `INSERT INTO "whatsappMessages"
+       ("conversationId","companyId","waId","wamid","direction","type","text","timestamp")
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+     ON CONFLICT ("wamid") DO NOTHING
+     RETURNING *`,
+    [
+      m.conversationId ?? null,
+      m.companyId,
+      m.waId,
+      m.wamid ?? null,
+      m.direction ?? "inbound",
+      m.type ?? "text",
+      m.text ?? null,
+      m.timestamp,
+    ]
+  );
+  return r.rows[0] ?? null;
+}
+
+/** Lista mensagens de uma conversa (mais antigas primeiro) */
+export async function listWhatsappMessages(companyId: number, waId: string, limit = 100) {
+  const pool = await getRawPool();
+  if (!pool) return [];
+  const r = await pool.query(
+    `SELECT * FROM "whatsappMessages"
+     WHERE "companyId" = $1 AND "waId" = $2
+     ORDER BY "timestamp" ASC LIMIT $3`,
+    [companyId, waId, limit]
   );
   return r.rows;
 }

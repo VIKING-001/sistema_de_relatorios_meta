@@ -1,17 +1,6 @@
 import { Router, Request, Response } from "express";
 import * as db from "./db";
 
-/**
- * Webhook da WhatsApp Cloud API (Meta).
- *
- * GET  /webhook/whatsapp  → verificação (hub.challenge) que a Meta exige ao salvar a URL
- * POST /webhook/whatsapp  → recebe as mensagens; a 1ª mensagem de um anúncio
- *                           Click-to-WhatsApp traz `referral` com a campanha/anúncio
- *                           de origem → registramos a conversa já ATRIBUÍDA.
- *
- * É um endpoint único (nível do app Meta). O roteamento para a empresa certa é
- * feito pelo `phone_number_id` que vem no payload (mapeado em whatsappConfigs).
- */
 const router = Router();
 
 // ── Verificação (GET) ────────────────────────────────────────────────────────
@@ -36,19 +25,10 @@ router.get("/webhook/whatsapp", async (req: Request, res: Response) => {
 
 // ── Recebimento de mensagens (POST) ──────────────────────────────────────────
 router.post("/webhook/whatsapp", async (req: Request, res: Response) => {
-  // Responde 200 IMEDIATAMENTE — a Meta reenvia se não receber 200 rápido.
   res.sendStatus(200);
 
   try {
     const body = req.body;
-    // Salva payload bruto para diagnóstico
-    const pool2 = await db.getRawPool();
-    if (pool2) {
-      await pool2.query(
-        `INSERT INTO "webhookEvents" ("companyId","platform","success","message","payloadSummary") VALUES (NULL,'whatsapp_debug',true,'raw payload',LEFT($1,500))`,
-        [JSON.stringify(body)]
-      ).catch(() => {});
-    }
     if (body?.object !== "whatsapp_business_account") return;
 
     for (const entry of body.entry ?? []) {
@@ -56,17 +36,14 @@ router.post("/webhook/whatsapp", async (req: Request, res: Response) => {
         const value = change.value ?? {};
         const phoneNumberId: string | undefined = value?.metadata?.phone_number_id;
         const messages = value.messages ?? [];
-        console.log(`[WhatsApp] phoneNumberId=${phoneNumberId} messages=${messages.length} statuses=${(value.statuses ?? []).length}`);
         if (!phoneNumberId || messages.length === 0) continue;
 
-        // Descobre a empresa dona deste número
         const cfg = await db.getWhatsappConfigByPhoneNumberId(phoneNumberId);
         if (!cfg) {
           console.warn(`[WhatsApp] phone_number_id ${phoneNumberId} sem empresa configurada.`);
           continue;
         }
 
-        // Mapa de nomes de contato (wa_id → nome do perfil)
         const contactName = new Map<string, string>();
         for (const c of value.contacts ?? []) {
           if (c?.wa_id) contactName.set(c.wa_id, c?.profile?.name ?? "");
@@ -81,7 +58,6 @@ router.post("/webhook/whatsapp", async (req: Request, res: Response) => {
             msg.interactive?.button_reply?.title ??
             `[${msg.type}]`;
 
-          // Click-to-WhatsApp: referral só vem na 1ª mensagem que originou do anúncio
           const ref = msg.referral;
           const campaignName =
             ref?.source_type === "ad" || ref?.source_id
@@ -101,8 +77,22 @@ router.post("/webhook/whatsapp", async (req: Request, res: Response) => {
             lastMessageText: text,
             messageTime: ts,
           }).catch((e: any) => {
-            console.error("[WhatsApp] upsertWhatsappConversation ERRO:", e?.message, JSON.stringify(e));
+            console.error("[WhatsApp] upsertWhatsappConversation ERRO:", e?.message, e?.code);
             return null;
+          });
+
+          // Salva a mensagem individual para exibir no histórico
+          await db.saveWhatsappMessage({
+            conversationId: conv?.id ?? null,
+            companyId: cfg.companyId,
+            waId,
+            wamid: msg.id ?? null,
+            direction: "inbound",
+            type: msg.type ?? "text",
+            text,
+            timestamp: ts,
+          }).catch((e: any) => {
+            console.error("[WhatsApp] saveWhatsappMessage ERRO:", e?.message);
           });
 
           await db.logWebhookEvent({
@@ -115,10 +105,6 @@ router.post("/webhook/whatsapp", async (req: Request, res: Response) => {
               : `Conversa de ${waId} (orgânica)`,
             payloadSummary: text?.slice(0, 200) ?? null,
           });
-
-          console.log(
-            `[WhatsApp] Conversa ${conv?.id} (${waId}) ${campaignName ? "ATRIBUÍDA → " + campaignName : "orgânica"}`
-          );
         }
       }
     }

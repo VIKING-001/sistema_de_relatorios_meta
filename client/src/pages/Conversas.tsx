@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
   MessageCircle, Building2, Loader2, Settings2, Copy, Check,
-  Megaphone, CheckCircle2, Phone, Users, Tag, Zap,
+  Megaphone, CheckCircle2, Phone, Users, Tag, Zap, ArrowLeft, Clock,
 } from "lucide-react";
 import { launchWhatsappEmbeddedSignup, WHATSAPP_CONFIG_ID } from "@/lib/facebookSdk";
 
@@ -16,10 +16,24 @@ function fmtDate(d: string) {
   return d ? new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—";
 }
 
+function fmtTime(d: string) {
+  return d ? new Date(d).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
+}
+
+function fmtDay(d: string) {
+  if (!d) return "";
+  const dt = new Date(d);
+  const today = new Date();
+  const isToday = dt.toDateString() === today.toDateString();
+  if (isToday) return "Hoje";
+  return dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
+}
+
 export default function Conversas() {
   const { data: companies, isLoading: loadingCompanies } = trpc.company.list.useQuery();
   const [companyId, setCompanyId] = useState<number | null>(null);
   const [showConfig, setShowConfig] = useState(false);
+  const [selectedConv, setSelectedConv] = useState<any | null>(null);
 
   const { data: convData, isLoading: loadingConvs } = trpc.whatsapp.listConversations.useQuery(
     { companyId: companyId ?? 0 },
@@ -29,9 +43,25 @@ export default function Conversas() {
     { companyId: companyId ?? 0 },
     { enabled: !!companyId }
   );
+  const { data: msgData, isLoading: loadingMsgs } = trpc.whatsapp.listMessages.useQuery(
+    { companyId: companyId ?? 0, waId: selectedConv?.waId ?? "" },
+    { enabled: !!companyId && !!selectedConv, refetchInterval: 5000 }
+  );
 
   const conversations = convData?.conversations ?? [];
   const summary = convData?.summary ?? { total: 0, attributed: 0, converted: 0 };
+  const messages = msgData?.messages ?? [];
+
+  // Agrupa mensagens por dia para separadores visuais
+  const msgsByDay: { day: string; msgs: any[] }[] = [];
+  for (const m of messages) {
+    const day = fmtDay(m.timestamp);
+    if (!msgsByDay.length || msgsByDay[msgsByDay.length - 1].day !== day) {
+      msgsByDay.push({ day, msgs: [m] });
+    } else {
+      msgsByDay[msgsByDay.length - 1].msgs.push(m);
+    }
+  }
 
   return (
     <div className="p-4 md:p-6 space-y-5">
@@ -39,18 +69,29 @@ export default function Conversas() {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2 flex-wrap">
-            <MessageCircle className="h-6 w-6 text-primary" /> Conversas WhatsApp
-            {companyId && waConfig && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border text-emerald-300 bg-emerald-400/10 border-emerald-400/25">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> WhatsApp Conectado
-              </span>
+            {selectedConv ? (
+              <button onClick={() => setSelectedConv(null)} className="flex items-center gap-2 hover:text-white/70 transition-colors">
+                <ArrowLeft className="h-5 w-5" />
+                {selectedConv.customerName || selectedConv.waId}
+              </button>
+            ) : (
+              <>
+                <MessageCircle className="h-6 w-6 text-primary" /> Conversas WhatsApp
+                {companyId && waConfig && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border text-emerald-300 bg-emerald-400/10 border-emerald-400/25">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> WhatsApp Conectado
+                  </span>
+                )}
+              </>
             )}
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            Conversas iniciadas pelos anúncios (Click-to-WhatsApp) com atribuição de campanha
+            {selectedConv
+              ? `${selectedConv.waId}${selectedConv.campaignName ? " · via " + selectedConv.campaignName : " · orgânica"}`
+              : "Conversas iniciadas pelos anúncios (Click-to-WhatsApp) com atribuição de campanha"}
           </p>
         </div>
-        {companyId && (
+        {companyId && !selectedConv && (
           <Button variant="outline" onClick={() => setShowConfig((v) => !v)} className="rounded-xl gap-2 border-white/10">
             <Settings2 className="h-4 w-4" /> Configurar conexão
           </Button>
@@ -58,27 +99,101 @@ export default function Conversas() {
       </div>
 
       {/* Empresa */}
-      <div className="glass-card rounded-xl p-4 border border-white/10 flex flex-col sm:flex-row sm:items-center gap-3">
-        <Label className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 shrink-0">
-          <Building2 className="h-3.5 w-3.5" /> Empresa
-        </Label>
-        <select
-          value={companyId ?? ""}
-          onChange={(e) => setCompanyId(e.target.value ? Number(e.target.value) : null)}
-          disabled={loadingCompanies}
-          className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white/90 focus:outline-none focus:border-primary/50"
-        >
-          <option value="" className="bg-zinc-900">Selecione a empresa…</option>
-          {companies?.map((c: any) => (
-            <option key={c.id} value={c.id} className="bg-zinc-900">{c.name}</option>
-          ))}
-        </select>
-      </div>
+      {!selectedConv && (
+        <div className="glass-card rounded-xl p-4 border border-white/10 flex flex-col sm:flex-row sm:items-center gap-3">
+          <Label className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 shrink-0">
+            <Building2 className="h-3.5 w-3.5" /> Empresa
+          </Label>
+          <select
+            value={companyId ?? ""}
+            onChange={(e) => { setCompanyId(e.target.value ? Number(e.target.value) : null); setSelectedConv(null); }}
+            disabled={loadingCompanies}
+            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white/90 focus:outline-none focus:border-primary/50"
+          >
+            <option value="" className="bg-zinc-900">Selecione a empresa…</option>
+            {companies?.map((c: any) => (
+              <option key={c.id} value={c.id} className="bg-zinc-900">{c.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {!companyId ? (
         <div className="text-center py-20 text-muted-foreground">
           <MessageCircle className="h-10 w-10 mx-auto mb-3 opacity-20" />
           <p className="text-sm">Selecione uma empresa para ver as conversas.</p>
+        </div>
+      ) : selectedConv ? (
+        /* ── Painel de mensagens ── */
+        <div className="glass-card rounded-xl border border-white/10 flex flex-col" style={{ minHeight: "60vh" }}>
+          {/* Info da conversa */}
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 bg-black/20">
+            <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+              <Phone className="h-4 w-4 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-white/90">{selectedConv.customerName || selectedConv.waId}</p>
+              {selectedConv.customerName && <p className="text-[11px] text-white/40">{selectedConv.waId}</p>}
+            </div>
+            <div className="text-right">
+              {selectedConv.campaignName
+                ? <span className="inline-flex items-center gap-1 text-[11px] text-cyan-300/80"><Megaphone className="h-3 w-3" />{selectedConv.campaignName}</span>
+                : <span className="inline-flex items-center gap-1 text-[11px] text-white/30"><Tag className="h-3 w-3" />orgânica</span>}
+              <p className="text-[10px] text-white/25 mt-0.5">{selectedConv.messageCount} msg(s)</p>
+            </div>
+          </div>
+
+          {/* Mensagens */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-1" style={{ maxHeight: "65vh" }}>
+            {loadingMsgs && (
+              <div className="flex items-center justify-center py-10 text-white/30 text-xs gap-2">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" /> Carregando mensagens…
+              </div>
+            )}
+            {!loadingMsgs && messages.length === 0 && (
+              <div className="text-center py-12 text-white/30 text-sm space-y-2">
+                <MessageCircle className="h-8 w-8 mx-auto opacity-20" />
+                <p>Nenhuma mensagem registrada ainda.</p>
+                <p className="text-[11px] text-white/20">As próximas mensagens recebidas aparecerão aqui automaticamente.</p>
+              </div>
+            )}
+            {msgsByDay.map(({ day, msgs }) => (
+              <div key={day}>
+                {/* Separador de dia */}
+                <div className="flex items-center gap-3 my-4">
+                  <div className="flex-1 h-px bg-white/8" />
+                  <span className="text-[10px] text-white/25 px-2">{day}</span>
+                  <div className="flex-1 h-px bg-white/8" />
+                </div>
+                <div className="space-y-2">
+                  {msgs.map((m: any) => (
+                    <div key={m.id} className={`flex ${m.direction === "outbound" ? "justify-end" : "justify-start"}`}>
+                      <div className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
+                        m.direction === "outbound"
+                          ? "bg-primary/70 text-white rounded-br-sm"
+                          : "bg-white/8 text-white/90 rounded-bl-sm"
+                      }`}>
+                        <p className="whitespace-pre-wrap break-words">{m.text}</p>
+                        <p className={`text-[10px] mt-1 text-right flex items-center justify-end gap-1 ${
+                          m.direction === "outbound" ? "text-white/50" : "text-white/30"
+                        }`}>
+                          <Clock className="h-2.5 w-2.5" />
+                          {fmtTime(m.timestamp)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Rodapé */}
+          <div className="px-4 py-2.5 border-t border-white/8 bg-black/20">
+            <p className="text-[11px] text-white/25 text-center">
+              Visualização somente leitura · Responda pelo WhatsApp Business
+            </p>
+          </div>
         </div>
       ) : (
         <>
@@ -101,7 +216,7 @@ export default function Conversas() {
             ))}
           </div>
 
-          {/* Lista */}
+          {/* Lista de conversas — clicável */}
           <div className="glass-card rounded-xl border border-white/10 overflow-hidden">
             <div className="hidden sm:flex items-center gap-2 px-4 py-2.5 bg-black/30 border-b border-white/8 text-[10px] text-white/25 uppercase tracking-widest font-bold">
               <div className="flex-1">Cliente</div>
@@ -123,13 +238,20 @@ export default function Conversas() {
               </div>
             )}
             {conversations.map((c: any) => (
-              <div key={c.id} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 px-4 py-3 border-b border-white/8 last:border-0 hover:bg-white/[0.03] transition-colors">
+              <button
+                key={c.id}
+                onClick={() => setSelectedConv(c)}
+                className="w-full text-left flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 px-4 py-3 border-b border-white/8 last:border-0 hover:bg-white/[0.06] active:bg-white/10 transition-colors"
+              >
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white/90 truncate flex items-center gap-1.5">
                     <Phone className="h-3 w-3 text-white/30 shrink-0" />
                     {c.customerName || c.waId}
                   </p>
-                  {c.customerName && <p className="text-[11px] text-white/35 truncate pl-4.5">{c.waId}</p>}
+                  {c.customerName && <p className="text-[11px] text-white/35 truncate pl-[18px]">{c.waId}</p>}
+                  {c.lastMessageText && (
+                    <p className="text-[11px] text-white/30 truncate pl-[18px] mt-0.5 italic">{c.lastMessageText}</p>
+                  )}
                 </div>
                 <div className="w-full sm:w-[180px] min-w-0">
                   {c.campaignName
@@ -143,7 +265,7 @@ export default function Conversas() {
                     ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border text-emerald-300 bg-emerald-400/10 border-emerald-400/25"><CheckCircle2 className="h-2.5 w-2.5" /> Vendeu</span>
                     : <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border text-white/50 bg-white/5 border-white/15">Aberta</span>}
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </>
@@ -163,7 +285,6 @@ function WhatsappConfig({ companyId }: { companyId: number }) {
   const [copied, setCopied] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
-  // Pré-preenche com o que já está salvo (uma vez)
   if (cfg && !loaded) {
     setPhoneNumberId(cfg.phoneNumberId ?? "");
     setWabaId(cfg.wabaId ?? "");
@@ -177,7 +298,6 @@ function WhatsappConfig({ companyId }: { companyId: number }) {
     onError: (e) => toast.error(e.message || "Erro ao salvar"),
   });
 
-  // Conexão "1 clique" via Meta Embedded Signup (popup nativo, igual ao Tintim)
   const [connecting, setConnecting] = useState(false);
   const finishSignup = trpc.whatsapp.finishEmbeddedSignup.useMutation({
     onSuccess: () => { toast.success("WhatsApp conectado com sucesso!"); refetch(); },
@@ -233,7 +353,6 @@ function WhatsappConfig({ companyId }: { companyId: number }) {
         {cfg && <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-emerald-300"><CheckCircle2 className="h-3 w-3" /> {cfg.displayPhone || "Conectado"}</span>}
       </div>
 
-      {/* Conexão 1 clique (Embedded Signup) */}
       {WHATSAPP_CONFIG_ID ? (
         <div className="rounded-lg bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 border border-emerald-500/20 p-4 space-y-3">
           <div className="flex items-start gap-2">
@@ -260,7 +379,6 @@ function WhatsappConfig({ companyId }: { companyId: number }) {
 
       {(!WHATSAPP_CONFIG_ID || showManual) && (
       <>
-      {/* Passo a passo da Meta */}
       <div className="rounded-lg bg-black/20 border border-white/8 p-3 text-[11px] text-white/50 space-y-1.5">
         <p className="text-white/70 font-semibold">No painel da Meta (developers.facebook.com → seu app → WhatsApp → Configuration):</p>
         <p>1. Em <b>Callback URL</b>, cole a URL abaixo. 2. Em <b>Verify token</b>, use o mesmo que você criar aqui. 3. Assine o campo <b>messages</b>.</p>
