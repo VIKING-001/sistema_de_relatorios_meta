@@ -82,18 +82,22 @@ router.post("/webhook/whatsapp", async (req: Request, res: Response) => {
           });
 
           // Salva a mensagem individual para exibir no histórico
-          await db.saveWhatsappMessage({
-            conversationId: conv?.id ?? null,
-            companyId: cfg.companyId,
-            waId,
-            wamid: msg.id ?? null,
-            direction: "inbound",
-            type: msg.type ?? "text",
-            text,
-            timestamp: ts,
-          }).catch((e: any) => {
-            console.error("[WhatsApp] saveWhatsappMessage ERRO:", e?.message);
-          });
+          console.log(`[WhatsApp] step:saveMsg fn=${typeof (db as any).saveWhatsappMessage} wamid=${msg.id} convId=${conv?.id}`);
+          try {
+            await (db as any).saveWhatsappMessage({
+              conversationId: conv?.id ?? null,
+              companyId: cfg.companyId,
+              waId,
+              wamid: msg.id ?? null,
+              direction: "inbound",
+              type: msg.type ?? "text",
+              text,
+              timestamp: ts,
+            });
+            console.log(`[WhatsApp] step:saveMsg OK`);
+          } catch (se: any) {
+            console.error("[WhatsApp] saveWhatsappMessage ERRO:", se?.message, se?.code, se?.detail);
+          }
 
           await db.logWebhookEvent({
             companyId: cfg.companyId,
@@ -109,7 +113,7 @@ router.post("/webhook/whatsapp", async (req: Request, res: Response) => {
       }
     }
   } catch (err: any) {
-    console.error("[WhatsApp] Erro processando webhook:", err?.message || err);
+    console.error("[WhatsApp] Erro processando webhook:", err?.stack?.split("\n").slice(0,2).join(" | ") || err?.message || String(err));
   }
 });
 
