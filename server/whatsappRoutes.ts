@@ -41,11 +41,15 @@ router.post("/webhook/whatsapp", async (req: Request, res: Response) => {
 
   try {
     const body = req.body;
-    console.log("[WhatsApp] Payload recebido:", JSON.stringify(body).slice(0, 500));
-    if (body?.object !== "whatsapp_business_account") {
-      console.log("[WhatsApp] object não é whatsapp_business_account:", body?.object);
-      return;
+    // Salva payload bruto para diagnóstico
+    const pool2 = await db.getRawPool();
+    if (pool2) {
+      await pool2.query(
+        `INSERT INTO "webhookEvents" ("companyId","platform","success","message","payloadSummary") VALUES (NULL,'whatsapp_debug',true,'raw payload',LEFT($1,500))`,
+        [JSON.stringify(body)]
+      ).catch(() => {});
     }
+    if (body?.object !== "whatsapp_business_account") return;
 
     for (const entry of body.entry ?? []) {
       for (const change of entry.changes ?? []) {
