@@ -1,6 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,13 +10,155 @@ import { toast } from "sonner";
 import {
   Settings, User, Shield, Bell, Palette,
   Save, LogOut, Eye, EyeOff, CheckCircle2,
+  BellRing, BellOff, Smartphone, DollarSign, Download,
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { usePushNotifications } from "@/lib/usePushNotifications";
+
+function BalanceAlertsSection() {
+  const { user } = useAuth();
+  const companiesQuery = trpc.company.list.useQuery(undefined, { enabled: !!user });
+  const companies = companiesQuery.data ?? [];
+
+  return (
+    <Card className="glass-card border-white/10">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+          <DollarSign className="h-4 w-4 text-primary" /> Alertas de Saldo
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-xs text-muted-foreground">
+          Configure o saldo mínimo por conta. Quando o saldo cair abaixo do limite, você receberá uma notificação às 9h.
+          Funciona apenas em contas pré-pagas (boleto/Pix).
+        </p>
+        {companies.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nenhuma conta cadastrada.</p>
+        ) : (
+          companies.map((company: any) => (
+            <BalanceAlertRow key={company.id} company={company} />
+          ))
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function BalanceAlertRow({ company }: { company: any }) {
+  const alertQuery = trpc.notifications.getBalanceAlert.useQuery(
+    { companyId: company.id },
+    { enabled: !!company.id }
+  );
+  const setAlert = trpc.notifications.setBalanceAlert.useMutation({
+    onSuccess: () => alertQuery.refetch(),
+  });
+
+  const alert = alertQuery.data;
+  const [threshold, setThreshold] = useState<string>(
+    alert ? String(alert.thresholdReais) : "100"
+  );
+  const [enabled, setEnabled] = useState<boolean>(alert?.enabled ?? true);
+
+  useEffect(() => {
+    if (alert) {
+      setThreshold(String(alert.thresholdReais));
+      setEnabled(alert.enabled);
+    }
+  }, [alert]);
+
+  const handleSave = async () => {
+    const val = parseFloat(threshold);
+    if (isNaN(val) || val < 0) {
+      toast.error("Valor inválido.");
+      return;
+    }
+    await setAlert.mutateAsync({
+      companyId: company.id,
+      thresholdReais: val,
+      enabled,
+    });
+    toast.success(`Alerta salvo para ${company.name}.`);
+  };
+
+  if (!company.metaAdAccountId) {
+    return (
+      <div className="py-3 border-b border-white/5 last:border-0 flex items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium">{company.name}</p>
+          <p className="text-xs text-muted-foreground">Sem conta Meta conectada</p>
+        </div>
+        <Badge variant="outline" className="border-white/10 text-muted-foreground text-[10px]">
+          Sem conexão
+        </Badge>
+      </div>
+    );
+  }
+
+  return (
+    <div className="py-3 border-b border-white/5 last:border-0 space-y-3">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium">{company.name}</p>
+          <p className="text-xs text-muted-foreground">Conta: {company.metaAdAccountId}</p>
+        </div>
+        {/* Toggle ativo/inativo */}
+        <button
+          onClick={() => setEnabled((v: boolean) => !v)}
+          className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${
+            enabled ? "bg-primary" : "bg-white/10"
+          }`}
+        >
+          <span
+            className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform shadow ${
+              enabled ? "translate-x-5" : "translate-x-0.5"
+            }`}
+          />
+        </button>
+      </div>
+      {enabled && (
+        <div className="flex items-center gap-2">
+          <Label className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+            Avisar quando saldo &lt; R$
+          </Label>
+          <Input
+            type="number"
+            min={0}
+            value={threshold}
+            onChange={(e) => setThreshold(e.target.value)}
+            className="bg-white/5 border-white/10 rounded-xl h-8 w-28 text-sm"
+            placeholder="100"
+          />
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={setAlert.isPending}
+            className="rounded-xl h-8 shrink-0"
+          >
+            <Save className="h-3.5 w-3.5 mr-1" />
+            {setAlert.isPending ? "..." : "Salvar"}
+          </Button>
+        </div>
+      )}
+      {!enabled && (
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={handleSave}
+          disabled={setAlert.isPending}
+          className="rounded-xl h-7 text-xs text-muted-foreground"
+        >
+          Salvar (desativado)
+        </Button>
+      )}
+    </div>
+  );
+}
 
 export default function Configuracoes() {
   const { user, logout } = useAuth();
   const [, setLocation] = useLocation();
   const logoutMutation = trpc.auth.logout.useMutation();
+  const push = usePushNotifications();
 
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState(user?.name ?? "");
@@ -25,6 +167,26 @@ export default function Configuracoes() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // PWA install prompt
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [installDismissed, setInstallDismissed] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const result = await installPrompt.userChoice;
+    if (result.outcome === "accepted") setInstallPrompt(null);
+  };
 
   const handleLogout = async () => {
     await logoutMutation.mutateAsync();
@@ -259,34 +421,100 @@ export default function Configuracoes() {
 
           {/* Notifications */}
           {activeSection === "notificacoes" && (
-            <Card className="glass-card border-white/10">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-                  <Bell className="h-4 w-4 text-primary" /> Notificações
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {[
-                  { label: "Token Meta expirado", desc: "Avise quando um token de acesso Meta estiver prestes a expirar" },
-                  { label: "Novo relatório criado", desc: "Notificação ao criar um novo relatório" },
-                  { label: "Importação de dados concluída", desc: "Avise quando a importação do Meta Ads terminar" },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-start justify-between gap-4 py-3 border-b border-white/5 last:border-0">
-                    <div>
-                      <p className="text-sm font-medium">{item.label}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
+            <div className="space-y-4">
+              {/* PWA install banner */}
+              {installPrompt && !installDismissed && (
+                <Card className="glass-card border-primary/30 bg-primary/5">
+                  <CardContent className="p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
+                      <Smartphone className="h-5 w-5 text-primary" />
                     </div>
-                    <button
-                      className="w-10 h-5 bg-primary/30 rounded-full relative shrink-0 mt-0.5"
-                      onClick={() => toast.info("Em breve!")}
-                    >
-                      <span className="absolute left-0.5 top-0.5 w-4 h-4 bg-white/30 rounded-full transition-transform" />
-                    </button>
-                  </div>
-                ))}
-                <p className="text-xs text-muted-foreground">Notificações — em breve.</p>
-              </CardContent>
-            </Card>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold">Instale o app no celular</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Adicione à tela inicial para receber notificações e acessar offline.
+                      </p>
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      <Button size="sm" onClick={handleInstall} className="gap-1.5 rounded-xl h-8">
+                        <Download className="h-3.5 w-3.5" />
+                        Instalar
+                      </Button>
+                      <button
+                        onClick={() => setInstallDismissed(true)}
+                        className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        Agora não
+                      </button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Push notifications toggle */}
+              <Card className="glass-card border-white/10">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                    <Bell className="h-4 w-4 text-primary" /> Notificações Push
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {!push.isSupported ? (
+                    <p className="text-sm text-muted-foreground">
+                      Seu navegador não suporta notificações push. Use Chrome ou Safari no celular.
+                    </p>
+                  ) : (
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-medium flex items-center gap-1.5">
+                          {push.isSubscribed ? (
+                            <BellRing className="h-4 w-4 text-emerald-400" />
+                          ) : (
+                            <BellOff className="h-4 w-4 text-muted-foreground" />
+                          )}
+                          {push.isSubscribed ? "Notificações ativas" : "Notificações desativadas"}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {push.isSubscribed
+                            ? "Você receberá alertas de saldo neste dispositivo, mesmo com o app fechado."
+                            : push.permission === "denied"
+                            ? "Permissão negada. Habilite nas configurações do navegador."
+                            : "Ative para receber alertas de saldo no celular."}
+                        </p>
+                      </div>
+                      {push.permission !== "denied" && (
+                        <Button
+                          size="sm"
+                          variant={push.isSubscribed ? "outline" : "default"}
+                          disabled={push.isLoading}
+                          onClick={async () => {
+                            if (push.isSubscribed) {
+                              await push.unsubscribe();
+                              toast.success("Notificações desativadas.");
+                            } else {
+                              const ok = await push.subscribe();
+                              if (ok) toast.success("Notificações ativadas!");
+                              else if (push.permission === "denied")
+                                toast.error("Permissão negada pelo navegador.");
+                            }
+                          }}
+                          className="rounded-xl shrink-0"
+                        >
+                          {push.isLoading
+                            ? "Aguarde..."
+                            : push.isSubscribed
+                            ? "Desativar"
+                            : "Ativar notificações"}
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Balance alerts per company */}
+              <BalanceAlertsSection />
+            </div>
           )}
 
           {/* System info */}

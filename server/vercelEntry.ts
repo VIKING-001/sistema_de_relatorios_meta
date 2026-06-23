@@ -7,6 +7,7 @@ import { createContext } from "./_core/context";
 import webhookRoutes from "./webhookRoutes";
 import shortlinkRoutes from "./shortlinkRoutes";
 import whatsappRoutes from "./whatsappRoutes";
+import checkBalancesRoute from "./cron/checkBalances";
 
 const app = express();
 
@@ -29,6 +30,9 @@ app.use(shortlinkRoutes);
 
 // Webhook da WhatsApp Cloud API em /webhook/whatsapp (conversas + atribuição CTWA)
 app.use(whatsappRoutes);
+
+// Cron: verificação diária de saldo das contas de anúncio pré-pagas
+app.use(checkBalancesRoute);
 
 // tRPC API
 app.use(

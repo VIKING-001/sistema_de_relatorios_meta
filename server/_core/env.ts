@@ -12,6 +12,12 @@ export const ENV = {
   appBaseUrl: (process.env.APP_BASE_URL || "https://sistemaderelatoriosmeta.vercel.app").trim(),
   /** URL do frontend para redirecionar após OAuth (pode ser diferente do callback) */
   frontendUrl: (process.env.FRONTEND_URL || process.env.APP_BASE_URL || "https://sistemaderelatoriosmeta.vercel.app").trim(),
+  /** Web Push (VAPID) — gerados com `npx web-push generate-vapid-keys` */
+  vapidPublicKey: (process.env.VAPID_PUBLIC_KEY || "").trim(),
+  vapidPrivateKey: (process.env.VAPID_PRIVATE_KEY || "").trim(),
+  vapidContactEmail: (process.env.VAPID_CONTACT_EMAIL || "raioshops@gmail.com").trim(),
+  /** Cron secret para proteger /api/cron/* contra chamadas externas */
+  cronSecret: (process.env.CRON_SECRET || "").trim(),
 };
 
 // Log basic status (DO NOT LOG DATABASE_URL FOR SECURITY)

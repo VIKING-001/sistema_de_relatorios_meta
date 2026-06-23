@@ -238,6 +238,30 @@ async function ensureTables(pool: InstanceType<typeof Pool>) {
     `CREATE INDEX IF NOT EXISTS "idx_whatsappConversations_companyId" ON "whatsappConversations"("companyId")`,
     `CREATE INDEX IF NOT EXISTS "idx_whatsappConversations_waId" ON "whatsappConversations"("waId")`,
     `CREATE INDEX IF NOT EXISTS "idx_whatsappConfigs_companyId" ON "whatsappConfigs"("companyId")`,
+    // ─── PWA Push Notifications ──────────────────────────────────────────────
+    // Subscriptions de push por usuário/dispositivo (chave = endpoint da subscription)
+    `CREATE TABLE IF NOT EXISTS "pushSubscriptions" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "userId" integer NOT NULL,
+      "companyId" integer,
+      "endpoint" text NOT NULL,
+      "p256dh" text NOT NULL,
+      "auth" text NOT NULL,
+      "createdAt" timestamptz DEFAULT NOW(),
+      CONSTRAINT "pushSubscriptions_endpoint_unique" UNIQUE("endpoint")
+    )`,
+    `CREATE INDEX IF NOT EXISTS "idx_pushSubs_userId" ON "pushSubscriptions"("userId")`,
+    // Configuração de alerta de saldo por empresa (threshold em centavos BRL)
+    `CREATE TABLE IF NOT EXISTS "balanceAlerts" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "companyId" integer NOT NULL,
+      "thresholdCents" integer NOT NULL DEFAULT 10000,
+      "enabled" boolean NOT NULL DEFAULT TRUE,
+      "lastNotifiedAt" timestamptz,
+      "createdAt" timestamptz DEFAULT NOW(),
+      "updatedAt" timestamptz DEFAULT NOW(),
+      CONSTRAINT "balanceAlerts_companyId_unique" UNIQUE("companyId")
+    )`,
   ];
   try {
     for (const sql of statements) {
@@ -729,6 +753,123 @@ export async function listWhatsappConversations(companyId: number, limit = 200) 
     [companyId, limit]
   );
   return r.rows;
+}
+
+// ─── PWA Push Subscriptions ──────────────────────────────────────────────────
+
+/** Salva/atualiza a subscription de push de um dispositivo (chave = endpoint) */
+export async function upsertPushSubscription(
+  userId: number,
+  endpoint: string,
+  p256dh: string,
+  auth: string,
+  companyId?: number | null
+) {
+  const pool = await getRawPool();
+  if (!pool) return;
+  await pool.query(
+    `INSERT INTO "pushSubscriptions" ("userId", "companyId", "endpoint", "p256dh", "auth")
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT ("endpoint") DO UPDATE SET
+       "userId" = EXCLUDED."userId",
+       "companyId" = EXCLUDED."companyId",
+       "p256dh" = EXCLUDED."p256dh",
+       "auth" = EXCLUDED."auth"`,
+    [userId, companyId ?? null, endpoint, p256dh, auth]
+  );
+}
+
+/** Remove uma subscription de push (quando o usuário desativa ou o endpoint expira) */
+export async function deletePushSubscription(endpoint: string) {
+  const pool = await getRawPool();
+  if (!pool) return;
+  await pool.query(`DELETE FROM "pushSubscriptions" WHERE "endpoint" = $1`, [endpoint]);
+}
+
+/** Retorna todas as subscriptions de push de um usuário (vários dispositivos) */
+export async function getPushSubscriptionsByUser(userId: number) {
+  const pool = await getRawPool();
+  if (!pool) return [];
+  const r = await pool.query(
+    `SELECT "endpoint", "p256dh", "auth" FROM "pushSubscriptions" WHERE "userId" = $1`,
+    [userId]
+  );
+  return r.rows as Array<{ endpoint: string; p256dh: string; auth: string }>;
+}
+
+// ─── Balance Alerts ──────────────────────────────────────────────────────────
+
+/** Salva/atualiza a configuração de alerta de saldo de uma empresa */
+export async function upsertBalanceAlert(
+  companyId: number,
+  thresholdCents: number,
+  enabled: boolean
+) {
+  const pool = await getRawPool();
+  if (!pool) return;
+  await pool.query(
+    `INSERT INTO "balanceAlerts" ("companyId", "thresholdCents", "enabled")
+     VALUES ($1, $2, $3)
+     ON CONFLICT ("companyId") DO UPDATE SET
+       "thresholdCents" = EXCLUDED."thresholdCents",
+       "enabled" = EXCLUDED."enabled",
+       "updatedAt" = NOW()`,
+    [companyId, thresholdCents, enabled]
+  );
+}
+
+/** Retorna a configuração de alerta de saldo de uma empresa */
+export async function getBalanceAlert(companyId: number) {
+  const pool = await getRawPool();
+  if (!pool) return null;
+  const r = await pool.query(
+    `SELECT * FROM "balanceAlerts" WHERE "companyId" = $1 LIMIT 1`,
+    [companyId]
+  );
+  return r.rows[0] ?? null;
+}
+
+/**
+ * Retorna todas as empresas com alerta de saldo ativo, incluindo as credenciais Meta
+ * necessárias para consultar o saldo. Usado pelo cron diário.
+ */
+export async function getAllEnabledBalanceAlerts() {
+  const pool = await getRawPool();
+  if (!pool) return [];
+  const r = await pool.query(
+    `SELECT
+       ba."companyId",
+       ba."thresholdCents",
+       ba."lastNotifiedAt",
+       c."userId",
+       c."name" AS "companyName",
+       c."metaAdAccountId",
+       c."metaAccessToken"
+     FROM "balanceAlerts" ba
+     JOIN "companies" c ON c."id" = ba."companyId"
+     WHERE ba."enabled" = TRUE
+       AND c."metaAdAccountId" IS NOT NULL
+       AND c."metaAccessToken" IS NOT NULL`
+  );
+  return r.rows as Array<{
+    companyId: number;
+    thresholdCents: number;
+    lastNotifiedAt: Date | null;
+    userId: number;
+    companyName: string;
+    metaAdAccountId: string;
+    metaAccessToken: string;
+  }>;
+}
+
+/** Atualiza lastNotifiedAt para agora (evita spam: só notifica 1x/dia) */
+export async function setBalanceAlertNotified(companyId: number) {
+  const pool = await getRawPool();
+  if (!pool) return;
+  await pool.query(
+    `UPDATE "balanceAlerts" SET "lastNotifiedAt" = NOW(), "updatedAt" = NOW() WHERE "companyId" = $1`,
+    [companyId]
+  );
 }
 
 /**
