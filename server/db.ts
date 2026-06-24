@@ -841,6 +841,12 @@ export async function listWhatsappMessages(companyId: number, waId: string, limi
   return r.rows;
 }
 
+export async function deleteWhatsappConfig(companyId: number) {
+  const pool = await getRawPool();
+  if (!pool) return;
+  await pool.query(`DELETE FROM "whatsappConfigs" WHERE "companyId" = $1`, [companyId]);
+}
+
 // ─── PWA Push Subscriptions ──────────────────────────────────────────────────
 
 /** Salva/atualiza a subscription de push de um dispositivo (chave = endpoint) */

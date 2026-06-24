@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
   MessageCircle, Building2, Loader2, Settings2, Copy, Check,
-  Megaphone, CheckCircle2, Phone, Users, Tag, Zap, ArrowLeft, Clock,
+  Megaphone, CheckCircle2, Phone, Users, Tag, Zap, ArrowLeft, Clock, LogOut,
 } from "lucide-react";
 import { launchWhatsappEmbeddedSignup, WHATSAPP_CONFIG_ID } from "@/lib/facebookSdk";
 
@@ -304,6 +304,20 @@ function WhatsappConfig({ companyId }: { companyId: number }) {
     onError: (e) => toast.error(e.message || "Erro ao finalizar conexão"),
   });
 
+  const disconnectWA = trpc.whatsapp.disconnect.useMutation({
+    onSuccess: () => {
+      toast.success("WhatsApp desconectado.");
+      setLoaded(false);
+      setPhoneNumberId(""); setWabaId(""); setDisplayPhone(""); setAccessToken(""); setVerifyToken("");
+      refetch();
+    },
+    onError: (e) => toast.error(e.message || "Erro ao desconectar"),
+  });
+  const handleDisconnect = () => {
+    if (!confirm("Desconectar o WhatsApp desta empresa? As conversas salvas não serão apagadas.")) return;
+    disconnectWA.mutate({ companyId });
+  };
+
   const connectOneClick = async () => {
     setConnecting(true);
     try {
@@ -350,7 +364,22 @@ function WhatsappConfig({ companyId }: { companyId: number }) {
       <div className="flex items-center gap-2">
         <Settings2 className="h-4 w-4 text-cyan-400" />
         <h2 className="text-sm font-bold">Conexão WhatsApp</h2>
-        {cfg && <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-emerald-300"><CheckCircle2 className="h-3 w-3" /> {cfg.displayPhone || "Conectado"}</span>}
+        {cfg && (
+          <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-emerald-300">
+            <CheckCircle2 className="h-3 w-3" /> {cfg.displayPhone || "Conectado"}
+          </span>
+        )}
+        {cfg && (
+          <button
+            onClick={handleDisconnect}
+            disabled={disconnectWA.isPending}
+            className="ml-2 inline-flex items-center gap-1 text-[10px] text-red-400/70 hover:text-red-400 transition-colors"
+            title="Desconectar WhatsApp"
+          >
+            {disconnectWA.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <LogOut className="h-3 w-3" />}
+            Desconectar
+          </button>
+        )}
       </div>
 
       {WHATSAPP_CONFIG_ID ? (

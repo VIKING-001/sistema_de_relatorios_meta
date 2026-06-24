@@ -177,6 +177,17 @@ export const whatsappRouter = router({
       };
     }),
 
+  disconnect: protectedProcedure
+    .input(z.object({ companyId: z.number().int().positive() }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.user?.id;
+      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+      const company = await db.getCompanyById(input.companyId);
+      if (!company || company.userId !== userId) throw new TRPCError({ code: "FORBIDDEN" });
+      await db.deleteWhatsappConfig(input.companyId);
+      return { success: true };
+    }),
+
   listMessages: protectedProcedure
     .input(z.object({
       companyId: z.number().int().positive(),
