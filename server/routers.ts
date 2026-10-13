@@ -315,6 +315,50 @@ export const appRouter = router({
         return companies;
       }),
 
+    getClientPortalLink: protectedProcedure
+      .input(z.object({ companyId: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        const company = await db.getCompanyById(input.companyId);
+        if (!company || company.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+        }
+        return { token: await db.getClientPortalToken(input.companyId, ctx.user.id) };
+      }),
+
+    createClientPortalLink: protectedProcedure
+      .input(z.object({ companyId: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        const company = await db.getCompanyById(input.companyId);
+        if (!company || company.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+        }
+        const current = await db.getClientPortalToken(input.companyId, ctx.user.id);
+        const token = current ?? await db.createClientPortalLink(input.companyId, ctx.user.id, nanoid(40));
+        if (!token) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Não foi possível criar o link" });
+        return { token };
+      }),
+
+    rotateClientPortalLink: protectedProcedure
+      .input(z.object({ companyId: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        const company = await db.getCompanyById(input.companyId);
+        if (!company || company.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+        }
+        return { token: await db.rotateClientPortalLink(input.companyId, ctx.user.id, nanoid(40)) };
+      }),
+
+    revokeClientPortalLink: protectedProcedure
+      .input(z.object({ companyId: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        const company = await db.getCompanyById(input.companyId);
+        if (!company || company.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+        }
+        await db.revokeClientPortalLink(input.companyId, ctx.user.id);
+        return { success: true };
+      }),
+
     get: protectedProcedure
       .input(z.object({ id: z.number().int().positive() }))
       .query(async ({ input }) => {
@@ -592,6 +636,27 @@ export const appRouter = router({
 
         const metrics = await db.getMetricsByReportId(report.id);
         const company = await db.getCompanyById(report.companyId);
+        const publicCompany = company
+          ? { id: company.id, name: company.name, description: company.description }
+          : null;
+        const safePublicReport = (source: typeof report) => {
+          let aiAnalysis: string | null = null;
+          try {
+            const parsed = source.aiAnalysis ? JSON.parse(source.aiAnalysis) : null;
+            if (parsed && typeof parsed === "object") {
+              aiAnalysis = JSON.stringify({
+                pontosFortesTexto: Array.isArray(parsed.pontosFortesTexto)
+                  ? parsed.pontosFortesTexto.filter((point: unknown) => typeof point === "string")
+                  : [],
+                recomendacaoPrincipal: typeof parsed.recomendacaoPrincipal === "string" ? parsed.recomendacaoPrincipal : "",
+              });
+            }
+          } catch {
+            aiAnalysis = null;
+          }
+          const { userId: _userId, ...visibleFields } = source;
+          return { ...visibleFields, aiAnalysis };
+        };
 
         // Vendas REAIS rastreadas no período do relatório (webhook + manual)
         const tracked = await db.getTrackedSalesSummary(
@@ -656,13 +721,23 @@ export const appRouter = router({
             const aiJson = JSON.stringify(aiResult);
             await db.updateReportAiAnalysis(report.id, aiJson);
             // Retorna com análise recém-gerada
-            return { report: { ...report, aiAnalysis: aiJson }, metrics, company, tracked, trackedList };
+            return { report: safePublicReport({ ...report, aiAnalysis: aiJson }), metrics, company: publicCompany, tracked, trackedList };
           } catch (err) {
             console.error("[AI] getBySlug lazy generation falhou:", err);
           }
         }
 
-        return { report, metrics, company, tracked, trackedList };
+        return { report: safePublicReport(report), metrics, company: publicCompany, tracked, trackedList };
+      }),
+  }),
+
+  clientPortal: router({
+    get: publicProcedure
+      .input(z.object({ token: z.string().regex(/^[A-Za-z0-9_-]{40}$/) }))
+      .query(async ({ input }) => {
+        const portal = await db.getClientPortalDataByToken(input.token);
+        if (!portal) throw new TRPCError({ code: "NOT_FOUND", message: "Portal não encontrado" });
+        return portal;
       }),
   }),
 

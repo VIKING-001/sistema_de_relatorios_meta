@@ -277,6 +277,14 @@ async function ensureTables(pool: InstanceType<typeof Pool>) {
       "updatedAt" timestamptz DEFAULT NOW(),
       CONSTRAINT "balanceAlerts_companyId_unique" UNIQUE("companyId")
     )`,
+    `CREATE TABLE IF NOT EXISTS "clientPortalLinks" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "companyId" integer NOT NULL UNIQUE,
+      "userId" integer NOT NULL,
+      "token" varchar(64) NOT NULL UNIQUE,
+      "createdAt" timestamptz DEFAULT NOW() NOT NULL,
+      "updatedAt" timestamptz DEFAULT NOW() NOT NULL
+    )`,
   ];
   try {
     for (const sql of statements) {
@@ -372,6 +380,51 @@ export async function getCompanyById(id: number) {
   const db = await getDb();
   const [result] = await db.select().from(companies).where(eq(companies.id, id)).limit(1);
   return result;
+}
+
+export async function getClientPortalToken(companyId: number, userId: number) {
+  const pool = await getRawPool();
+  if (!pool) return null;
+  const result = await pool.query(
+    `SELECT "token" FROM "clientPortalLinks" WHERE "companyId" = $1 AND "userId" = $2 LIMIT 1`,
+    [companyId, userId]
+  );
+  return result.rows[0]?.token ?? null;
+}
+
+export async function createClientPortalLink(companyId: number, userId: number, token: string) {
+  const pool = await getRawPool();
+  if (!pool) throw new Error("Banco de dados indisponível");
+  const result = await pool.query(
+    `INSERT INTO "clientPortalLinks" ("companyId", "userId", "token")
+     VALUES ($1, $2, $3)
+     ON CONFLICT ("companyId") DO NOTHING
+     RETURNING "token"`,
+    [companyId, userId, token]
+  );
+  return result.rows[0]?.token ?? await getClientPortalToken(companyId, userId);
+}
+
+export async function rotateClientPortalLink(companyId: number, userId: number, token: string) {
+  const pool = await getRawPool();
+  if (!pool) throw new Error("Banco de dados indisponível");
+  const result = await pool.query(
+    `INSERT INTO "clientPortalLinks" ("companyId", "userId", "token")
+     VALUES ($1, $2, $3)
+     ON CONFLICT ("companyId") DO UPDATE SET "token" = EXCLUDED."token", "updatedAt" = NOW()
+     RETURNING "token"`,
+    [companyId, userId, token]
+  );
+  return result.rows[0].token as string;
+}
+
+export async function revokeClientPortalLink(companyId: number, userId: number) {
+  const pool = await getRawPool();
+  if (!pool) throw new Error("Banco de dados indisponível");
+  await pool.query(
+    `DELETE FROM "clientPortalLinks" WHERE "companyId" = $1 AND "userId" = $2`,
+    [companyId, userId]
+  );
 }
 
 // ─── Webhook events / health ────────────────────────────────────────────────
@@ -556,6 +609,74 @@ export async function getReportBySlug(slug: string) {
   const db = await getDb();
   const [result] = await db.select().from(reports).where(eq(reports.slug, slug)).limit(1);
   return result;
+}
+
+export async function getClientPortalDataByToken(token: string) {
+  const pool = await getRawPool();
+  if (!pool) return null;
+  const result = await pool.query(
+    `SELECT c."name" AS "companyName",
+            r."id" AS "reportId", r."title", r."startDate"::text AS "startDate",
+            r."endDate"::text AS "endDate", r."description",
+            m."reportId" AS "metricsId", m."totalSpent", m."totalReach", m."totalImpressions",
+            m."instagramProfileVisits", m."newInstagramFollowers", m."messagesInitiated",
+            m."totalClicks", m."costPerClick", m."videoRetentionRate",
+            m."profileVisitsThroughCampaigns", m."costPerProfileVisit", m."cpm", m."ctr",
+            m."purchases", m."purchaseValue", m."costPerPurchase", m."costPerMessage",
+            COALESCE(sales."count", 0)::int AS "trackedSalesCount",
+            COALESCE(sales."revenue", 0)::numeric AS "trackedSalesRevenue"
+     FROM "clientPortalLinks" portal
+     JOIN "companies" c ON c."id" = portal."companyId"
+     LEFT JOIN "reports" r ON r."companyId" = c."id" AND r."isPublished" = 'published'
+     LEFT JOIN "reportMetrics" m ON m."reportId" = r."id"
+     LEFT JOIN LATERAL (
+       SELECT COUNT(*) AS "count", COALESCE(SUM(ts."orderValue"), 0) AS "revenue"
+       FROM "trackedSales" ts
+       WHERE ts."companyId" = c."id"
+         AND r."id" IS NOT NULL
+         AND ts."saleDate"::date BETWEEN r."startDate" AND r."endDate"
+     ) sales ON TRUE
+     WHERE portal."token" = $1
+     ORDER BY r."startDate" DESC NULLS LAST, r."endDate" DESC NULLS LAST, r."createdAt" DESC NULLS LAST`,
+    [token]
+  );
+  if (!result.rows.length) return null;
+
+  const asNumber = (value: unknown) => Number(value ?? 0);
+  const reports = result.rows
+    .filter((row: any) => row.reportId != null)
+    .map((row: any) => ({
+      id: Number(row.reportId),
+      title: row.title as string,
+      startDate: row.startDate as string,
+      endDate: row.endDate as string,
+      description: row.description as string | null,
+      trackedSales: {
+        count: asNumber(row.trackedSalesCount),
+        revenue: asNumber(row.trackedSalesRevenue),
+      },
+      metrics: row.metricsId == null ? null : {
+        totalSpent: asNumber(row.totalSpent),
+        totalReach: asNumber(row.totalReach),
+        totalImpressions: asNumber(row.totalImpressions),
+        instagramProfileVisits: asNumber(row.instagramProfileVisits),
+        newInstagramFollowers: asNumber(row.newInstagramFollowers),
+        messagesInitiated: asNumber(row.messagesInitiated),
+        totalClicks: asNumber(row.totalClicks),
+        costPerClick: asNumber(row.costPerClick),
+        videoRetentionRate: asNumber(row.videoRetentionRate),
+        profileVisitsThroughCampaigns: asNumber(row.profileVisitsThroughCampaigns),
+        costPerProfileVisit: asNumber(row.costPerProfileVisit),
+        cpm: asNumber(row.cpm),
+        ctr: asNumber(row.ctr),
+        purchases: asNumber(row.purchases),
+        purchaseValue: asNumber(row.purchaseValue),
+        costPerPurchase: asNumber(row.costPerPurchase),
+        costPerMessage: asNumber(row.costPerMessage),
+      },
+    }));
+
+  return { companyName: result.rows[0].companyName as string, reports };
 }
 
 export async function updateReport(

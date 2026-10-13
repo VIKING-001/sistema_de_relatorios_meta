@@ -16,6 +16,7 @@ import Conversas from "./pages/Conversas";
 import Integracoes from "./pages/Integracoes";
 import Configuracoes from "./pages/Configuracoes";
 import PublicReport from "./pages/PublicReport";
+import ClientPortal from "./pages/ClientPortal";
 import DashboardLayout from "./components/DashboardLayout";
 
 function PrivateRoutes() {
@@ -40,6 +41,11 @@ function PrivateRoutes() {
 function Router() {
   const { isAuthenticated, loading } = useAuth();
   const [location] = useLocation();
+
+  // Public client portal uses an unguessable per-company token, not an account login.
+  if (location.startsWith("/portal/")) {
+    return <ClientPortal />;
+  }
 
   if (loading) {
     return (

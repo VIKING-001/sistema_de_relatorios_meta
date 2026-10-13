@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import {
   Plus, Loader2, Building2, Zap, ArrowLeft,
   CheckCircle2, AlertCircle, FileText, Edit2, Trash2,
-  ChevronDown, LogOut, BarChart2, X,
+  ChevronDown, LogOut, BarChart2, X, Link2, Copy, RefreshCw,
 } from "lucide-react";
 
 // ─── Company Grid Card ────────────────────────────────────────────────────────
@@ -100,6 +100,29 @@ function CompanyDetailView({
   const [isSelectingAccount, setIsSelectingAccount] = useState(false);
 
   const { data: reports, refetch: refetchReports } = trpc.report.list.useQuery({ companyId: company.id });
+  const utils = trpc.useUtils();
+  const { data: portalLink, isLoading: isPortalLinkLoading } = trpc.company.getClientPortalLink.useQuery({ companyId: company.id });
+  const createPortalLink = trpc.company.createClientPortalLink.useMutation({
+    onSuccess: async () => {
+      await utils.company.getClientPortalLink.invalidate({ companyId: company.id });
+      toast.success("Link do portal criado.");
+    },
+    onError: () => toast.error("Não foi possível criar o link do portal."),
+  });
+  const rotatePortalLink = trpc.company.rotateClientPortalLink.useMutation({
+    onSuccess: async () => {
+      await utils.company.getClientPortalLink.invalidate({ companyId: company.id });
+      toast.success("Link renovado. O anterior foi desativado.");
+    },
+    onError: () => toast.error("Não foi possível renovar o link."),
+  });
+  const revokePortalLink = trpc.company.revokeClientPortalLink.useMutation({
+    onSuccess: async () => {
+      await utils.company.getClientPortalLink.invalidate({ companyId: company.id });
+      toast.success("Acesso ao portal desativado.");
+    },
+    onError: () => toast.error("Não foi possível desativar o portal."),
+  });
   const { data: metaStatus, refetch: refetchStatus } = trpc.meta.getStatus.useQuery(
     { companyId: company.id },
     { refetchOnWindowFocus: true }
@@ -150,6 +173,18 @@ function CompanyDetailView({
     return new Date(date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
   };
 
+  const portalUrl = portalLink?.token
+    ? `${window.location.origin}/portal/${portalLink.token}`
+    : "";
+  const copyPortalLink = async () => {
+    try {
+      await navigator.clipboard.writeText(portalUrl);
+      toast.success("Link do portal copiado.");
+    } catch {
+      toast.error("Não foi possível copiar o link neste dispositivo.");
+    }
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-5">
       {/* Header */}
@@ -197,6 +232,70 @@ function CompanyDetailView({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Link fixo do portal do cliente */}
+      <section className="glass-card rounded-xl border border-primary/20 p-4 sm:p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <div className="w-9 h-9 rounded-lg bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0">
+              <Link2 className="h-4 w-4 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold text-white">Portal do cliente</h2>
+              <p className="text-xs text-white/45 mt-1">Um link fixo para consultar relatórios publicados e comparar períodos.</p>
+            </div>
+          </div>
+          {!portalUrl && (
+            <Button
+              size="sm"
+              onClick={() => createPortalLink.mutate({ companyId: company.id })}
+              disabled={isPortalLinkLoading || createPortalLink.isPending}
+              className="gap-2 shrink-0"
+            >
+              {createPortalLink.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
+              Criar link
+            </Button>
+          )}
+        </div>
+        {portalUrl && (
+          <div className="mt-4 flex flex-col sm:flex-row gap-2">
+            <input aria-label="Link do portal do cliente" value={portalUrl} readOnly className="h-10 w-full min-w-0 rounded-lg border border-white/10 bg-black/20 px-3 text-xs text-white/70" />
+            <Button size="sm" variant="outline" onClick={copyPortalLink} className="gap-2 shrink-0">
+              <Copy className="h-3.5 w-3.5" /> Copiar
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                if (confirm("Renovar o link? O link atual do cliente deixará de funcionar.")) {
+                  rotatePortalLink.mutate({ companyId: company.id });
+                }
+              }}
+              disabled={rotatePortalLink.isPending}
+              className="gap-2 shrink-0"
+              title="Renovar link e desativar o atual"
+            >
+              {rotatePortalLink.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              Renovar
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                if (confirm("Desativar o portal? O cliente perderá acesso por este link.")) {
+                  revokePortalLink.mutate({ companyId: company.id });
+                }
+              }}
+              disabled={revokePortalLink.isPending}
+              className="gap-2 shrink-0 border-red-400/20 text-red-300 hover:bg-red-400/10"
+            >
+              {revokePortalLink.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+              Desativar
+            </Button>
+          </div>
+        )}
+        <p className="text-[11px] text-white/35 mt-3">Somente relatórios publicados aparecem no portal. Renovar ou desativar o link revoga o acesso anterior.</p>
+      </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* ── Meta Connection Panel ── */}

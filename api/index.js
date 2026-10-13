@@ -48323,6 +48323,21 @@ async function ensureTables(pool2) {
     `CREATE INDEX IF NOT EXISTS "idx_whatsappConversations_companyId" ON "whatsappConversations"("companyId")`,
     `CREATE INDEX IF NOT EXISTS "idx_whatsappConversations_waId" ON "whatsappConversations"("waId")`,
     `CREATE INDEX IF NOT EXISTS "idx_whatsappConfigs_companyId" ON "whatsappConfigs"("companyId")`,
+    // Mensagens individuais de WhatsApp (uma linha por mensagem recebida)
+    `CREATE TABLE IF NOT EXISTS "whatsappMessages" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "conversationId" integer,
+      "companyId" integer NOT NULL,
+      "waId" varchar(32) NOT NULL,
+      "wamid" text UNIQUE,
+      "direction" varchar(10) NOT NULL DEFAULT 'inbound',
+      "type" varchar(20) DEFAULT 'text',
+      "text" text,
+      "timestamp" timestamptz NOT NULL DEFAULT NOW(),
+      "createdAt" timestamptz DEFAULT NOW()
+    )`,
+    `CREATE INDEX IF NOT EXISTS "idx_whatsappMessages_companyWaId" ON "whatsappMessages"("companyId","waId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_whatsappMessages_conversationId" ON "whatsappMessages"("conversationId")`,
     // ─── PWA Push Notifications ──────────────────────────────────────────────
     // Subscriptions de push por usuário/dispositivo (chave = endpoint da subscription)
     `CREATE TABLE IF NOT EXISTS "pushSubscriptions" (
@@ -48346,6 +48361,14 @@ async function ensureTables(pool2) {
       "createdAt" timestamptz DEFAULT NOW(),
       "updatedAt" timestamptz DEFAULT NOW(),
       CONSTRAINT "balanceAlerts_companyId_unique" UNIQUE("companyId")
+    )`,
+    `CREATE TABLE IF NOT EXISTS "clientPortalLinks" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "companyId" integer NOT NULL UNIQUE,
+      "userId" integer NOT NULL,
+      "token" varchar(64) NOT NULL UNIQUE,
+      "createdAt" timestamptz DEFAULT NOW() NOT NULL,
+      "updatedAt" timestamptz DEFAULT NOW() NOT NULL
     )`
   ];
   try {
@@ -48427,6 +48450,47 @@ async function getCompanyById(id) {
   const db = await getDb();
   const [result] = await db.select().from(companies).where(eq(companies.id, id)).limit(1);
   return result;
+}
+async function getClientPortalToken(companyId, userId) {
+  const pool2 = await getRawPool();
+  if (!pool2) return null;
+  const result = await pool2.query(
+    `SELECT "token" FROM "clientPortalLinks" WHERE "companyId" = $1 AND "userId" = $2 LIMIT 1`,
+    [companyId, userId]
+  );
+  return result.rows[0]?.token ?? null;
+}
+async function createClientPortalLink(companyId, userId, token) {
+  const pool2 = await getRawPool();
+  if (!pool2) throw new Error("Banco de dados indispon\xEDvel");
+  const result = await pool2.query(
+    `INSERT INTO "clientPortalLinks" ("companyId", "userId", "token")
+     VALUES ($1, $2, $3)
+     ON CONFLICT ("companyId") DO NOTHING
+     RETURNING "token"`,
+    [companyId, userId, token]
+  );
+  return result.rows[0]?.token ?? await getClientPortalToken(companyId, userId);
+}
+async function rotateClientPortalLink(companyId, userId, token) {
+  const pool2 = await getRawPool();
+  if (!pool2) throw new Error("Banco de dados indispon\xEDvel");
+  const result = await pool2.query(
+    `INSERT INTO "clientPortalLinks" ("companyId", "userId", "token")
+     VALUES ($1, $2, $3)
+     ON CONFLICT ("companyId") DO UPDATE SET "token" = EXCLUDED."token", "updatedAt" = NOW()
+     RETURNING "token"`,
+    [companyId, userId, token]
+  );
+  return result.rows[0].token;
+}
+async function revokeClientPortalLink(companyId, userId) {
+  const pool2 = await getRawPool();
+  if (!pool2) throw new Error("Banco de dados indispon\xEDvel");
+  await pool2.query(
+    `DELETE FROM "clientPortalLinks" WHERE "companyId" = $1 AND "userId" = $2`,
+    [companyId, userId]
+  );
 }
 async function logWebhookEvent(e) {
   const pool2 = await getRawPool();
@@ -48534,6 +48598,69 @@ async function getReportBySlug(slug) {
   const db = await getDb();
   const [result] = await db.select().from(reports).where(eq(reports.slug, slug)).limit(1);
   return result;
+}
+async function getClientPortalDataByToken(token) {
+  const pool2 = await getRawPool();
+  if (!pool2) return null;
+  const result = await pool2.query(
+    `SELECT c."name" AS "companyName",
+            r."id" AS "reportId", r."title", r."startDate"::text AS "startDate",
+            r."endDate"::text AS "endDate", r."description",
+            m."reportId" AS "metricsId", m."totalSpent", m."totalReach", m."totalImpressions",
+            m."instagramProfileVisits", m."newInstagramFollowers", m."messagesInitiated",
+            m."totalClicks", m."costPerClick", m."videoRetentionRate",
+            m."profileVisitsThroughCampaigns", m."costPerProfileVisit", m."cpm", m."ctr",
+            m."purchases", m."purchaseValue", m."costPerPurchase", m."costPerMessage",
+            COALESCE(sales."count", 0)::int AS "trackedSalesCount",
+            COALESCE(sales."revenue", 0)::numeric AS "trackedSalesRevenue"
+     FROM "clientPortalLinks" portal
+     JOIN "companies" c ON c."id" = portal."companyId"
+     LEFT JOIN "reports" r ON r."companyId" = c."id" AND r."isPublished" = 'published'
+     LEFT JOIN "reportMetrics" m ON m."reportId" = r."id"
+     LEFT JOIN LATERAL (
+       SELECT COUNT(*) AS "count", COALESCE(SUM(ts."orderValue"), 0) AS "revenue"
+       FROM "trackedSales" ts
+       WHERE ts."companyId" = c."id"
+         AND r."id" IS NOT NULL
+         AND ts."saleDate"::date BETWEEN r."startDate" AND r."endDate"
+     ) sales ON TRUE
+     WHERE portal."token" = $1
+     ORDER BY r."startDate" DESC NULLS LAST, r."endDate" DESC NULLS LAST, r."createdAt" DESC NULLS LAST`,
+    [token]
+  );
+  if (!result.rows.length) return null;
+  const asNumber = (value) => Number(value ?? 0);
+  const reports2 = result.rows.filter((row) => row.reportId != null).map((row) => ({
+    id: Number(row.reportId),
+    title: row.title,
+    startDate: row.startDate,
+    endDate: row.endDate,
+    description: row.description,
+    trackedSales: {
+      count: asNumber(row.trackedSalesCount),
+      revenue: asNumber(row.trackedSalesRevenue)
+    },
+    metrics: row.metricsId == null ? null : {
+      totalSpent: asNumber(row.totalSpent),
+      totalReach: asNumber(row.totalReach),
+      totalImpressions: asNumber(row.totalImpressions),
+      instagramProfileVisits: asNumber(row.instagramProfileVisits),
+      newInstagramFollowers: asNumber(row.newInstagramFollowers),
+      messagesInitiated: asNumber(row.messagesInitiated),
+      totalClicks: asNumber(row.totalClicks),
+      costPerClick: asNumber(row.costPerClick),
+      videoRetentionRate: asNumber(row.videoRetentionRate),
+      profileVisitsThroughCampaigns: asNumber(row.profileVisitsThroughCampaigns),
+      costPerProfileVisit: asNumber(row.costPerProfileVisit),
+      cpm: asNumber(row.cpm),
+      ctr: asNumber(row.ctr),
+      purchases: asNumber(row.purchases),
+      purchaseValue: asNumber(row.purchaseValue),
+      costPerPurchase: asNumber(row.costPerPurchase),
+      costPerMessage: asNumber(row.costPerMessage)
+    }
+  }));
+  return { companyName: result.rows[0].companyName, reports: reports2 };
 }
 async function updateReport(id, title, slug, startDate, endDate, description, isPublished = "draft") {
   const toDateStr = (d) => d instanceof Date ? d.toISOString().split("T")[0] : String(d).split("T")[0];
@@ -48711,6 +48838,44 @@ async function listWhatsappConversations(companyId, limit2 = 200) {
     [companyId, limit2]
   );
   return r.rows;
+}
+async function saveWhatsappMessage(m) {
+  const pool2 = await getRawPool();
+  if (!pool2) return null;
+  const r = await pool2.query(
+    `INSERT INTO "whatsappMessages"
+       ("conversationId","companyId","waId","wamid","direction","type","text","timestamp")
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+     ON CONFLICT ("wamid") DO NOTHING
+     RETURNING *`,
+    [
+      m.conversationId ?? null,
+      m.companyId,
+      m.waId,
+      m.wamid ?? null,
+      m.direction ?? "inbound",
+      m.type ?? "text",
+      m.text ?? null,
+      m.timestamp
+    ]
+  );
+  return r.rows[0] ?? null;
+}
+async function listWhatsappMessages(companyId, waId, limit2 = 100) {
+  const pool2 = await getRawPool();
+  if (!pool2) return [];
+  const r = await pool2.query(
+    `SELECT * FROM "whatsappMessages"
+     WHERE "companyId" = $1 AND "waId" = $2
+     ORDER BY "timestamp" ASC LIMIT $3`,
+    [companyId, waId, limit2]
+  );
+  return r.rows;
+}
+async function deleteWhatsappConfig(companyId) {
+  const pool2 = await getRawPool();
+  if (!pool2) return;
+  await pool2.query(`DELETE FROM "whatsappConfigs" WHERE "companyId" = $1`, [companyId]);
 }
 async function upsertPushSubscription(userId, endpoint, p256dh, auth, companyId) {
   const pool2 = await getRawPool();
@@ -72945,6 +73110,25 @@ var whatsappRouter = router({
       conversations: rows,
       summary: { total, attributed, converted }
     };
+  }),
+  disconnect: protectedProcedure.input(external_exports.object({ companyId: external_exports.number().int().positive() })).mutation(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) throw new TRPCError({ code: "FORBIDDEN" });
+    await deleteWhatsappConfig(input.companyId);
+    return { success: true };
+  }),
+  listMessages: protectedProcedure.input(external_exports.object({
+    companyId: external_exports.number().int().positive(),
+    waId: external_exports.string().min(1)
+  })).query(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) throw new TRPCError({ code: "FORBIDDEN" });
+    const messages = await listWhatsappMessages(input.companyId, input.waId);
+    return { messages };
   })
 });
 
@@ -73241,6 +73425,38 @@ var appRouter = router({
       const companies2 = await getCompaniesByUserId(ctx.user.id);
       return companies2;
     }),
+    getClientPortalLink: protectedProcedure.input(external_exports.object({ companyId: external_exports.number().int().positive() })).query(async ({ ctx, input }) => {
+      const company = await getCompanyById(input.companyId);
+      if (!company || company.userId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+      }
+      return { token: await getClientPortalToken(input.companyId, ctx.user.id) };
+    }),
+    createClientPortalLink: protectedProcedure.input(external_exports.object({ companyId: external_exports.number().int().positive() })).mutation(async ({ ctx, input }) => {
+      const company = await getCompanyById(input.companyId);
+      if (!company || company.userId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+      }
+      const current = await getClientPortalToken(input.companyId, ctx.user.id);
+      const token = current ?? await createClientPortalLink(input.companyId, ctx.user.id, nanoid(40));
+      if (!token) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "N\xE3o foi poss\xEDvel criar o link" });
+      return { token };
+    }),
+    rotateClientPortalLink: protectedProcedure.input(external_exports.object({ companyId: external_exports.number().int().positive() })).mutation(async ({ ctx, input }) => {
+      const company = await getCompanyById(input.companyId);
+      if (!company || company.userId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+      }
+      return { token: await rotateClientPortalLink(input.companyId, ctx.user.id, nanoid(40)) };
+    }),
+    revokeClientPortalLink: protectedProcedure.input(external_exports.object({ companyId: external_exports.number().int().positive() })).mutation(async ({ ctx, input }) => {
+      const company = await getCompanyById(input.companyId);
+      if (!company || company.userId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+      }
+      await revokeClientPortalLink(input.companyId, ctx.user.id);
+      return { success: true };
+    }),
     get: protectedProcedure.input(external_exports.object({ id: external_exports.number().int().positive() })).query(async ({ input }) => {
       const company = await getCompanyById(input.id);
       if (!company) {
@@ -73449,6 +73665,23 @@ var appRouter = router({
       }
       const metrics = await getMetricsByReportId(report.id);
       const company = await getCompanyById(report.companyId);
+      const publicCompany = company ? { id: company.id, name: company.name, description: company.description } : null;
+      const safePublicReport = (source) => {
+        let aiAnalysis = null;
+        try {
+          const parsed = source.aiAnalysis ? JSON.parse(source.aiAnalysis) : null;
+          if (parsed && typeof parsed === "object") {
+            aiAnalysis = JSON.stringify({
+              pontosFortesTexto: Array.isArray(parsed.pontosFortesTexto) ? parsed.pontosFortesTexto.filter((point2) => typeof point2 === "string") : [],
+              recomendacaoPrincipal: typeof parsed.recomendacaoPrincipal === "string" ? parsed.recomendacaoPrincipal : ""
+            });
+          }
+        } catch {
+          aiAnalysis = null;
+        }
+        const { userId: _userId, ...visibleFields } = source;
+        return { ...visibleFields, aiAnalysis };
+      };
       const tracked2 = await getTrackedSalesSummary(
         report.companyId,
         String(report.startDate),
@@ -73503,12 +73736,19 @@ var appRouter = router({
           });
           const aiJson = JSON.stringify(aiResult);
           await updateReportAiAnalysis(report.id, aiJson);
-          return { report: { ...report, aiAnalysis: aiJson }, metrics, company, tracked: tracked2, trackedList };
+          return { report: safePublicReport({ ...report, aiAnalysis: aiJson }), metrics, company: publicCompany, tracked: tracked2, trackedList };
         } catch (err) {
           console.error("[AI] getBySlug lazy generation falhou:", err);
         }
       }
-      return { report, metrics, company, tracked: tracked2, trackedList };
+      return { report: safePublicReport(report), metrics, company: publicCompany, tracked: tracked2, trackedList };
+    })
+  }),
+  clientPortal: router({
+    get: publicProcedure.input(external_exports.object({ token: external_exports.string().regex(/^[A-Za-z0-9_-]{40}$/) })).query(async ({ input }) => {
+      const portal = await getClientPortalDataByToken(input.token);
+      if (!portal) throw new TRPCError({ code: "NOT_FOUND", message: "Portal n\xE3o encontrado" });
+      return portal;
     })
   }),
   // ── Meta Marketing API ────────────────────────────────────────────────────
@@ -74111,7 +74351,26 @@ router4.post("/webhook/whatsapp", async (req, res) => {
             sourceUrl: ref?.source_url ?? null,
             lastMessageText: text2,
             messageTime: ts
+          }).catch((e) => {
+            console.error("[WhatsApp] upsertWhatsappConversation ERRO:", e?.message, e?.code);
+            return null;
           });
+          console.log(`[WhatsApp] step:saveMsg fn=${typeof saveWhatsappMessage} wamid=${msg.id} convId=${conv?.id}`);
+          try {
+            await saveWhatsappMessage({
+              conversationId: conv?.id ?? null,
+              companyId: cfg.companyId,
+              waId,
+              wamid: msg.id ?? null,
+              direction: "inbound",
+              type: msg.type ?? "text",
+              text: text2,
+              timestamp: ts
+            });
+            console.log(`[WhatsApp] step:saveMsg OK`);
+          } catch (se) {
+            console.error("[WhatsApp] saveWhatsappMessage ERRO:", se?.message, se?.code, se?.detail);
+          }
           await logWebhookEvent({
             companyId: cfg.companyId,
             platform: "whatsapp",
@@ -74120,14 +74379,11 @@ router4.post("/webhook/whatsapp", async (req, res) => {
             message: campaignName ? `Conversa de ${waId} via an\xFAncio: ${campaignName}` : `Conversa de ${waId} (org\xE2nica)`,
             payloadSummary: text2?.slice(0, 200) ?? null
           });
-          console.log(
-            `[WhatsApp] Conversa ${conv?.id} (${waId}) ${campaignName ? "ATRIBU\xCDDA \u2192 " + campaignName : "org\xE2nica"}`
-          );
         }
       }
     }
   } catch (err) {
-    console.error("[WhatsApp] Erro processando webhook:", err?.message || err);
+    console.error("[WhatsApp] Erro processando webhook:", err?.stack?.split("\n").slice(0, 2).join(" | ") || err?.message || String(err));
   }
 });
 var whatsappRoutes_default = router4;
