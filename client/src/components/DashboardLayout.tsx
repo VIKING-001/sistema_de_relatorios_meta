@@ -43,18 +43,18 @@ import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { trpc } from "@/lib/trpc";
 
 const mainNav = [
-  { icon: BarChart3,    label: "Dashboard",        path: "/" },
-  { icon: Building2,    label: "Relatórios",        path: "/relatorios" },
-  { icon: Megaphone,    label: "Contas de Anúncio", path: "/contas" },
-  { icon: Zap,          label: "Campanhas",          path: "/campanhas" },
-  { icon: ShoppingCart, label: "Compras",            path: "/compras" },
-  { icon: MessageCircle, label: "Conversas",          path: "/conversas" },
+  { icon: BarChart3, label: "Dashboard", path: "/" },
+  { icon: Building2, label: "Relatórios", path: "/relatorios" },
+  { icon: Megaphone, label: "Contas de Anúncio", path: "/contas" },
+  { icon: Zap, label: "Campanhas", path: "/campanhas" },
+  { icon: ShoppingCart, label: "Compras", path: "/compras" },
+  { icon: MessageCircle, label: "Conversas", path: "/conversas" },
 ];
 
 const toolsNav = [
-  { icon: Link2,    label: "Gerador de URL", path: "/gerador-url" },
-  { icon: Globe,    label: "Integrações",    path: "/integracoes" },
-  { icon: Settings, label: "Configurações",  path: "/configuracoes" },
+  { icon: Link2, label: "Gerador de URL", path: "/gerador-url" },
+  { icon: Globe, label: "Integrações", path: "/integracoes" },
+  { icon: Settings, label: "Configurações", path: "/configuracoes" },
 ];
 
 const allNav = [...mainNav, ...toolsNav];
@@ -64,29 +64,36 @@ const DEFAULT_WIDTH = 240;
 const MIN_WIDTH = 180;
 const MAX_WIDTH = 320;
 
+function isPathActive(location: string, path: string) {
+  return path === "/"
+    ? location === "/"
+    : location === path || location.startsWith(`${path}/`);
+}
+
 // ─── Mobile bottom navigation ────────────────────────────────────────────────
 // 4 itens principais fixos na barra + botão "Mais" para todo o resto
 const mobilePrimary = [
-  { icon: BarChart3,    label: "Dashboard",  path: "/" },
-  { icon: Building2,    label: "Relatórios", path: "/relatorios" },
-  { icon: Megaphone,    label: "Contas",     path: "/contas" },
-  { icon: Zap,          label: "Campanhas",  path: "/campanhas" },
+  { icon: BarChart3, label: "Dashboard", path: "/" },
+  { icon: Building2, label: "Relatórios", path: "/relatorios" },
+  { icon: Megaphone, label: "Contas", path: "/contas" },
+  { icon: Zap, label: "Campanhas", path: "/campanhas" },
 ];
 
 // Itens secundários acessíveis pelo menu "Mais" no celular
 const mobileMore = [
-  { icon: ShoppingCart,  label: "Compras",       path: "/compras" },
-  { icon: MessageCircle, label: "Conversas",     path: "/conversas" },
-  { icon: Link2,         label: "Gerador de URL", path: "/gerador-url" },
-  { icon: Globe,         label: "Integrações",   path: "/integracoes" },
-  { icon: Settings,      label: "Configurações", path: "/configuracoes" },
+  { icon: ShoppingCart, label: "Compras", path: "/compras" },
+  { icon: MessageCircle, label: "Conversas", path: "/conversas" },
+  { icon: Link2, label: "Gerador de URL", path: "/gerador-url" },
+  { icon: Globe, label: "Integrações", path: "/integracoes" },
+  { icon: Settings, label: "Configurações", path: "/configuracoes" },
 ];
 
 function MobileLayout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
   const { user, logout } = useAuth();
   const logoutMutation = trpc.auth.logout.useMutation();
-  const activeLabel = allNav.find(i => i.path === location)?.label ?? "Menu";
+  const activeLabel =
+    allNav.find(i => isPathActive(location, i.path))?.label ?? "Menu";
 
   const handleLogout = async () => {
     await logoutMutation.mutateAsync();
@@ -95,20 +102,26 @@ function MobileLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex min-h-dvh flex-col bg-background">
       {/* Mobile top bar */}
-      <header className="sticky top-0 z-40 flex items-center justify-between h-12 px-4 bg-background/95 backdrop-blur border-b border-white/5">
+      <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background px-4">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-primary rounded-md flex items-center justify-center">
-            <BarChart3 className="h-3.5 w-3.5 text-white" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary">
+            <BarChart3 className="h-4 w-4 text-primary-foreground" />
           </div>
           <span className="font-bold text-sm">Meta Reports</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">{activeLabel}</span>
+          <span className="text-xs font-medium text-muted-foreground">
+            {activeLabel}
+          </span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="rounded-full">
+              <button
+                type="button"
+                aria-label="Abrir menu da conta"
+                className="flex min-h-11 min-w-11 items-center justify-center rounded-full"
+              >
                 <Avatar className="h-7 w-7">
                   <AvatarFallback className="text-xs font-bold bg-primary/20 text-primary">
                     {user?.name?.charAt(0).toUpperCase() ?? "U"}
@@ -117,11 +130,17 @@ function MobileLayout({ children }: { children: React.ReactNode }) {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem onClick={() => setLocation("/configuracoes")} className="cursor-pointer">
+              <DropdownMenuItem
+                onClick={() => setLocation("/configuracoes")}
+                className="cursor-pointer"
+              >
                 <User className="mr-2 h-4 w-4" /> Perfil
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:text-destructive">
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="cursor-pointer text-destructive focus:text-destructive"
+              >
                 <LogOut className="mr-2 h-4 w-4" /> Sair
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -130,25 +149,34 @@ function MobileLayout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Page content */}
-      <main className="flex-1 pb-20 overflow-x-hidden">
+      <main className="flex-1 overflow-x-hidden pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
         {children}
       </main>
 
       {/* Mobile bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur border-t border-white/5 safe-area-inset-bottom">
-        <div className="flex items-center justify-around h-16 px-1">
+      <nav
+        aria-label="Navegação principal"
+        className="safe-area-inset-bottom fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card"
+      >
+        <div className="flex h-[72px] items-center justify-around px-1">
           {mobilePrimary.map(({ icon: Icon, label, path }) => {
-            const isActive = location === path || (path !== "/" && location.startsWith(path));
+            const isActive = isPathActive(location, path);
             return (
               <button
                 key={path}
+                type="button"
                 onClick={() => setLocation(path)}
-                className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-colors min-w-0 flex-1 ${
-                  isActive ? "text-primary" : "text-muted-foreground"
+                aria-current={isActive ? "page" : undefined}
+                className={`flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-lg px-1 py-1.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+                  isActive
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
                 }`}
               >
-                <Icon className={`h-5 w-5 shrink-0 ${isActive ? "text-primary" : ""}`} />
-                <span className="text-[9px] font-medium truncate w-full text-center">{label}</span>
+                <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                <span className="w-full truncate text-center text-[10px] font-medium leading-none">
+                  {label}
+                </span>
               </button>
             );
           })}
@@ -157,14 +185,20 @@ function MobileLayout({ children }: { children: React.ReactNode }) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-colors min-w-0 flex-1 ${
-                  mobileMore.some(i => location.startsWith(i.path) && i.path !== "/")
-                    ? "text-primary"
-                    : "text-muted-foreground"
+                type="button"
+                className={`flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-lg px-1 py-1.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+                  mobileMore.some(i => isPathActive(location, i.path))
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
                 }`}
               >
-                <MoreHorizontal className="h-5 w-5 shrink-0" />
-                <span className="text-[9px] font-medium truncate w-full text-center">Mais</span>
+                <MoreHorizontal
+                  className="h-5 w-5 shrink-0"
+                  aria-hidden="true"
+                />
+                <span className="w-full truncate text-center text-[10px] font-medium leading-none">
+                  Mais
+                </span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" side="top" className="w-52 mb-2">
@@ -194,7 +228,11 @@ function MobileLayout({ children }: { children: React.ReactNode }) {
 }
 
 // ─── Desktop sidebar layout ───────────────────────────────────────────────────
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const isMobile = useIsMobile();
   const { loading, user } = useAuth();
 
@@ -209,7 +247,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   });
 
   useEffect(() => {
-    try { localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString()); } catch {}
+    try {
+      localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
+    } catch {}
   }, [sidebarWidth]);
 
   if (loading) return <DashboardLayoutSkeleton />;
@@ -222,7 +262,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // Desktop: usa Sidebar do Radix
   return (
-    <SidebarProvider style={{ "--sidebar-width": `${sidebarWidth}px` } as CSSProperties}>
+    <SidebarProvider
+      style={{ "--sidebar-width": `${sidebarWidth}px` } as CSSProperties}
+    >
       <DesktopSidebarContent setSidebarWidth={setSidebarWidth}>
         {children}
       </DesktopSidebarContent>
@@ -277,12 +319,19 @@ function DesktopSidebarContent({
     setLocation("/");
   };
 
-  const NavItem = ({ icon: Icon, label, path }: typeof mainNav[0]) => {
-    const isActive = location === path || (path !== "/" && location.startsWith(path));
+  const NavItem = ({ icon: Icon, label, path }: (typeof mainNav)[0]) => {
+    const isActive = isPathActive(location, path);
     return (
       <SidebarMenuItem>
-        <SidebarMenuButton isActive={isActive} onClick={() => setLocation(path)} tooltip={label} className="h-9 font-normal">
-          <Icon className={`h-4 w-4 shrink-0 ${isActive ? "text-primary" : ""}`} />
+        <SidebarMenuButton
+          isActive={isActive}
+          onClick={() => setLocation(path)}
+          tooltip={label}
+          className="h-10 rounded-md font-normal data-[active=true]:bg-primary/10 data-[active=true]:font-semibold data-[active=true]:text-foreground"
+        >
+          <Icon
+            className={`h-4 w-4 shrink-0 ${isActive ? "text-primary" : ""}`}
+          />
           <span>{label}</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
@@ -292,42 +341,53 @@ function DesktopSidebarContent({
   return (
     <>
       <div className="relative" ref={sidebarRef}>
-        <Sidebar collapsible="icon" className="border-r border-white/5">
-          <SidebarHeader className="h-14 justify-center border-b border-white/5">
+        <Sidebar collapsible="icon" className="border-r border-border">
+          <SidebarHeader className="h-14 justify-center border-b border-border">
             <div className="flex items-center gap-3 px-2">
-              <button onClick={toggleSidebar} className="h-8 w-8 flex items-center justify-center hover:bg-white/5 rounded-lg transition-colors shrink-0">
+              <button
+                type="button"
+                aria-label={isCollapsed ? "Expandir menu" : "Recolher menu"}
+                onClick={toggleSidebar}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              >
                 <PanelLeft className="h-4 w-4 text-muted-foreground" />
               </button>
               {!isCollapsed && (
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-6 h-6 bg-primary rounded-md flex items-center justify-center shrink-0">
-                    <BarChart3 className="h-3.5 w-3.5 text-white" />
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary">
+                    <BarChart3 className="h-4 w-4 text-primary-foreground" />
                   </div>
-                  <span className="font-bold text-sm tracking-tight truncate">Meta Reports</span>
+                  <span className="font-bold text-sm tracking-tight truncate">
+                    Meta Reports
+                  </span>
                 </div>
               )}
             </div>
           </SidebarHeader>
 
-          <SidebarContent className="gap-0 pt-2">
+          <SidebarContent className="gap-0 pt-3">
             <SidebarGroup>
-              <SidebarMenu className="px-2 gap-0.5">
-                {mainNav.map(item => <NavItem key={item.path} {...item} />)}
+              <SidebarMenu className="gap-1 px-2">
+                {mainNav.map(item => (
+                  <NavItem key={item.path} {...item} />
+                ))}
               </SidebarMenu>
             </SidebarGroup>
             <SidebarGroup className="mt-2">
               {!isCollapsed && (
-                <SidebarGroupLabel className="px-4 text-[10px] uppercase tracking-widest text-white/30 font-bold">
+                <SidebarGroupLabel className="px-4 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Ferramentas
                 </SidebarGroupLabel>
               )}
-              <SidebarMenu className="px-2 gap-0.5">
-                {toolsNav.map(item => <NavItem key={item.path} {...item} />)}
+              <SidebarMenu className="gap-1 px-2">
+                {toolsNav.map(item => (
+                  <NavItem key={item.path} {...item} />
+                ))}
               </SidebarMenu>
             </SidebarGroup>
           </SidebarContent>
 
-          <SidebarFooter className="p-2 border-t border-white/5">
+          <SidebarFooter className="border-t border-border p-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2.5 rounded-lg px-2 py-2 hover:bg-white/5 transition-colors w-full text-left">
@@ -338,18 +398,28 @@ function DesktopSidebarContent({
                   </Avatar>
                   {!isCollapsed && (
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold truncate leading-none">{user?.name ?? "-"}</p>
-                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">{user?.email ?? "-"}</p>
+                      <p className="text-xs font-semibold truncate leading-none">
+                        {user?.name ?? "-"}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                        {user?.email ?? "-"}
+                      </p>
                     </div>
                   )}
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem className="cursor-pointer" onClick={() => setLocation("/configuracoes")}>
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={() => setLocation("/configuracoes")}
+                >
                   <User className="mr-2 h-4 w-4" /> Perfil
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:text-destructive">
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="cursor-pointer text-destructive focus:text-destructive"
+                >
                   <LogOut className="mr-2 h-4 w-4" /> Sair
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -358,7 +428,11 @@ function DesktopSidebarContent({
         </Sidebar>
 
         {!isCollapsed && (
-          <div className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/30 transition-colors" style={{ zIndex: 50 }} onMouseDown={() => setIsResizing(true)} />
+          <div
+            className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/30 transition-colors"
+            style={{ zIndex: 50 }}
+            onMouseDown={() => setIsResizing(true)}
+          />
         )}
       </div>
 
