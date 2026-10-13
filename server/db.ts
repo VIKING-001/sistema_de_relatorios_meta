@@ -617,7 +617,7 @@ export async function getClientPortalDataByToken(token: string) {
   const result = await pool.query(
     `SELECT c."name" AS "companyName",
             r."id" AS "reportId", r."title", r."startDate"::text AS "startDate",
-            r."endDate"::text AS "endDate", r."description",
+            r."endDate"::text AS "endDate", r."description", r."aiAnalysis",
             m."reportId" AS "metricsId", m."totalSpent", m."totalReach", m."totalImpressions",
             m."instagramProfileVisits", m."newInstagramFollowers", m."messagesInitiated",
             m."totalClicks", m."costPerClick", m."videoRetentionRate",
@@ -643,6 +643,21 @@ export async function getClientPortalDataByToken(token: string) {
   if (!result.rows.length) return null;
 
   const asNumber = (value: unknown) => Number(value ?? 0);
+  const safePortalAnalysis = (value: unknown): string | null => {
+    if (typeof value !== "string" || !value) return null;
+    try {
+      const parsed = JSON.parse(value);
+      if (!parsed || typeof parsed !== "object") return null;
+      return JSON.stringify({
+        pontosFortesTexto: Array.isArray(parsed.pontosFortesTexto)
+          ? parsed.pontosFortesTexto.filter((point: unknown) => typeof point === "string")
+          : [],
+        recomendacaoPrincipal: typeof parsed.recomendacaoPrincipal === "string" ? parsed.recomendacaoPrincipal : "",
+      });
+    } catch {
+      return null;
+    }
+  };
   const reports = result.rows
     .filter((row: any) => row.reportId != null)
     .map((row: any) => ({
@@ -651,6 +666,7 @@ export async function getClientPortalDataByToken(token: string) {
       startDate: row.startDate as string,
       endDate: row.endDate as string,
       description: row.description as string | null,
+      aiAnalysis: safePortalAnalysis(row.aiAnalysis),
       trackedSales: {
         count: asNumber(row.trackedSalesCount),
         revenue: asNumber(row.trackedSalesRevenue),

@@ -48605,7 +48605,7 @@ async function getClientPortalDataByToken(token) {
   const result = await pool2.query(
     `SELECT c."name" AS "companyName",
             r."id" AS "reportId", r."title", r."startDate"::text AS "startDate",
-            r."endDate"::text AS "endDate", r."description",
+            r."endDate"::text AS "endDate", r."description", r."aiAnalysis",
             m."reportId" AS "metricsId", m."totalSpent", m."totalReach", m."totalImpressions",
             m."instagramProfileVisits", m."newInstagramFollowers", m."messagesInitiated",
             m."totalClicks", m."costPerClick", m."videoRetentionRate",
@@ -48630,12 +48630,26 @@ async function getClientPortalDataByToken(token) {
   );
   if (!result.rows.length) return null;
   const asNumber = (value) => Number(value ?? 0);
+  const safePortalAnalysis = (value) => {
+    if (typeof value !== "string" || !value) return null;
+    try {
+      const parsed = JSON.parse(value);
+      if (!parsed || typeof parsed !== "object") return null;
+      return JSON.stringify({
+        pontosFortesTexto: Array.isArray(parsed.pontosFortesTexto) ? parsed.pontosFortesTexto.filter((point2) => typeof point2 === "string") : [],
+        recomendacaoPrincipal: typeof parsed.recomendacaoPrincipal === "string" ? parsed.recomendacaoPrincipal : ""
+      });
+    } catch {
+      return null;
+    }
+  };
   const reports2 = result.rows.filter((row) => row.reportId != null).map((row) => ({
     id: Number(row.reportId),
     title: row.title,
     startDate: row.startDate,
     endDate: row.endDate,
     description: row.description,
+    aiAnalysis: safePortalAnalysis(row.aiAnalysis),
     trackedSales: {
       count: asNumber(row.trackedSalesCount),
       revenue: asNumber(row.trackedSalesRevenue)

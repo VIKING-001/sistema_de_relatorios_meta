@@ -19,6 +19,7 @@ interface FunnelChartProps {
   costPerPurchase: number;
   purchaseValue: number;
   dark?: boolean;
+  compact?: boolean;
 }
 
 interface Step {
@@ -60,6 +61,7 @@ export default function FunnelChart({
   costPerPurchase,
   purchaseValue,
   dark = false,
+  compact = false,
 }: FunnelChartProps) {
 
   const allSteps: Step[] = [
@@ -160,10 +162,10 @@ export default function FunnelChart({
       </div>
 
       {/* ── Funil + Sidebar ── */}
-      <div className="flex flex-col lg:flex-row">
+      <div className={compact ? "" : "flex flex-col lg:flex-row"}>
 
         {/* ── Funil visual ── */}
-        <div className="flex-1 px-4 sm:px-8 py-5 sm:py-7">
+        <div className={compact ? "w-full px-3 py-4 sm:px-4 sm:py-5" : "flex-1 px-4 sm:px-8 py-5 sm:py-7"}>
           {allSteps.map((step, i) => {
             const topPct  = getWPct(step.value, maxVal);
             const nextPct = i < allSteps.length - 1
@@ -257,7 +259,7 @@ export default function FunnelChart({
         </div>
 
         {/* ── Painel lateral — Taxas de Conversão ── */}
-        <div className="lg:w-52 border-t lg:border-t-0 lg:border-l border-white/5 bg-white/[0.015]">
+        {!compact && <div className="lg:w-52 border-t lg:border-t-0 lg:border-l border-white/5 bg-white/[0.015]">
           <div className="p-3 sm:p-4">
             <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-3">
               Taxas de Conversão
@@ -311,7 +313,7 @@ export default function FunnelChart({
               )}
             </div>
           </div>
-        </div>
+        </div>}
       </div>
     </div>
   );
