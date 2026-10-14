@@ -17,45 +17,20 @@ async function executeQuery(sql: string, params: any[] = []) {
 
 const createWebhookSchema = z.object({
   companyId: z.number().int().positive(),
-  platform: z.enum([
-    // Plataformas principais
-    "shopify", "woocommerce", "custom", "zapier",
-
-    // Plataformas de infoproduto
-    "hotmart", "kiwify", "eduzz", "braip", "monetizze",
-
-    // E-commerce & Vendas (30+)
-    "cartpanda", "vega1", "kirvano", "perfectpay", "yampi", "lastlink", "payt", "logzz", "adoorel", "tribopay",
-    "clickbank", "ticto", "pepper", "buygoods", "mundpay", "disrupty", "greenn", "guru", "digistore", "hubla",
-    "doppus", "frendz", "invictuspay", "appmax", "nitropagamentos", "goatpay", "nuvemshop",
-
-    // Gateways de pagamento (100+)
-    "facilzap", "mercadopago", "pagseguro", "stripe", "paypal", "cielo", "rede", "stone", "getnet", "todo",
-    "vindi", "hebreus", "iexperience", "pagtrust", "fortpay", "systeme", "ironpay", "clinqpay", "sharkpays", "maxweb",
-    "zoutl", "pantherfy", "strivpay", "atomopay", "allpay", "bullpay", "octuspay", "zippify", "masterfy", "inovapag",
-    "soutpay", "wolfpay", "sigmapagamentos", "nexopavt", "wegate", "unicornify", "alipes", "vittapay", "fluxionpay", "nezzyay",
-    "pmhmpay", "trivexpay", "gatpay", "bearpay", "amandlspay", "digipag", "alphapay", "assetpay", "brgateway", "creedx",
-    "hotfy", "klivopay", "plumify", "primegate", "wise2pay", "visionpay", "sharkbytepay", "sigmapay", "zeroeonepay", "traxon",
-    "bloo", "kitepay", "b4you", "risepay", "urus", "cakto", "flashpay", "digitalmart", "exattus", "lunarcash",
-    "youshop", "blackpay", "venuzpay", "lunacheckout", "fullsale", "bullspay", "moodl", "nikpay", "ghostspay", "keedpay",
-    "salduu", "viperpay", "sunize", "assiny", "wiapy", "unicopaq", "imperialpay", "zedy", "sinlx", "voomp",
-    "ombrelone", "pushinpay", "genesys", "onprofit", "sacapay", "cloudfy", "kuenha", "ninjapay", "xgrow", "ggcheckout",
-    "panteracheckout", "nublapay", "cartly", "pagah", "pagsafe", "nomadfy", "sync", "lpov", "auryon369", "paradise",
-    "firepay", "lowify", "hyppe", "seedpay", "membriz", "cerefy", "pagamerican", "affiliaxpay", "kambafy", "approval",
-    "zuckpay", "xynonpay", "kavoo", "fruitfy", "coeud", "clickpay", "orlacheckout", "tukanopay",
-
-    // Marketplaces
-    "amazon", "ebay", "aliexpress", "mercado_livre",
-
-    // Automação & Custom
-    "n8n", "make", "custom_api"
-  ]),
+  platform: z.enum(["shopify", "woocommerce", "custom"]),
+  signingSecret: z.string().trim().min(8).optional(),
+}).superRefine((input, ctx) => {
+  if (input.platform === "shopify" && !input.signingSecret) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["signingSecret"], message: "Informe o segredo do app Shopify para validar a assinatura." });
+  }
 });
 
 const updateWebhookStatusSchema = z.object({
   webhookId: z.number().int().positive(),
   status: z.enum(["active", "inactive"]),
 });
+
+const supportedWebhookPlatforms = new Set(["shopify", "woocommerce", "custom"]);
 
 // ─── Router ────────────────────────────────────────────────────────────────
 
@@ -76,8 +51,9 @@ export const webhookRouter = router({
         throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado à empresa" });
       }
 
-      // Gerar secret para validação HMAC
-      const webhookSecret = crypto.randomBytes(32).toString("hex");
+      const webhookSecret = input.platform === "shopify"
+        ? input.signingSecret!
+        : crypto.randomBytes(32).toString("hex");
 
       // Construir URL do webhook baseado na plataforma (domínio vivo via env)
       const baseUrl = ENV.appBaseUrl.replace(/\/+$/, "");
@@ -99,7 +75,15 @@ export const webhookRouter = router({
         ]
       );
 
-      return result.rows[0];
+      const created = result.rows[0];
+      const url = new URL(webhookUrl);
+      url.searchParams.set("webhookId", String(created.id));
+      const updated = await executeQuery(
+        `UPDATE "webhookConfigs" SET "webhookUrl" = $1, "updatedAt" = NOW() WHERE "id" = $2 RETURNING *`,
+        [url.toString(), created.id]
+      );
+      const { webhookSecret: _secret, ...safeWebhook } = updated.rows[0];
+      return safeWebhook;
     }),
 
   /**
@@ -117,7 +101,7 @@ export const webhookRouter = router({
       }
 
       const result = await executeQuery(
-        `SELECT * FROM "webhookConfigs"
+        `SELECT "id", "companyId", "userId", "platform", "webhookUrl", "status", "lastHealthCheck", "createdAt", "updatedAt" FROM "webhookConfigs"
          WHERE "companyId" = $1
          ORDER BY "createdAt" DESC`,
         [input.companyId]
@@ -137,7 +121,7 @@ export const webhookRouter = router({
 
       // Verificar permissão
       const webhookResult = await executeQuery(
-        `SELECT * FROM "webhookConfigs" WHERE "id" = $1`,
+        `SELECT "id", "companyId", "userId", "platform", "webhookUrl", "status", "lastHealthCheck", "createdAt", "updatedAt" FROM "webhookConfigs" WHERE "id" = $1`,
         [input.webhookId]
       );
 
@@ -153,12 +137,19 @@ export const webhookRouter = router({
         throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
       }
 
+      if (input.status === "active" && !supportedWebhookPlatforms.has(webhook.platform)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Esta plataforma ainda não possui adaptador de recebimento. Use Shopify, WooCommerce ou API Genérica.",
+        });
+      }
+
       // Atualizar status
       const result = await executeQuery(
         `UPDATE "webhookConfigs"
          SET "status" = $1, "updatedAt" = NOW()
          WHERE "id" = $2
-         RETURNING *`,
+         RETURNING "id", "companyId", "userId", "platform", "webhookUrl", "status", "lastHealthCheck", "createdAt", "updatedAt"`,
         [input.status, input.webhookId]
       );
 
@@ -176,7 +167,7 @@ export const webhookRouter = router({
 
       // Verificar permissão
       const webhookResult = await executeQuery(
-        `SELECT * FROM "webhookConfigs" WHERE "id" = $1`,
+        `SELECT "id", "companyId", "userId", "platform", "webhookUrl", "status", "lastHealthCheck", "createdAt", "updatedAt" FROM "webhookConfigs" WHERE "id" = $1`,
         [input.webhookId]
       );
 
@@ -211,7 +202,7 @@ export const webhookRouter = router({
       if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
 
       const webhookResult = await executeQuery(
-        `SELECT * FROM "webhookConfigs" WHERE "id" = $1`,
+        `SELECT "id", "companyId", "userId", "platform", "webhookUrl", "status", "lastHealthCheck", "createdAt", "updatedAt" FROM "webhookConfigs" WHERE "id" = $1`,
         [input.webhookId]
       );
 
@@ -228,6 +219,22 @@ export const webhookRouter = router({
       }
 
       return webhook;
+    }),
+
+  getSecret: protectedProcedure
+    .input(z.object({ webhookId: z.number().int().positive() }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.user?.id;
+      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+      const result = await executeQuery(
+        `SELECT "companyId", "webhookSecret" FROM "webhookConfigs" WHERE "id" = $1 LIMIT 1`,
+        [input.webhookId]
+      );
+      const webhook = result.rows[0];
+      if (!webhook) throw new TRPCError({ code: "NOT_FOUND", message: "Webhook não encontrado" });
+      const company = await db.getCompanyById(webhook.companyId);
+      if (!company || company.userId !== userId) throw new TRPCError({ code: "FORBIDDEN" });
+      return { webhookSecret: webhook.webhookSecret as string };
     }),
 
   /**

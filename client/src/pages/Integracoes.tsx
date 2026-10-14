@@ -24,6 +24,9 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WEBHOOK_PLATFORMS, PLATFORMS_BY_CATEGORY, CATEGORY_LABELS } from "@/lib/platforms";
 
+const IMPLEMENTED_WEBHOOKS = new Set(["shopify", "woocommerce", "custom"]);
+const IMPLEMENTED_WEBHOOK_PLATFORMS = WEBHOOK_PLATFORMS.filter((platform) => IMPLEMENTED_WEBHOOKS.has(platform.id));
+
 const INTEGRATIONS = [
   {
     id: "meta",
@@ -81,8 +84,8 @@ export default function Integracoes() {
   const { data: companies } = trpc.company.list.useQuery();
   const [, setLocation] = useLocation();
   const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
-  const [selectedPlatform, setSelectedPlatform] = useState<string>("shopify");
-  const [selectedWebhookTab, setSelectedWebhookTab] = useState<string>("principal");
+  const [selectedPlatform, setSelectedPlatform] = useState<string>("custom");
+  const [providerSecret, setProviderSecret] = useState("");
   const [selectedCredentialTab, setSelectedCredentialTab] = useState<string>("principal");
   const [showAddWebhook, setShowAddWebhook] = useState(false);
   const [showAddCredential, setShowAddCredential] = useState(false);
@@ -145,6 +148,7 @@ export default function Integracoes() {
     onSuccess: () => {
       refetchWebhooks();
       setShowAddWebhook(false);
+      setProviderSecret("");
       toast.success("Webhook criado com sucesso!");
     },
     onError: (err) => {
@@ -169,6 +173,14 @@ export default function Integracoes() {
     onError: (err) => {
       toast.error(err.message || "Erro ao atualizar status");
     },
+  });
+
+  const getWebhookSecretMut = trpc.webhook.getSecret.useMutation({
+    onSuccess: ({ webhookSecret }) => {
+      navigator.clipboard.writeText(webhookSecret);
+      toast.success("Segredo copiado. Guarde-o em local seguro.");
+    },
+    onError: (err) => toast.error(err.message || "Não foi possível obter o segredo"),
   });
 
   // API Credentials
@@ -212,7 +224,7 @@ export default function Integracoes() {
   const connectedMeta = companies?.filter((c: any) => c.metaAccessToken).length ?? 0;
   const totalCompanies = companies?.length ?? 0;
 
-  const categories = [...new Set(INTEGRATIONS.map(i => i.category))];
+  const categories = Array.from(new Set(INTEGRATIONS.map(i => i.category)));
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -227,6 +239,7 @@ export default function Integracoes() {
     createWebhookMut.mutate({
       companyId: selectedCompanyId,
       platform: selectedPlatform as any,
+      signingSecret: selectedPlatform === "shopify" ? providerSecret : undefined,
     });
   };
 
@@ -410,32 +423,32 @@ export default function Integracoes() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <label className="text-xs font-bold text-white/60">Plataforma</label>
-                <Tabs value={selectedWebhookTab} onValueChange={setSelectedWebhookTab} className="w-full">
-                  <TabsList className="grid grid-cols-3 md:grid-cols-6 gap-1 bg-white/5 p-1 h-auto">
-                    {(Object.keys(PLATFORMS_BY_CATEGORY) as Array<keyof typeof PLATFORMS_BY_CATEGORY>).map((category) => (
-                      <TabsTrigger key={category} value={category} className="text-xs">
-                        {CATEGORY_LABELS[category].split(" ")[0]}
-                      </TabsTrigger>
+                <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
+                  <SelectTrigger className="w-full bg-white/5 border-white/10 text-white rounded-lg">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-950 border-white/10">
+                    {IMPLEMENTED_WEBHOOK_PLATFORMS.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.icon} {p.name}</SelectItem>
                     ))}
-                  </TabsList>
-
-                  {(Object.entries(PLATFORMS_BY_CATEGORY) as Array<[string, any]>).map(([category, platforms]) => (
-                    <TabsContent key={category} value={category} className="mt-3">
-                      <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
-                        <SelectTrigger className="w-full bg-white/5 border-white/10 text-white rounded-lg">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-slate-950 border-white/10 max-h-72">
-                          {platforms.map((p: any) => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {p.icon} {p.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TabsContent>
-                  ))}
-                </Tabs>
+                  </SelectContent>
+                </Select>
+                {selectedPlatform === "shopify" && (
+                  <Input
+                    type="password"
+                    value={providerSecret}
+                    onChange={(event) => setProviderSecret(event.target.value)}
+                    placeholder="Segredo do app Shopify"
+                    autoComplete="new-password"
+                  />
+                )}
+                <p className="text-xs text-white/50">
+                  {selectedPlatform === "shopify"
+                    ? "Use o segredo do app Shopify para validar a assinatura dos eventos."
+                    : selectedPlatform === "woocommerce"
+                      ? "Após criar, copie o segredo e configure-o no webhook do WooCommerce."
+                      : "API genérica para Zapier, Make, n8n ou seu sistema: envie JSON padronizado e o segredo no cabeçalho Authorization."}
+                </p>
               </div>
 
               <div className="flex gap-2">
@@ -443,7 +456,7 @@ export default function Integracoes() {
                   size="sm"
                   className="rounded-lg flex-1"
                   onClick={handleCreateWebhook}
-                  disabled={createWebhookMut.isPending}
+                  disabled={createWebhookMut.isPending || (selectedPlatform === "shopify" && providerSecret.trim().length < 8)}
                 >
                   {createWebhookMut.isPending ? "Criando..." : "Criar Webhook"}
                 </Button>
@@ -466,11 +479,15 @@ export default function Integracoes() {
             {webhooksLoading ? (
               <div className="text-xs text-muted-foreground text-center py-4">Carregando webhooks...</div>
             ) : webhooks && webhooks.length > 0 ? (
-              webhooks.map((webhook: any) => (
-                <Card
+              webhooks.map((webhook: any) => {
+                const implemented = IMPLEMENTED_WEBHOOKS.has(webhook.platform);
+                const active = implemented && webhook.status === "active";
+                const last = lastEventByPlatform(webhook.platform);
+                return (
+                  <Card
                   key={webhook.id}
                   className={`glass-card border-white/10 transition-all ${
-                    webhook.status === "active" ? "border-emerald-400/30 bg-emerald-400/5" : "opacity-60"
+                    active ? "border-emerald-400/30 bg-emerald-400/5" : "opacity-60"
                   }`}
                 >
                   <CardContent className="p-4 space-y-3">
@@ -478,56 +495,69 @@ export default function Integracoes() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <span className="text-lg">
-                            {WEBHOOK_PLATFORMS.find((p) => p.id === webhook.platform)?.icon}
+                            {WEBHOOK_PLATFORMS.find((p) => p.id === webhook.platform)?.icon ?? "🔌"}
                           </span>
                           <p className="font-semibold text-sm">
-                            {WEBHOOK_PLATFORMS.find((p) => p.id === webhook.platform)?.name}
+                            {WEBHOOK_PLATFORMS.find((p) => p.id === webhook.platform)?.name ?? webhook.platform}
                           </p>
                           <Badge
                             variant="outline"
                             className={`text-[9px] h-4 ${
-                              webhook.status === "active"
+                              !implemented
+                                ? "border-amber-400/30 bg-amber-400/10 text-amber-300"
+                                : active
                                 ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-400"
                                 : "border-amber-400/30 bg-amber-400/10 text-amber-400"
                             }`}
                           >
-                            {webhook.status === "active" ? "Ativo" : "Desativado"}
+                            {!implemented ? "Sem adaptador" : active ? "Ativo" : "Desativado"}
                           </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1 break-all">{webhook.webhookUrl}</p>
-                        {/* Status de recebimento */}
-                        {(() => {
-                          const last = lastEventByPlatform(webhook.platform);
-                          if (last) {
-                            return (
-                              <p className="text-[11px] mt-1.5 flex items-center gap-1.5 text-emerald-400">
-                                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                Recebendo ✓ — última chamada {timeAgo(last.createdAt)}
-                                {last.trackingFound ? " (UTM casada)" : ""}
-                              </p>
-                            );
-                          }
-                          return (
-                            <p className="text-[11px] mt-1.5 flex items-center gap-1.5 text-white/40">
-                              <span className="inline-block h-1.5 w-1.5 rounded-full bg-white/30" />
-                              Nenhuma venda recebida ainda — use "Testar conexão" para validar
-                            </p>
-                          );
-                        })()}
+                        {implemented ? (
+                          <p className="text-xs text-muted-foreground mt-1 break-all">{webhook.webhookUrl}</p>
+                        ) : (
+                          <p className="text-[11px] mt-1.5 text-amber-300">
+                            Esta configuração antiga não tem rota de recebimento e não registra vendas.
+                          </p>
+                        )}
+                        {!implemented ? (
+                          <p className="text-[11px] mt-1.5 text-white/50">
+                            Use Shopify, WooCommerce ou API Genérica para receber pedidos neste momento.
+                          </p>
+                        ) : last?.success && last.saleId ? (
+                          <p className="text-[11px] mt-1.5 flex items-center gap-1.5 text-emerald-400">
+                            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                            Venda recebida {timeAgo(last.createdAt)}
+                            {last.trackingFound ? " · UTM atribuída" : " · sem atribuição de UTM"}
+                          </p>
+                        ) : last && !last.success ? (
+                          <p className="text-[11px] mt-1.5 flex items-center gap-1.5 text-red-300">
+                            <span className="inline-block h-1.5 w-1.5 rounded-full bg-red-400" />
+                            Última chamada rejeitada {timeAgo(last.createdAt)}: {last.message || "verifique a assinatura e o formato do pedido"}
+                          </p>
+                        ) : last ? (
+                          <p className="text-[11px] mt-1.5 text-amber-300">
+                            Evento recebido {timeAgo(last.createdAt)}, mas nenhuma venda foi registrada.
+                          </p>
+                        ) : (
+                          <p className="text-[11px] mt-1.5 text-white/50">
+                            Nenhuma venda validada. O teste do servidor abaixo não simula uma venda.
+                          </p>
+                        )}
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Button
+                      {implemented && <Button
                         size="sm"
                         variant="outline"
                         className="rounded-lg text-xs h-7 gap-1 text-primary border-primary/30 hover:border-primary/50"
                         onClick={() => handleTestWebhook(webhook)}
                         disabled={testingPlatform === webhook.platform}
                       >
-                        {testingPlatform === webhook.platform ? "Testando..." : "Testar conexão"}
-                      </Button>
-                      <Button
+                        {testingPlatform === webhook.platform ? "Testando..." : "Testar servidor"}
+                      </Button>}
+                      {(implemented || webhook.status === "active") && <Button
                         size="sm"
                         variant={webhook.status === "active" ? "outline" : "default"}
                         className="rounded-lg text-xs h-7 gap-1"
@@ -535,15 +565,24 @@ export default function Integracoes() {
                         disabled={updateStatusMut.isPending}
                       >
                         {webhook.status === "active" ? "Desativar" : "Ativar"}
-                      </Button>
-                      <Button
+                      </Button>}
+                      {implemented && <Button
                         size="sm"
                         variant="outline"
                         className="rounded-lg text-xs h-7 gap-1"
                         onClick={() => copyToClipboard(webhook.webhookUrl)}
                       >
                         <Copy className="h-3 w-3" /> Copiar URL
-                      </Button>
+                      </Button>}
+                      {implemented && <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-lg text-xs h-7 gap-1"
+                        onClick={() => getWebhookSecretMut.mutate({ webhookId: webhook.id })}
+                        disabled={getWebhookSecretMut.isPending}
+                      >
+                        <Copy className="h-3 w-3" /> Copiar segredo
+                      </Button>}
                       <Button
                         size="sm"
                         variant="outline"
@@ -555,8 +594,9 @@ export default function Integracoes() {
                       </Button>
                     </div>
                   </CardContent>
-                </Card>
-              ))
+                  </Card>
+                );
+              })
             ) : (
               <div className="text-xs text-muted-foreground text-center py-4">
                 Nenhum webhook configurado. Clique em "Adicionar Webhook" para começar.
@@ -573,12 +613,22 @@ export default function Integracoes() {
                 <strong>📖 Como configurar:</strong>
               </p>
               <ul className="text-xs text-white/60 mt-2 space-y-1 ml-2">
-                <li>✓ Copie a URL do webhook acima</li>
-                <li>✓ Vá para configurações da sua plataforma (Shopify, WooCommerce, etc)</li>
-                <li>✓ Cole a URL na seção de Webhooks/Notificações</li>
-                <li>✓ Configure o evento: "Pedido Criado" ou "Venda Concluída"</li>
-                <li>✓ Teste com uma venda de teste</li>
+                <li>Shopify: configure o evento <code>orders/paid</code> e use o segredo do app para validar a assinatura.</li>
+                <li>WooCommerce: configure o webhook de pedido para estados pagos e copie o segredo gerado no sistema.</li>
+                <li>API Genérica: envie pedido pago em JSON com <code>orderId</code> e <code>orderValue</code>, autenticando com o segredo.</li>
+                <li>Para atribuir UTM, envie também <code>utm_id</code>, <code>utm_session</code> ou os campos UTM no pedido.</li>
+                <li>"Testar servidor" verifica apenas se o endpoint responde; uma venda de teste valida a integração ponta a ponta.</li>
               </ul>
+              <pre className="mt-3 overflow-x-auto rounded-md border border-white/10 bg-black/20 p-3 text-[11px] text-white/70">{`{
+  "orderId": "pedido-123",
+  "orderValue": 129.90,
+  "currency": "BRL",
+  "utm_id": "CODIGO_DO_LINK",
+  "utm_session": "SESSAO_DO_VISITANTE"
+}`}</pre>
+              <p className="mt-2 text-[11px] text-white/50">
+                Envie por POST e use o segredo copiado no cabeçalho <code>Authorization: Bearer …</code> ou <code>X-Webhook-Secret</code>.
+              </p>
             </CardContent>
           </Card>
         )}

@@ -104,7 +104,7 @@ var require_main = __commonJS({
     var fs = require("fs");
     var path2 = require("path");
     var os = require("os");
-    var crypto5 = require("crypto");
+    var crypto6 = require("crypto");
     var packageJson = require_package();
     var version3 = packageJson.version;
     var TIPS = [
@@ -358,7 +358,7 @@ var require_main = __commonJS({
       const authTag = ciphertext.subarray(-16);
       ciphertext = ciphertext.subarray(12, -16);
       try {
-        const aesgcm = crypto5.createDecipheriv("aes-256-gcm", key, nonce);
+        const aesgcm = crypto6.createDecipheriv("aes-256-gcm", key, nonce);
         aesgcm.setAuthTag(authTag);
         return `${aesgcm.update(ciphertext)}${aesgcm.final()}`;
       } catch (error46) {
@@ -19030,14 +19030,14 @@ var require_etag = __commonJS({
   "node_modules/.pnpm/etag@1.8.1/node_modules/etag/index.js"(exports2, module2) {
     "use strict";
     module2.exports = etag;
-    var crypto5 = require("crypto");
+    var crypto6 = require("crypto");
     var Stats = require("fs").Stats;
     var toString = Object.prototype.toString;
     function entitytag(entity) {
       if (entity.length === 0) {
         return '"0-2jmj7l5rSw0yVb/vlWAYkK/YBwk"';
       }
-      var hash2 = crypto5.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
+      var hash2 = crypto6.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
       var len = typeof entity === "string" ? Buffer.byteLength(entity, "utf8") : entity.length;
       return '"' + len.toString(16) + "-" + hash2 + '"';
     }
@@ -21929,11 +21929,11 @@ var require_request = __commonJS({
 // node_modules/.pnpm/cookie-signature@1.0.6/node_modules/cookie-signature/index.js
 var require_cookie_signature = __commonJS({
   "node_modules/.pnpm/cookie-signature@1.0.6/node_modules/cookie-signature/index.js"(exports2) {
-    var crypto5 = require("crypto");
+    var crypto6 = require("crypto");
     exports2.sign = function(val, secret) {
       if ("string" != typeof val) throw new TypeError("Cookie value must be provided as a string.");
       if ("string" != typeof secret) throw new TypeError("Secret string must be provided.");
-      return val + "." + crypto5.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
+      return val + "." + crypto6.createHmac("sha256", secret).update(val).digest("base64").replace(/\=+$/, "");
     };
     exports2.unsign = function(val, secret) {
       if ("string" != typeof val) throw new TypeError("Signed cookie string must be provided.");
@@ -21942,7 +21942,7 @@ var require_cookie_signature = __commonJS({
       return sha1(mac) == sha1(val) ? str2 : false;
     };
     function sha1(str2) {
-      return crypto5.createHash("sha1").update(str2).digest("hex");
+      return crypto6.createHash("sha1").update(str2).digest("hex");
     }
   }
 });
@@ -23186,7 +23186,7 @@ var require_postgres_date = __commonJS({
     var DATE = /^(\d{1,})-(\d{2})-(\d{2})( BC)?$/;
     var TIME_ZONE = /([Z+-])(\d{2})?:?(\d{2})?:?(\d{2})?/;
     var INFINITY2 = /^-?infinity$/;
-    module2.exports = function parseDate(isoDate) {
+    module2.exports = function parseDate2(isoDate) {
       if (INFINITY2.test(isoDate)) {
         return Number(isoDate.replace("i", "I"));
       }
@@ -23416,7 +23416,7 @@ var require_textParsers = __commonJS({
   "node_modules/.pnpm/pg-types@2.2.0/node_modules/pg-types/lib/textParsers.js"(exports2, module2) {
     var array2 = require_postgres_array();
     var arrayParser = require_arrayParser();
-    var parseDate = require_postgres_date();
+    var parseDate2 = require_postgres_date();
     var parseInterval = require_postgres_interval();
     var parseByteA = require_postgres_bytea();
     function allowNull(fn) {
@@ -23483,7 +23483,7 @@ var require_textParsers = __commonJS({
       }
       var p = arrayParser.create(value, function(entry) {
         if (entry !== null) {
-          entry = parseDate(entry);
+          entry = parseDate2(entry);
         }
         return entry;
       });
@@ -23567,9 +23567,9 @@ var require_textParsers = __commonJS({
       register(700, parseFloat);
       register(701, parseFloat);
       register(16, parseBool);
-      register(1082, parseDate);
-      register(1114, parseDate);
-      register(1184, parseDate);
+      register(1082, parseDate2);
+      register(1114, parseDate2);
+      register(1184, parseDate2);
       register(600, parsePoint);
       register(651, parseStringArray);
       register(718, parseCircle);
@@ -23794,7 +23794,7 @@ var require_binaryParsers = __commonJS({
       var scale = Math.pow(10, parseBits(value, 16, 48));
       return (sign === 0 ? 1 : -1) * Math.round(result * scale) / scale;
     };
-    var parseDate = function(isUTC, value) {
+    var parseDate2 = function(isUTC, value) {
       var sign = parseBits(value, 1);
       var rawValue = parseBits(value, 63, 1);
       var result = new Date((sign === 0 ? 1 : -1) * rawValue / 1e3 + 9466848e5);
@@ -23876,8 +23876,8 @@ var require_binaryParsers = __commonJS({
       register(700, parseFloat32);
       register(701, parseFloat64);
       register(16, parseBool);
-      register(1114, parseDate.bind(null, false));
-      register(1184, parseDate.bind(null, true));
+      register(1114, parseDate2.bind(null, false));
+      register(1184, parseDate2.bind(null, true));
       register(1e3, parseArray);
       register(1007, parseArray);
       register(1016, parseArray);
@@ -24444,7 +24444,7 @@ var require_cert_signatures = __commonJS({
 var require_sasl = __commonJS({
   "node_modules/.pnpm/pg@8.20.0/node_modules/pg/lib/crypto/sasl.js"(exports2, module2) {
     "use strict";
-    var crypto5 = require_utils4();
+    var crypto6 = require_utils4();
     var { signatureAlgorithmHashFromCertificate } = require_cert_signatures();
     function startSession(mechanisms, stream) {
       const candidates = ["SCRAM-SHA-256"];
@@ -24456,7 +24456,7 @@ var require_sasl = __commonJS({
       if (mechanism === "SCRAM-SHA-256-PLUS" && typeof stream.getPeerCertificate !== "function") {
         throw new Error("SASL: Mechanism SCRAM-SHA-256-PLUS requires a certificate");
       }
-      const clientNonce = crypto5.randomBytes(18).toString("base64");
+      const clientNonce = crypto6.randomBytes(18).toString("base64");
       const gs2Header = mechanism === "SCRAM-SHA-256-PLUS" ? "p=tls-server-end-point" : stream ? "y" : "n";
       return {
         mechanism,
@@ -24491,20 +24491,20 @@ var require_sasl = __commonJS({
         const peerCert = stream.getPeerCertificate().raw;
         let hashName = signatureAlgorithmHashFromCertificate(peerCert);
         if (hashName === "MD5" || hashName === "SHA-1") hashName = "SHA-256";
-        const certHash = await crypto5.hashByName(hashName, peerCert);
+        const certHash = await crypto6.hashByName(hashName, peerCert);
         const bindingData = Buffer.concat([Buffer.from("p=tls-server-end-point,,"), Buffer.from(certHash)]);
         channelBinding = bindingData.toString("base64");
       }
       const clientFinalMessageWithoutProof = "c=" + channelBinding + ",r=" + sv.nonce;
       const authMessage = clientFirstMessageBare + "," + serverFirstMessage + "," + clientFinalMessageWithoutProof;
       const saltBytes = Buffer.from(sv.salt, "base64");
-      const saltedPassword = await crypto5.deriveKey(password, saltBytes, sv.iteration);
-      const clientKey = await crypto5.hmacSha256(saltedPassword, "Client Key");
-      const storedKey = await crypto5.sha256(clientKey);
-      const clientSignature = await crypto5.hmacSha256(storedKey, authMessage);
+      const saltedPassword = await crypto6.deriveKey(password, saltBytes, sv.iteration);
+      const clientKey = await crypto6.hmacSha256(saltedPassword, "Client Key");
+      const storedKey = await crypto6.sha256(clientKey);
+      const clientSignature = await crypto6.hmacSha256(storedKey, authMessage);
       const clientProof = xorBuffers(Buffer.from(clientKey), Buffer.from(clientSignature)).toString("base64");
-      const serverKey = await crypto5.hmacSha256(saltedPassword, "Server Key");
-      const serverSignatureBytes = await crypto5.hmacSha256(serverKey, authMessage);
+      const serverKey = await crypto6.hmacSha256(saltedPassword, "Server Key");
+      const serverSignatureBytes = await crypto6.hmacSha256(serverKey, authMessage);
       session.message = "SASLResponse";
       session.serverSignature = Buffer.from(serverSignatureBytes).toString("base64");
       session.response = clientFinalMessageWithoutProof + ",p=" + clientProof;
@@ -26672,7 +26672,7 @@ var require_client = __commonJS({
     var Query2 = require_query2();
     var defaults3 = require_defaults();
     var Connection2 = require_connection();
-    var crypto5 = require_utils4();
+    var crypto6 = require_utils4();
     var activeQueryDeprecationNotice = nodeUtils.deprecate(
       () => {
       },
@@ -26907,7 +26907,7 @@ var require_client = __commonJS({
       _handleAuthMD5Password(msg) {
         this._getPassword(async () => {
           try {
-            const hashedPassword = await crypto5.postgresMd5PasswordHash(this.user, this.password, msg.salt);
+            const hashedPassword = await crypto6.postgresMd5PasswordHash(this.user, this.password, msg.salt);
             this.connection.password(hashedPassword);
           } catch (e) {
             this.emit("error", e);
@@ -34076,14 +34076,14 @@ var require_buffer_equal_constant_time = __commonJS({
 var require_jwa = __commonJS({
   "node_modules/.pnpm/jwa@2.0.1/node_modules/jwa/index.js"(exports2, module2) {
     var Buffer2 = require_safe_buffer().Buffer;
-    var crypto5 = require("crypto");
+    var crypto6 = require("crypto");
     var formatEcdsa = require_ecdsa_sig_formatter();
     var util = require("util");
     var MSG_INVALID_ALGORITHM = '"%s" is not a valid algorithm.\n  Supported algorithms are:\n  "HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512" and "none".';
     var MSG_INVALID_SECRET = "secret must be a string or buffer";
     var MSG_INVALID_VERIFIER_KEY = "key must be a string or a buffer";
     var MSG_INVALID_SIGNER_KEY = "key must be a string, a buffer or an object";
-    var supportsKeyObjects = typeof crypto5.createPublicKey === "function";
+    var supportsKeyObjects = typeof crypto6.createPublicKey === "function";
     if (supportsKeyObjects) {
       MSG_INVALID_VERIFIER_KEY += " or a KeyObject";
       MSG_INVALID_SECRET += "or a KeyObject";
@@ -34173,17 +34173,17 @@ var require_jwa = __commonJS({
       return function sign(thing, secret) {
         checkIsSecretKey(secret);
         thing = normalizeInput(thing);
-        var hmac = crypto5.createHmac("sha" + bits, secret);
+        var hmac = crypto6.createHmac("sha" + bits, secret);
         var sig = (hmac.update(thing), hmac.digest("base64"));
         return fromBase64(sig);
       };
     }
     var bufferEqual;
-    var timingSafeEqual = "timingSafeEqual" in crypto5 ? function timingSafeEqual2(a, b) {
+    var timingSafeEqual = "timingSafeEqual" in crypto6 ? function timingSafeEqual2(a, b) {
       if (a.byteLength !== b.byteLength) {
         return false;
       }
-      return crypto5.timingSafeEqual(a, b);
+      return crypto6.timingSafeEqual(a, b);
     } : function timingSafeEqual2(a, b) {
       if (!bufferEqual) {
         bufferEqual = require_buffer_equal_constant_time();
@@ -34200,7 +34200,7 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto5.createSign("RSA-SHA" + bits);
+        var signer = crypto6.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign(privateKey, "base64"));
         return fromBase64(sig);
       };
@@ -34210,7 +34210,7 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto5.createVerify("RSA-SHA" + bits);
+        var verifier = crypto6.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify(publicKey, signature, "base64");
       };
@@ -34219,11 +34219,11 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto5.createSign("RSA-SHA" + bits);
+        var signer = crypto6.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign({
           key: privateKey,
-          padding: crypto5.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto5.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto6.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto6.constants.RSA_PSS_SALTLEN_DIGEST
         }, "base64"));
         return fromBase64(sig);
       };
@@ -34233,12 +34233,12 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto5.createVerify("RSA-SHA" + bits);
+        var verifier = crypto6.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify({
           key: publicKey,
-          padding: crypto5.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto5.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto6.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto6.constants.RSA_PSS_SALTLEN_DIGEST
         }, signature, "base64");
       };
     }
@@ -34569,7 +34569,7 @@ var require_urlsafe_base64_helper = __commonJS({
 var require_vapid_helper = __commonJS({
   "node_modules/.pnpm/web-push@3.6.7/node_modules/web-push/src/vapid-helper.js"(exports2, module2) {
     "use strict";
-    var crypto5 = require("crypto");
+    var crypto6 = require("crypto");
     var asn1 = require_asn1();
     var jws = require_jws();
     var { URL: URL2 } = require("url");
@@ -34596,7 +34596,7 @@ var require_vapid_helper = __commonJS({
       });
     }
     function generateVAPIDKeys() {
-      const curve = crypto5.createECDH("prime256v1");
+      const curve = crypto6.createECDH("prime256v1");
       curve.generateKeys();
       let publicKeyBuffer = curve.getPublicKey();
       let privateKeyBuffer = curve.getPrivateKey();
@@ -34746,7 +34746,7 @@ var require_vapid_helper = __commonJS({
 var require_ece = __commonJS({
   "node_modules/.pnpm/http_ece@1.2.0/node_modules/http_ece/ece.js"(exports2, module2) {
     "use strict";
-    var crypto5 = require("crypto");
+    var crypto6 = require("crypto");
     var AES_GCM = "aes-128-gcm";
     var PAD_SIZE = { "aes128gcm": 1, "aesgcm": 2 };
     var TAG_LENGTH = 16;
@@ -34773,7 +34773,7 @@ var require_ece = __commonJS({
       return b;
     }
     function HMAC_hash(key, input) {
-      var hmac = crypto5.createHmac("sha256", key);
+      var hmac = crypto6.createHmac("sha256", key);
       hmac.update(input);
       return hmac.digest();
     }
@@ -35041,7 +35041,7 @@ var require_ece = __commonJS({
     function decryptRecord(key, counter, buffer, header, last) {
       keylog("decrypt", buffer);
       var nonce = generateNonce(key.nonce, counter);
-      var gcm = crypto5.createDecipheriv(AES_GCM, key.key, nonce);
+      var gcm = crypto6.createDecipheriv(AES_GCM, key.key, nonce);
       gcm.setAuthTag(buffer.slice(buffer.length - TAG_LENGTH));
       var data = gcm.update(buffer.slice(0, buffer.length - TAG_LENGTH));
       data = Buffer.concat([data, gcm.final()]);
@@ -35089,7 +35089,7 @@ var require_ece = __commonJS({
       keylog("encrypt", buffer);
       pad = pad || 0;
       var nonce = generateNonce(key.nonce, counter);
-      var gcm = crypto5.createCipheriv(AES_GCM, key.key, nonce);
+      var gcm = crypto6.createCipheriv(AES_GCM, key.key, nonce);
       var ciphertext = [];
       var padSize = PAD_SIZE[header.version];
       var padding = Buffer.alloc(pad + padSize);
@@ -35132,7 +35132,7 @@ var require_ece = __commonJS({
       }
       var header = parseParams(params);
       if (!header.salt) {
-        header.salt = crypto5.randomBytes(KEY_LENGTH);
+        header.salt = crypto6.randomBytes(KEY_LENGTH);
       }
       var result;
       if (header.version === "aes128gcm") {
@@ -35197,7 +35197,7 @@ var require_ece = __commonJS({
 var require_encryption_helper = __commonJS({
   "node_modules/.pnpm/web-push@3.6.7/node_modules/web-push/src/encryption-helper.js"(exports2, module2) {
     "use strict";
-    var crypto5 = require("crypto");
+    var crypto6 = require("crypto");
     var ece = require_ece();
     var encrypt = function(userPublicKey, userAuth, payload, contentEncoding) {
       if (!userPublicKey) {
@@ -35224,9 +35224,9 @@ var require_encryption_helper = __commonJS({
       if (typeof payload === "string" || payload instanceof String) {
         payload = Buffer.from(payload);
       }
-      const localCurve = crypto5.createECDH("prime256v1");
+      const localCurve = crypto6.createECDH("prime256v1");
       const localPublicKey = localCurve.generateKeys();
-      const salt = crypto5.randomBytes(16).toString("base64url");
+      const salt = crypto6.randomBytes(16).toString("base64url");
       const cipherText = ece.encrypt(payload, {
         version: contentEncoding,
         dh: userPublicKey,
@@ -62175,6 +62175,8 @@ var recordSaleSchema = external_exports.object({
   utmSource: external_exports.string().optional(),
   utmMedium: external_exports.string().optional(),
   utmCampaign: external_exports.string().optional(),
+  utmId: external_exports.string().optional(),
+  utmSession: external_exports.string().optional(),
   utmContent: external_exports.string().optional(),
   utmTerm: external_exports.string().optional(),
   customerEmail: external_exports.string().email().optional(),
@@ -62200,10 +62202,9 @@ var utmRouter = router({
     urlObj.searchParams.set("utm_campaign", input.utmCampaign);
     if (input.utmContent) urlObj.searchParams.set("utm_content", input.utmContent);
     if (input.utmTerm) urlObj.searchParams.set("utm_term", input.utmTerm);
-    const trackingId = nanoid(12);
-    urlObj.searchParams.set("utm_id", trackingId);
-    const trackingUrl = urlObj.toString();
     const shortCode = nanoid(8);
+    urlObj.searchParams.set("utm_id", shortCode);
+    const trackingUrl = urlObj.toString();
     const result = await executeQuery(
       `INSERT INTO "utmTracking" (
           "companyId", "userId", "baseUrl", "utmSource", "utmMedium",
@@ -62247,8 +62248,8 @@ var utmRouter = router({
    */
   clickRedirect: publicProcedure.input(
     external_exports.object({
-      utm_id: external_exports.string(),
-      sessionId: external_exports.string().optional()
+      utm_id: external_exports.string().min(1).max(64),
+      sessionId: external_exports.string().min(1).max(255).optional()
     })
   ).query(async ({ input }) => {
     const trackResult = await executeQuery(
@@ -62268,8 +62269,11 @@ var utmRouter = router({
       `UPDATE "utmTracking" SET "clickCount" = "clickCount" + 1 WHERE "id" = $1`,
       [tracking.id]
     );
+    const redirect = new URL(tracking.trackingUrl || tracking.baseUrl);
+    if (tracking.shortCode) redirect.searchParams.set("utm_id", tracking.shortCode);
+    redirect.searchParams.set("utm_session", sessionId);
     return {
-      redirectUrl: tracking.baseUrl,
+      redirectUrl: redirect.toString(),
       sessionId,
       trackingId: tracking.id
     };
@@ -62278,58 +62282,84 @@ var utmRouter = router({
    * Webhook para registrar conversão/venda
    * POST /api/trpc/utm.recordSale
    */
-  recordSale: publicProcedure.input(recordSaleSchema).mutation(async ({ input }) => {
-    const companyResult = await executeQuery(
-      `SELECT id FROM "companies" WHERE "id" = $1`,
-      [input.companyId]
-    );
-    if (companyResult.rows.length === 0) {
-      throw new TRPCError({ code: "NOT_FOUND", message: "Empresa n\xE3o encontrada" });
-    }
-    let trackingId = null;
-    if (input.utmCampaign) {
-      const trackResult = await executeQuery(
-        `SELECT id FROM "utmTracking"
-           WHERE "companyId" = $1
-             AND "utmCampaign" = $2
-             AND "utmSource" IS NOT DISTINCT FROM $3
-             AND "utmMedium" IS NOT DISTINCT FROM $4
-           ORDER BY "createdAt" DESC LIMIT 1`,
-        [input.companyId, input.utmCampaign, input.utmSource || null, input.utmMedium || null]
+  recordSale: protectedProcedure.input(recordSaleSchema).mutation(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) throw new TRPCError({ code: "FORBIDDEN" });
+    let tracking = null;
+    let sessionRowId = null;
+    if (input.utmSession) {
+      const session = await executeQuery(
+        `SELECT s.id AS "sessionRowId", t.* FROM "utmSessions" s
+           JOIN "utmTracking" t ON t.id = s."trackingId"
+           WHERE s."sessionId" = $1 AND t."companyId" = $2
+           ORDER BY s."clickedAt" DESC LIMIT 1`,
+        [input.utmSession, input.companyId]
       );
-      if (trackResult.rows.length > 0) {
-        trackingId = trackResult.rows[0].id;
-        await executeQuery(
-          `UPDATE "utmTracking" SET "conversionCount" = "conversionCount" + 1 WHERE "id" = $1`,
-          [trackingId]
-        );
+      if (session.rows[0]) {
+        tracking = session.rows[0];
+        sessionRowId = tracking.sessionRowId;
       }
     }
+    if (!tracking && input.utmId) {
+      const byId = await executeQuery(
+        `SELECT * FROM "utmTracking" WHERE "companyId" = $1 AND ("shortCode" = $2 OR "id"::text = $2) LIMIT 1`,
+        [input.companyId, input.utmId]
+      );
+      tracking = byId.rows[0] ?? null;
+    }
+    if (!tracking && input.utmCampaign) {
+      const trackResult = await executeQuery(
+        `SELECT * FROM "utmTracking"
+           WHERE "companyId" = $1
+             AND lower(trim("utmCampaign")) = lower(trim($2))
+             AND ($3::text IS NULL OR lower(trim(COALESCE("utmSource", ''))) = lower(trim($3)))
+             AND ($4::text IS NULL OR lower(trim(COALESCE("utmMedium", ''))) = lower(trim($4)))
+           ORDER BY "createdAt" DESC LIMIT 2`,
+        [input.companyId, input.utmCampaign, input.utmSource || null, input.utmMedium || null]
+      );
+      if (trackResult.rows.length === 1) tracking = trackResult.rows[0];
+    }
+    const trackingId = tracking?.id ?? null;
     const saleResult = await executeQuery(
       `INSERT INTO "trackedSales" (
-          "companyId", "userId", "trackingId", "orderId", "orderValue",
+          "companyId", "userId", "sessionId", "trackingId", "orderId", "orderValue",
           "utmSource", "utmMedium", "utmCampaign", "utmContent", "utmTerm",
           "customerEmail", "customerPhone", "source", "externalId", "saleDate"
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW())
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW())
         RETURNING *`,
       [
         input.companyId,
-        null,
-        // userId será preenchido pelo webhook
+        userId,
+        sessionRowId,
         trackingId,
         input.orderId,
         input.orderValue,
-        input.utmSource || null,
-        input.utmMedium || null,
-        input.utmCampaign || null,
-        input.utmContent || null,
-        input.utmTerm || null,
+        input.utmSource || tracking?.utmSource || null,
+        input.utmMedium || tracking?.utmMedium || null,
+        input.utmCampaign || tracking?.utmCampaign || null,
+        input.utmContent || tracking?.utmContent || null,
+        input.utmTerm || tracking?.utmTerm || null,
         input.customerEmail || null,
         input.customerPhone || null,
         input.source,
         input.externalId || null
       ]
     );
+    if (trackingId) {
+      await executeQuery(
+        `UPDATE "utmTracking" SET "conversionCount" = "conversionCount" + 1 WHERE "id" = $1`,
+        [trackingId]
+      );
+    }
+    if (sessionRowId) {
+      await executeQuery(
+        `UPDATE "utmSessions" SET "convertedAt" = COALESCE("convertedAt", NOW()),
+            "conversionValue" = $2, "conversionType" = 'purchase', "externalConversionId" = $3 WHERE id = $1`,
+        [sessionRowId, input.orderValue, input.externalId || input.orderId]
+      );
+    }
     return {
       success: true,
       sale: saleResult.rows[0],
@@ -62590,190 +62620,18 @@ async function executeQuery2(sql2, params = []) {
 }
 var createWebhookSchema = external_exports.object({
   companyId: external_exports.number().int().positive(),
-  platform: external_exports.enum([
-    // Plataformas principais
-    "shopify",
-    "woocommerce",
-    "custom",
-    "zapier",
-    // Plataformas de infoproduto
-    "hotmart",
-    "kiwify",
-    "eduzz",
-    "braip",
-    "monetizze",
-    // E-commerce & Vendas (30+)
-    "cartpanda",
-    "vega1",
-    "kirvano",
-    "perfectpay",
-    "yampi",
-    "lastlink",
-    "payt",
-    "logzz",
-    "adoorel",
-    "tribopay",
-    "clickbank",
-    "ticto",
-    "pepper",
-    "buygoods",
-    "mundpay",
-    "disrupty",
-    "greenn",
-    "guru",
-    "digistore",
-    "hubla",
-    "doppus",
-    "frendz",
-    "invictuspay",
-    "appmax",
-    "nitropagamentos",
-    "goatpay",
-    "nuvemshop",
-    // Gateways de pagamento (100+)
-    "facilzap",
-    "mercadopago",
-    "pagseguro",
-    "stripe",
-    "paypal",
-    "cielo",
-    "rede",
-    "stone",
-    "getnet",
-    "todo",
-    "vindi",
-    "hebreus",
-    "iexperience",
-    "pagtrust",
-    "fortpay",
-    "systeme",
-    "ironpay",
-    "clinqpay",
-    "sharkpays",
-    "maxweb",
-    "zoutl",
-    "pantherfy",
-    "strivpay",
-    "atomopay",
-    "allpay",
-    "bullpay",
-    "octuspay",
-    "zippify",
-    "masterfy",
-    "inovapag",
-    "soutpay",
-    "wolfpay",
-    "sigmapagamentos",
-    "nexopavt",
-    "wegate",
-    "unicornify",
-    "alipes",
-    "vittapay",
-    "fluxionpay",
-    "nezzyay",
-    "pmhmpay",
-    "trivexpay",
-    "gatpay",
-    "bearpay",
-    "amandlspay",
-    "digipag",
-    "alphapay",
-    "assetpay",
-    "brgateway",
-    "creedx",
-    "hotfy",
-    "klivopay",
-    "plumify",
-    "primegate",
-    "wise2pay",
-    "visionpay",
-    "sharkbytepay",
-    "sigmapay",
-    "zeroeonepay",
-    "traxon",
-    "bloo",
-    "kitepay",
-    "b4you",
-    "risepay",
-    "urus",
-    "cakto",
-    "flashpay",
-    "digitalmart",
-    "exattus",
-    "lunarcash",
-    "youshop",
-    "blackpay",
-    "venuzpay",
-    "lunacheckout",
-    "fullsale",
-    "bullspay",
-    "moodl",
-    "nikpay",
-    "ghostspay",
-    "keedpay",
-    "salduu",
-    "viperpay",
-    "sunize",
-    "assiny",
-    "wiapy",
-    "unicopaq",
-    "imperialpay",
-    "zedy",
-    "sinlx",
-    "voomp",
-    "ombrelone",
-    "pushinpay",
-    "genesys",
-    "onprofit",
-    "sacapay",
-    "cloudfy",
-    "kuenha",
-    "ninjapay",
-    "xgrow",
-    "ggcheckout",
-    "panteracheckout",
-    "nublapay",
-    "cartly",
-    "pagah",
-    "pagsafe",
-    "nomadfy",
-    "sync",
-    "lpov",
-    "auryon369",
-    "paradise",
-    "firepay",
-    "lowify",
-    "hyppe",
-    "seedpay",
-    "membriz",
-    "cerefy",
-    "pagamerican",
-    "affiliaxpay",
-    "kambafy",
-    "approval",
-    "zuckpay",
-    "xynonpay",
-    "kavoo",
-    "fruitfy",
-    "coeud",
-    "clickpay",
-    "orlacheckout",
-    "tukanopay",
-    // Marketplaces
-    "amazon",
-    "ebay",
-    "aliexpress",
-    "mercado_livre",
-    // Automação & Custom
-    "n8n",
-    "make",
-    "custom_api"
-  ])
+  platform: external_exports.enum(["shopify", "woocommerce", "custom"]),
+  signingSecret: external_exports.string().trim().min(8).optional()
+}).superRefine((input, ctx) => {
+  if (input.platform === "shopify" && !input.signingSecret) {
+    ctx.addIssue({ code: external_exports.ZodIssueCode.custom, path: ["signingSecret"], message: "Informe o segredo do app Shopify para validar a assinatura." });
+  }
 });
 var updateWebhookStatusSchema = external_exports.object({
   webhookId: external_exports.number().int().positive(),
   status: external_exports.enum(["active", "inactive"])
 });
+var supportedWebhookPlatforms = /* @__PURE__ */ new Set(["shopify", "woocommerce", "custom"]);
 var webhookRouter = router({
   /**
    * Criar uma nova configuração de webhook
@@ -62786,7 +62644,7 @@ var webhookRouter = router({
     if (!company || company.userId !== userId) {
       throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado \xE0 empresa" });
     }
-    const webhookSecret = import_crypto.default.randomBytes(32).toString("hex");
+    const webhookSecret = input.platform === "shopify" ? input.signingSecret : import_crypto.default.randomBytes(32).toString("hex");
     const baseUrl = ENV.appBaseUrl.replace(/\/+$/, "");
     const webhookUrl = `${baseUrl}/webhook/${input.platform}?companyId=${input.companyId}`;
     const result = await executeQuery2(
@@ -62803,7 +62661,15 @@ var webhookRouter = router({
         "active"
       ]
     );
-    return result.rows[0];
+    const created = result.rows[0];
+    const url2 = new URL(webhookUrl);
+    url2.searchParams.set("webhookId", String(created.id));
+    const updated = await executeQuery2(
+      `UPDATE "webhookConfigs" SET "webhookUrl" = $1, "updatedAt" = NOW() WHERE "id" = $2 RETURNING *`,
+      [url2.toString(), created.id]
+    );
+    const { webhookSecret: _secret, ...safeWebhook } = updated.rows[0];
+    return safeWebhook;
   }),
   /**
    * Listar todos os webhooks de uma empresa
@@ -62816,7 +62682,7 @@ var webhookRouter = router({
       throw new TRPCError({ code: "FORBIDDEN" });
     }
     const result = await executeQuery2(
-      `SELECT * FROM "webhookConfigs"
+      `SELECT "id", "companyId", "userId", "platform", "webhookUrl", "status", "lastHealthCheck", "createdAt", "updatedAt" FROM "webhookConfigs"
          WHERE "companyId" = $1
          ORDER BY "createdAt" DESC`,
       [input.companyId]
@@ -62830,7 +62696,7 @@ var webhookRouter = router({
     const userId = ctx.user?.id;
     if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
     const webhookResult = await executeQuery2(
-      `SELECT * FROM "webhookConfigs" WHERE "id" = $1`,
+      `SELECT "id", "companyId", "userId", "platform", "webhookUrl", "status", "lastHealthCheck", "createdAt", "updatedAt" FROM "webhookConfigs" WHERE "id" = $1`,
       [input.webhookId]
     );
     if (webhookResult.rows.length === 0) {
@@ -62841,11 +62707,17 @@ var webhookRouter = router({
     if (!company || company.userId !== userId) {
       throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
     }
+    if (input.status === "active" && !supportedWebhookPlatforms.has(webhook.platform)) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Esta plataforma ainda n\xE3o possui adaptador de recebimento. Use Shopify, WooCommerce ou API Gen\xE9rica."
+      });
+    }
     const result = await executeQuery2(
       `UPDATE "webhookConfigs"
          SET "status" = $1, "updatedAt" = NOW()
          WHERE "id" = $2
-         RETURNING *`,
+         RETURNING "id", "companyId", "userId", "platform", "webhookUrl", "status", "lastHealthCheck", "createdAt", "updatedAt"`,
       [input.status, input.webhookId]
     );
     return result.rows[0];
@@ -62857,7 +62729,7 @@ var webhookRouter = router({
     const userId = ctx.user?.id;
     if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
     const webhookResult = await executeQuery2(
-      `SELECT * FROM "webhookConfigs" WHERE "id" = $1`,
+      `SELECT "id", "companyId", "userId", "platform", "webhookUrl", "status", "lastHealthCheck", "createdAt", "updatedAt" FROM "webhookConfigs" WHERE "id" = $1`,
       [input.webhookId]
     );
     if (webhookResult.rows.length === 0) {
@@ -62881,7 +62753,7 @@ var webhookRouter = router({
     const userId = ctx.user?.id;
     if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
     const webhookResult = await executeQuery2(
-      `SELECT * FROM "webhookConfigs" WHERE "id" = $1`,
+      `SELECT "id", "companyId", "userId", "platform", "webhookUrl", "status", "lastHealthCheck", "createdAt", "updatedAt" FROM "webhookConfigs" WHERE "id" = $1`,
       [input.webhookId]
     );
     if (webhookResult.rows.length === 0) {
@@ -62893,6 +62765,19 @@ var webhookRouter = router({
       throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
     }
     return webhook;
+  }),
+  getSecret: protectedProcedure.input(external_exports.object({ webhookId: external_exports.number().int().positive() })).mutation(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const result = await executeQuery2(
+      `SELECT "companyId", "webhookSecret" FROM "webhookConfigs" WHERE "id" = $1 LIMIT 1`,
+      [input.webhookId]
+    );
+    const webhook = result.rows[0];
+    if (!webhook) throw new TRPCError({ code: "NOT_FOUND", message: "Webhook n\xE3o encontrado" });
+    const company = await getCompanyById(webhook.companyId);
+    if (!company || company.userId !== userId) throw new TRPCError({ code: "FORBIDDEN" });
+    return { webhookSecret: webhook.webhookSecret };
   }),
   /**
    * Obter estatísticas de um webhook (quantos webhooks foram disparados, etc)
@@ -63789,13 +63674,13 @@ function __classPrivateFieldGet(receiver, state, kind, f) {
 
 // node_modules/.pnpm/openai@6.37.0_zod@4.1.12/node_modules/openai/internal/utils/uuid.mjs
 var uuid42 = function() {
-  const { crypto: crypto5 } = globalThis;
-  if (crypto5?.randomUUID) {
-    uuid42 = crypto5.randomUUID.bind(crypto5);
-    return crypto5.randomUUID();
+  const { crypto: crypto6 } = globalThis;
+  if (crypto6?.randomUUID) {
+    uuid42 = crypto6.randomUUID.bind(crypto6);
+    return crypto6.randomUUID();
   }
   const u8 = new Uint8Array(1);
-  const randomByte = crypto5 ? () => crypto5.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
+  const randomByte = crypto6 ? () => crypto6.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
   return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (+c ^ randomByte() & 15 >> +c / 4).toString(16));
 };
 
@@ -74112,164 +73997,333 @@ async function createContext(opts) {
 var import_express = __toESM(require_express2(), 1);
 
 // server/webhookHandler.ts
-async function handleSaleWebhook(req, res) {
-  const companyId = Number(req.body?.companyId ?? req.query?.companyId);
-  const { orderId, orderValue, source } = req.body || {};
-  const platform = source || req.query?.platform || "custom";
-  try {
-    const { companyId: _c, orderId: _o, orderValue: _v, source: _s, ...utmParams } = req.body || {};
-    if (!companyId || !orderId || orderValue == null || !source) {
-      await logWebhookEvent({
-        companyId: Number.isFinite(companyId) ? companyId : null,
-        platform,
-        success: false,
-        message: "Campos obrigat\xF3rios faltando: companyId, orderId, orderValue, source"
-      });
-      return res.status(400).json({
-        error: "Campos obrigat\xF3rios faltando: companyId, orderId, orderValue, source"
-      });
-    }
-    const pool2 = await getRawPool();
-    if (!pool2) {
-      return res.status(500).json({ error: "Database connection failed" });
-    }
-    const company = await getCompanyById(companyId);
-    if (!company) {
-      await logWebhookEvent({ companyId, platform, success: false, message: "Empresa n\xE3o encontrada" });
-      return res.status(404).json({ error: "Empresa n\xE3o encontrada" });
-    }
-    const userId = company.userId;
-    let trackingId = null;
-    if (utmParams.utmCampaign) {
-      const trackResult = await pool2.query(
-        `SELECT id FROM "utmTracking"
-         WHERE "companyId" = $1
-           AND "utmCampaign" = $2
-           AND "utmSource" IS NOT DISTINCT FROM $3
-           AND "utmMedium" IS NOT DISTINCT FROM $4
-         ORDER BY "createdAt" DESC LIMIT 1`,
-        [
-          companyId,
-          utmParams.utmCampaign,
-          utmParams.utmSource || null,
-          utmParams.utmMedium || null
-        ]
-      );
-      if (trackResult.rows.length > 0) {
-        trackingId = trackResult.rows[0].id;
-        await pool2.query(
-          `UPDATE "utmTracking" SET "conversionCount" = "conversionCount" + 1 WHERE "id" = $1`,
-          [trackingId]
-        );
+var import_crypto3 = __toESM(require("crypto"), 1);
+function asString(value) {
+  if (typeof value === "string" && value.trim()) return value.trim();
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return void 0;
+}
+function parseDate(value) {
+  const raw = asString(value);
+  if (!raw) return void 0;
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? void 0 : parsed;
+}
+function safeEqual(left, right) {
+  const a = Buffer.from(left);
+  const b = Buffer.from(right);
+  return a.length === b.length && import_crypto3.default.timingSafeEqual(a, b);
+}
+function validateWebhookSignature(payload, signature, secret) {
+  if (!payload || !signature || !secret) return false;
+  const expected = import_crypto3.default.createHmac("sha256", secret).update(payload, "utf8").digest("base64");
+  return safeEqual(signature, expected);
+}
+function getUtmMetadata(record2) {
+  const values = /* @__PURE__ */ new Map();
+  const collections = [record2?.meta_data, record2?.metafields, record2?.note_attributes, record2?.attributes, record2?.custom_fields];
+  for (const collection of collections) {
+    if (Array.isArray(collection)) {
+      for (const item of collection) {
+        const key = asString(item?.key ?? item?.name);
+        const value = asString(item?.value);
+        if (key && value) values.set(key.toLowerCase().replace(/^_+/, ""), value);
+      }
+    } else if (collection && typeof collection === "object") {
+      for (const [key, rawValue] of Object.entries(collection)) {
+        const value = asString(rawValue);
+        if (value) values.set(key.toLowerCase().replace(/^_+/, ""), value);
       }
     }
-    const saleResult = await pool2.query(
+  }
+  return values;
+}
+function extractUtmFields(record2) {
+  const metadata = getUtmMetadata(record2);
+  const landingPage = asString(record2?.landing_site ?? record2?.landingSite ?? record2?.landing_page);
+  let urlParams;
+  if (landingPage) {
+    try {
+      urlParams = new URL(landingPage).searchParams;
+    } catch {
+    }
+  }
+  const read = (camel, snake) => asString(record2?.[camel] ?? record2?.[snake] ?? record2?.[`_${snake}`]) ?? metadata.get(snake) ?? asString(urlParams?.get(snake));
+  return {
+    utmId: read("utmId", "utm_id"),
+    utmSession: read("utmSession", "utm_session") ?? metadata.get("session_id"),
+    utmSource: read("utmSource", "utm_source"),
+    utmMedium: read("utmMedium", "utm_medium"),
+    utmCampaign: read("utmCampaign", "utm_campaign"),
+    utmContent: read("utmContent", "utm_content"),
+    utmTerm: read("utmTerm", "utm_term")
+  };
+}
+async function activeWebhookConfig(companyId, platform, webhookId) {
+  const pool2 = await getRawPool();
+  if (!pool2) return null;
+  const result = webhookId ? await pool2.query(
+    `SELECT * FROM "webhookConfigs" WHERE "id" = $1 AND "companyId" = $2 AND "platform" = $3 AND "status" = 'active' LIMIT 1`,
+    [webhookId, companyId, platform]
+  ) : await pool2.query(
+    `SELECT * FROM "webhookConfigs" WHERE "companyId" = $1 AND "platform" = $2 AND "status" = 'active' ORDER BY "createdAt" DESC LIMIT 1`,
+    [companyId, platform]
+  );
+  return result.rows[0] ?? null;
+}
+async function persistSale(companyId, platform, payload) {
+  const company = await getCompanyById(companyId);
+  if (!company) throw new Error("Empresa n\xE3o encontrada");
+  const pool2 = await getRawPool();
+  if (!pool2) throw new Error("Banco de dados indispon\xEDvel");
+  const externalId = payload.externalId || payload.orderId;
+  const client = await pool2.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`${companyId}:${platform}:${externalId}`]);
+    const duplicate = await client.query(
+      `SELECT id FROM "trackedSales" WHERE "companyId" = $1 AND "source" = $2 AND "externalId" = $3 LIMIT 1`,
+      [companyId, platform, externalId]
+    );
+    if (duplicate.rows.length) {
+      await client.query("COMMIT");
+      return { saleId: duplicate.rows[0].id, duplicate: true, trackingFound: false };
+    }
+    let sessionRow = null;
+    if (payload.utmSession) {
+      const result = await client.query(
+        `SELECT s.id AS "sessionRowId", t.*
+         FROM "utmSessions" s JOIN "utmTracking" t ON t.id = s."trackingId"
+         WHERE s."sessionId" = $1 AND t."companyId" = $2
+         ORDER BY s."clickedAt" DESC LIMIT 1`,
+        [payload.utmSession, companyId]
+      );
+      sessionRow = result.rows[0] ?? null;
+    }
+    let tracking = sessionRow;
+    if (!tracking && payload.utmId) {
+      const result = await client.query(
+        `SELECT * FROM "utmTracking" WHERE "companyId" = $1 AND ("shortCode" = $2 OR "id"::text = $2) LIMIT 1`,
+        [companyId, payload.utmId]
+      );
+      tracking = result.rows[0] ?? null;
+    }
+    if (!tracking && payload.utmCampaign) {
+      const result = await client.query(
+        `SELECT * FROM "utmTracking"
+         WHERE "companyId" = $1 AND lower(trim("utmCampaign")) = lower(trim($2))
+           AND ($3::text IS NULL OR lower(trim(COALESCE("utmSource", ''))) = lower(trim($3)))
+           AND ($4::text IS NULL OR lower(trim(COALESCE("utmMedium", ''))) = lower(trim($4)))
+         ORDER BY "createdAt" DESC LIMIT 2`,
+        [companyId, payload.utmCampaign, payload.utmSource ?? null, payload.utmMedium ?? null]
+      );
+      tracking = result.rows.length === 1 ? result.rows[0] : null;
+    }
+    const trackingId = tracking?.id ?? null;
+    const values = {
+      utmSource: payload.utmSource ?? tracking?.utmSource ?? null,
+      utmMedium: payload.utmMedium ?? tracking?.utmMedium ?? null,
+      utmCampaign: payload.utmCampaign ?? tracking?.utmCampaign ?? null,
+      utmContent: payload.utmContent ?? tracking?.utmContent ?? null,
+      utmTerm: payload.utmTerm ?? tracking?.utmTerm ?? null
+    };
+    const sale = await client.query(
       `INSERT INTO "trackedSales" (
-        "companyId", "userId", "trackingId", "orderId", "orderValue",
-        "utmSource", "utmMedium", "utmCampaign", "utmContent", "utmTerm",
-        "customerEmail", "customerPhone", "source", "externalId", "saleDate"
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW())
-      RETURNING *`,
+        "companyId", "userId", "sessionId", "trackingId", "utmSource", "utmMedium",
+        "utmCampaign", "utmContent", "utmTerm", "orderId", "orderValue", "currency",
+        "saleDate", "customerName", "customerEmail", "customerPhone", "source", "externalId", "status"
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'confirmed')
+      RETURNING id`,
       [
         companyId,
-        userId,
+        company.userId,
+        sessionRow?.sessionRowId ?? null,
         trackingId,
-        orderId,
-        orderValue,
-        utmParams.utmSource || null,
-        utmParams.utmMedium || null,
-        utmParams.utmCampaign || null,
-        utmParams.utmContent || null,
-        utmParams.utmTerm || null,
-        utmParams.customerEmail || null,
-        utmParams.customerPhone || null,
-        source,
-        utmParams.externalId || null
+        values.utmSource,
+        values.utmMedium,
+        values.utmCampaign,
+        values.utmContent,
+        values.utmTerm,
+        payload.orderId,
+        payload.orderValue,
+        payload.currency || "BRL",
+        payload.saleDate || /* @__PURE__ */ new Date(),
+        payload.customerName ?? null,
+        payload.customerEmail ?? null,
+        payload.customerPhone ?? null,
+        platform,
+        externalId
       ]
     );
-    const saleId = saleResult.rows[0].id;
-    const message2 = trackingId ? "Venda rastreada com sucesso" : "Venda registrada mas UTM n\xE3o encontrada";
-    await logWebhookEvent({
-      companyId,
-      platform,
-      success: true,
-      saleId,
-      trackingFound: !!trackingId,
-      message: message2,
-      payloadSummary: `order=${orderId} valor=${orderValue}`
-    });
-    return res.status(200).json({
-      success: true,
-      saleId,
-      trackingFound: !!trackingId,
-      message: message2
-    });
-  } catch (err) {
-    console.error("[Webhook] Error:", err);
-    await logWebhookEvent({
-      companyId: Number.isFinite(companyId) ? companyId : null,
-      platform,
-      success: false,
-      message: err?.message || "Erro ao processar webhook"
-    });
-    return res.status(500).json({
-      error: err.message || "Erro ao processar webhook"
-    });
+    const saleId = sale.rows[0].id;
+    if (trackingId) {
+      await client.query(`UPDATE "utmTracking" SET "conversionCount" = "conversionCount" + 1 WHERE id = $1`, [trackingId]);
+    }
+    if (sessionRow?.sessionRowId) {
+      await client.query(
+        `UPDATE "utmSessions" SET "convertedAt" = COALESCE("convertedAt", NOW()),
+          "conversionValue" = $2, "conversionType" = 'purchase', "externalConversionId" = $3 WHERE id = $1`,
+        [sessionRow.sessionRowId, payload.orderValue, externalId]
+      );
+    }
+    await client.query("COMMIT");
+    return { saleId, duplicate: false, trackingFound: !!trackingId };
+  } catch (error46) {
+    await client.query("ROLLBACK").catch(() => void 0);
+    throw error46;
+  } finally {
+    client.release();
   }
 }
-async function handleShopifyWebhook(req, res) {
+function getCompanyId(req, allowBody = false) {
+  const raw = req.query.companyId ?? (allowBody ? req.body?.companyId : void 0);
+  const id = Number(raw);
+  return Number.isInteger(id) && id > 0 ? id : 0;
+}
+async function logRejected(companyId, platform, message2) {
+  await logWebhookEvent({ companyId: companyId || null, platform, success: false, message: message2 });
+}
+async function saveAndRespond(res, companyId, platform, payload) {
+  if (!payload.orderId || !Number.isFinite(payload.orderValue) || payload.orderValue <= 0) {
+    await logRejected(companyId, platform, "Pedido sem identificador ou valor v\xE1lido");
+    return res.status(400).json({ error: "orderId e orderValue positivo s\xE3o obrigat\xF3rios" });
+  }
+  const result = await persistSale(companyId, platform, payload);
+  const message2 = result.duplicate ? "Entrega duplicada ignorada" : result.trackingFound ? "Venda recebida e UTM atribu\xEDda" : "Venda recebida sem atribui\xE7\xE3o de UTM";
+  await logWebhookEvent({
+    companyId,
+    platform,
+    success: true,
+    saleId: result.saleId,
+    trackingFound: result.trackingFound,
+    message: message2,
+    payloadSummary: `pedido=${payload.orderId} valor=${payload.orderValue}`
+  });
+  return res.status(200).json({ success: true, ...result, message: message2 });
+}
+function normalizeGenericSale(body) {
+  const record2 = body?.data?.order ?? body?.order ?? body?.data ?? body ?? {};
+  const utm = extractUtmFields(record2);
+  const orderId = asString(record2.orderId ?? record2.order_id ?? record2.id) ?? "";
+  const orderValue = Number(record2.orderValue ?? record2.order_value ?? record2.total ?? record2.amount);
+  return {
+    ...utm,
+    orderId,
+    externalId: asString(record2.externalId ?? record2.external_id ?? record2.id) ?? orderId,
+    orderValue,
+    currency: asString(record2.currency)?.toUpperCase(),
+    customerName: asString(record2.customerName ?? record2.customer_name),
+    customerEmail: asString(record2.customerEmail ?? record2.customer_email ?? record2.email),
+    customerPhone: asString(record2.customerPhone ?? record2.customer_phone ?? record2.phone),
+    saleDate: parseDate(record2.saleDate ?? record2.created_at ?? record2.createdAt)
+  };
+}
+async function handleSaleWebhook(req, res) {
+  const companyId = getCompanyId(req, true);
+  const platform = "custom";
   try {
-    const signature = req.headers["x-shopify-hmac-sha256"];
-    const body = req.rawBody || JSON.stringify(req.body);
-    const order = req.body;
-    const payload = {
-      companyId: req.query.companyId || 1,
-      orderId: order.id.toString(),
-      orderValue: parseFloat(order.total_price),
-      source: "shopify",
-      customerEmail: order.email,
-      customerPhone: order.shipping_address?.phone,
-      externalId: order.id.toString(),
-      // UTMs viriam de custom fields ou checkout
-      utmSource: order.metafields?.find((m) => m.key === "utm_source")?.value,
-      utmMedium: order.metafields?.find((m) => m.key === "utm_medium")?.value,
-      utmCampaign: order.metafields?.find((m) => m.key === "utm_campaign")?.value,
-      utmContent: order.metafields?.find((m) => m.key === "utm_content")?.value,
-      utmTerm: order.metafields?.find((m) => m.key === "utm_term")?.value
-    };
-    return handleSaleWebhook({ body: payload }, res);
-  } catch (err) {
-    console.error("[Shopify Webhook] Error:", err);
-    return res.status(500).json({ error: err.message });
+    if (!companyId) return res.status(400).json({ error: "companyId inv\xE1lido" });
+    const webhookId = Number(req.query.webhookId) || void 0;
+    const config2 = await activeWebhookConfig(companyId, platform, webhookId);
+    if (!config2) return res.status(404).json({ error: "Webhook ativo n\xE3o encontrado" });
+    const bearer = /^Bearer\s+(.+)$/i.exec(req.get("authorization") || "")?.[1];
+    const provided = req.get("x-webhook-secret") || bearer || "";
+    if (!safeEqual(provided, config2.webhookSecret)) {
+      await logRejected(companyId, platform, "Credencial inv\xE1lida");
+      return res.status(401).json({ error: "Credencial inv\xE1lida" });
+    }
+    return await saveAndRespond(res, companyId, platform, normalizeGenericSale(req.body));
+  } catch (error46) {
+    console.error("[Webhook custom] falha ao processar venda:", error46?.message || error46);
+    await logRejected(companyId, platform, "Falha ao processar pedido");
+    return res.status(500).json({ error: "Falha ao processar venda" });
+  }
+}
+function shopifyCustomerName(order) {
+  const customer = order?.customer ?? order?.billing_address ?? order?.shipping_address;
+  return [customer?.first_name, customer?.last_name].filter(Boolean).join(" ") || asString(customer?.name);
+}
+async function handleShopifyWebhook(req, res) {
+  const companyId = getCompanyId(req);
+  const platform = "shopify";
+  try {
+    if (!companyId) return res.status(400).json({ error: "companyId inv\xE1lido" });
+    const config2 = await activeWebhookConfig(companyId, platform, Number(req.query.webhookId) || void 0);
+    if (!config2) return res.status(404).json({ error: "Webhook ativo n\xE3o encontrado" });
+    const signature = req.get("x-shopify-hmac-sha256") || "";
+    if (!validateWebhookSignature(req.rawBody || "", signature, config2.webhookSecret)) {
+      await logRejected(companyId, platform, "Assinatura Shopify inv\xE1lida");
+      return res.status(401).json({ error: "Assinatura inv\xE1lida" });
+    }
+    const order = req.body?.order ?? req.body;
+    const paymentStatus = asString(order?.financial_status)?.toLowerCase();
+    if (paymentStatus !== "paid") {
+      await logWebhookEvent({ companyId, platform, success: true, message: "Pedido ignorado: pagamento ainda n\xE3o confirmado" });
+      return res.status(200).json({ success: true, ignored: true, reason: "Pagamento n\xE3o confirmado" });
+    }
+    const utm = extractUtmFields(order);
+    const orderId = asString(order?.id ?? order?.name) ?? "";
+    const value = Number(order?.current_total_price ?? order?.total_price ?? 0);
+    return await saveAndRespond(res, companyId, platform, {
+      ...utm,
+      orderId,
+      externalId: orderId,
+      orderValue: value,
+      currency: asString(order?.currency)?.toUpperCase(),
+      customerName: shopifyCustomerName(order),
+      customerEmail: asString(order?.email ?? order?.customer?.email),
+      customerPhone: asString(order?.phone ?? order?.shipping_address?.phone),
+      saleDate: parseDate(order?.processed_at ?? order?.created_at)
+    });
+  } catch (error46) {
+    console.error("[Webhook Shopify] falha ao processar pedido:", error46?.message || error46);
+    await logRejected(companyId, platform, "Falha ao processar pedido Shopify");
+    return res.status(500).json({ error: "Falha ao processar pedido Shopify" });
   }
 }
 async function handleWooCommerceWebhook(req, res) {
+  const companyId = getCompanyId(req);
+  const platform = "woocommerce";
   try {
-    const order = req.body;
-    const payload = {
-      companyId: req.query.companyId || 1,
-      orderId: order.id.toString(),
-      orderValue: parseFloat(order.total),
-      source: "woocommerce",
-      customerEmail: order.billing.email,
-      customerPhone: order.billing.phone,
-      externalId: order.id.toString(),
-      utmSource: order.meta_data?.find((m) => m.key === "_utm_source")?.value,
-      utmMedium: order.meta_data?.find((m) => m.key === "_utm_medium")?.value,
-      utmCampaign: order.meta_data?.find((m) => m.key === "_utm_campaign")?.value,
-      utmContent: order.meta_data?.find((m) => m.key === "_utm_content")?.value,
-      utmTerm: order.meta_data?.find((m) => m.key === "_utm_term")?.value
-    };
-    return handleSaleWebhook({ body: payload }, res);
-  } catch (err) {
-    console.error("[WooCommerce Webhook] Error:", err);
-    return res.status(500).json({ error: err.message });
+    if (!companyId) return res.status(400).json({ error: "companyId inv\xE1lido" });
+    const config2 = await activeWebhookConfig(companyId, platform, Number(req.query.webhookId) || void 0);
+    if (!config2) return res.status(404).json({ error: "Webhook ativo n\xE3o encontrado" });
+    const signature = req.get("x-wc-webhook-signature") || "";
+    if (!validateWebhookSignature(req.rawBody || "", signature, config2.webhookSecret)) {
+      await logRejected(companyId, platform, "Assinatura WooCommerce inv\xE1lida");
+      return res.status(401).json({ error: "Assinatura inv\xE1lida" });
+    }
+    const order = req.body?.order ?? req.body;
+    const status = asString(order?.status)?.toLowerCase();
+    if (!["processing", "completed"].includes(status || "")) {
+      await logWebhookEvent({ companyId, platform, success: true, message: "Pedido ignorado: status n\xE3o representa venda paga" });
+      return res.status(200).json({ success: true, ignored: true, reason: "Pedido ainda n\xE3o pago" });
+    }
+    const utm = extractUtmFields(order);
+    const orderId = asString(order?.id) ?? "";
+    const billing = order?.billing ?? {};
+    return await saveAndRespond(res, companyId, platform, {
+      ...utm,
+      orderId,
+      externalId: orderId,
+      orderValue: Number(order?.total),
+      currency: asString(order?.currency)?.toUpperCase(),
+      customerName: [billing.first_name, billing.last_name].filter(Boolean).join(" ") || void 0,
+      customerEmail: asString(billing.email),
+      customerPhone: asString(billing.phone),
+      saleDate: parseDate(order?.date_paid ?? order?.date_created)
+    });
+  } catch (error46) {
+    console.error("[Webhook WooCommerce] falha ao processar pedido:", error46?.message || error46);
+    await logRejected(companyId, platform, "Falha ao processar pedido WooCommerce");
+    return res.status(500).json({ error: "Falha ao processar pedido WooCommerce" });
   }
 }
 
 // server/webhookRoutes.ts
 var router2 = (0, import_express.Router)();
 router2.post("/webhook/sale", handleSaleWebhook);
+router2.post("/webhook/custom", handleSaleWebhook);
 router2.post("/webhook/shopify", (req, res) => {
   handleShopifyWebhook(req, res);
 });
@@ -74277,14 +74331,9 @@ router2.post("/webhook/woocommerce", (req, res) => {
   handleWooCommerceWebhook(req, res);
 });
 router2.post("/webhook/test", (req, res) => {
-  console.log("[Webhook Test]", {
-    headers: req.headers,
-    body: req.body
-  });
   res.status(200).json({
     success: true,
-    message: "Webhook test received",
-    body: req.body
+    message: "O servidor respondeu ao teste. Isso n\xE3o confirma o recebimento de uma venda."
   });
 });
 var webhookRoutes_default = router2;
@@ -74305,13 +74354,15 @@ router3.get("/r/:code", async (req, res) => {
       return res.status(404).send("Link de rastreamento n\xE3o encontrado.");
     }
     const tracking = result.rows[0];
+    let sessionToken = null;
     try {
+      sessionToken = nanoid(21);
       await pool2.query(
         `INSERT INTO "utmSessions" ("trackingId", "sessionId", "ipAddress", "userAgent", "referrer")
          VALUES ($1, $2, $3, $4, $5)`,
         [
           tracking.id,
-          nanoid(),
+          sessionToken,
           req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.ip || null,
           req.headers["user-agent"] || null,
           req.headers["referer"] || null
@@ -74324,8 +74375,10 @@ router3.get("/r/:code", async (req, res) => {
     } catch (e) {
       console.error("[Shortlink] falha ao registrar clique:", e?.message || e);
     }
-    const dest = tracking.trackingUrl || tracking.baseUrl;
-    return res.redirect(302, dest);
+    const dest = new URL(tracking.trackingUrl || tracking.baseUrl);
+    if (tracking.shortCode) dest.searchParams.set("utm_id", tracking.shortCode);
+    if (sessionToken) dest.searchParams.set("utm_session", sessionToken);
+    return res.redirect(302, dest.toString());
   } catch (err) {
     console.error("[Shortlink] erro:", err?.message || err);
     return res.status(500).send("Erro ao processar link.");

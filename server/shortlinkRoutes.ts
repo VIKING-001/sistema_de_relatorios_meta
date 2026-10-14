@@ -27,14 +27,16 @@ router.get("/r/:code", async (req: Request, res: Response) => {
 
     const tracking = result.rows[0];
 
-    // Registra clique + sessão (best-effort; nunca bloqueia o redirect)
+    // A sessão acompanha o visitante até o checkout/webhook quando a plataforma a preserva.
+    let sessionToken: string | null = null;
     try {
+      sessionToken = nanoid(21);
       await pool.query(
         `INSERT INTO "utmSessions" ("trackingId", "sessionId", "ipAddress", "userAgent", "referrer")
          VALUES ($1, $2, $3, $4, $5)`,
         [
           tracking.id,
-          nanoid(),
+          sessionToken,
           (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || null,
           (req.headers["user-agent"] as string) || null,
           (req.headers["referer"] as string) || null,
@@ -49,8 +51,10 @@ router.get("/r/:code", async (req: Request, res: Response) => {
     }
 
     // Redireciona para a URL com UTMs (fallback para baseUrl)
-    const dest = tracking.trackingUrl || tracking.baseUrl;
-    return res.redirect(302, dest);
+    const dest = new URL(tracking.trackingUrl || tracking.baseUrl);
+    if (tracking.shortCode) dest.searchParams.set("utm_id", tracking.shortCode);
+    if (sessionToken) dest.searchParams.set("utm_session", sessionToken);
+    return res.redirect(302, dest.toString());
   } catch (err: any) {
     console.error("[Shortlink] erro:", err?.message || err);
     return res.status(500).send("Erro ao processar link.");

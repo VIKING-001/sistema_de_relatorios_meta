@@ -2,215 +2,348 @@ import { Request, Response } from "express";
 import crypto from "crypto";
 import { getRawPool, getCompanyById, logWebhookEvent } from "./db";
 
-/**
- * Valida assinatura HMAC de Shopify/WooCommerce
- */
-export function validateWebhookSignature(
-  payload: string,
-  signature: string,
-  secret: string
-): boolean {
-  const hash = crypto
-    .createHmac("sha256", secret)
-    .update(payload, "utf8")
-    .digest("base64");
-  return hash === signature;
+type UTMFields = {
+  utmId?: string;
+  utmSession?: string;
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  utmContent?: string;
+  utmTerm?: string;
+};
+
+type SalePayload = UTMFields & {
+  orderId: string;
+  externalId?: string;
+  orderValue: number;
+  currency?: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  saleDate?: Date;
+};
+
+type RawBodyRequest = Request & { rawBody?: string };
+
+function asString(value: unknown): string | undefined {
+  if (typeof value === "string" && value.trim()) return value.trim();
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return undefined;
 }
 
-/**
- * Handler genérico para webhooks de venda
- */
-export async function handleSaleWebhook(req: Request, res: Response) {
-  // companyId pode vir no body ou na query string (?companyId=)
-  const companyId = Number(req.body?.companyId ?? req.query?.companyId);
-  const { orderId, orderValue, source } = req.body || {};
-  const platform = (source || (req.query as any)?.platform || "custom") as string;
-  try {
-    const { companyId: _c, orderId: _o, orderValue: _v, source: _s, ...utmParams } = req.body || {};
+function parseDate(value: unknown): Date | undefined {
+  const raw = asString(value);
+  if (!raw) return undefined;
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+}
 
-    // Validações básicas
-    if (!companyId || !orderId || orderValue == null || !source) {
-      await logWebhookEvent({
-        companyId: Number.isFinite(companyId) ? companyId : null,
-        platform,
-        success: false,
-        message: "Campos obrigatórios faltando: companyId, orderId, orderValue, source",
-      });
-      return res.status(400).json({
-        error: "Campos obrigatórios faltando: companyId, orderId, orderValue, source",
-      });
-    }
+function safeEqual(left: string, right: string): boolean {
+  const a = Buffer.from(left);
+  const b = Buffer.from(right);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
 
-    const pool = await getRawPool();
-    if (!pool) {
-      return res.status(500).json({ error: "Database connection failed" });
-    }
+export function validateWebhookSignature(payload: string, signature: string, secret: string): boolean {
+  if (!payload || !signature || !secret) return false;
+  const expected = crypto.createHmac("sha256", secret).update(payload, "utf8").digest("base64");
+  return safeEqual(signature, expected);
+}
 
-    // userId obrigatório (coluna NOT NULL) — derivar da empresa dona
-    const company = await getCompanyById(companyId);
-    if (!company) {
-      await logWebhookEvent({ companyId, platform, success: false, message: "Empresa não encontrada" });
-      return res.status(404).json({ error: "Empresa não encontrada" });
-    }
-    const userId = company.userId;
-
-    // Procurar tracking ID baseado nos parâmetros UTM
-    let trackingId = null;
-    if (utmParams.utmCampaign) {
-      const trackResult = await pool.query(
-        `SELECT id FROM "utmTracking"
-         WHERE "companyId" = $1
-           AND "utmCampaign" = $2
-           AND "utmSource" IS NOT DISTINCT FROM $3
-           AND "utmMedium" IS NOT DISTINCT FROM $4
-         ORDER BY "createdAt" DESC LIMIT 1`,
-        [
-          companyId,
-          utmParams.utmCampaign,
-          utmParams.utmSource || null,
-          utmParams.utmMedium || null,
-        ]
-      );
-
-      if (trackResult.rows.length > 0) {
-        trackingId = trackResult.rows[0].id;
-
-        // Incrementar contador de conversões
-        await pool.query(
-          `UPDATE "utmTracking" SET "conversionCount" = "conversionCount" + 1 WHERE "id" = $1`,
-          [trackingId]
-        );
+function getUtmMetadata(record: any): Map<string, string> {
+  const values = new Map<string, string>();
+  const collections = [record?.meta_data, record?.metafields, record?.note_attributes, record?.attributes, record?.custom_fields];
+  for (const collection of collections) {
+    if (Array.isArray(collection)) {
+      for (const item of collection) {
+        const key = asString(item?.key ?? item?.name);
+        const value = asString(item?.value);
+        if (key && value) values.set(key.toLowerCase().replace(/^_+/, ""), value);
+      }
+    } else if (collection && typeof collection === "object") {
+      for (const [key, rawValue] of Object.entries(collection)) {
+        const value = asString(rawValue);
+        if (value) values.set(key.toLowerCase().replace(/^_+/, ""), value);
       }
     }
+  }
+  return values;
+}
 
-    // Registrar a venda
-    const saleResult = await pool.query(
-      `INSERT INTO "trackedSales" (
-        "companyId", "userId", "trackingId", "orderId", "orderValue",
-        "utmSource", "utmMedium", "utmCampaign", "utmContent", "utmTerm",
-        "customerEmail", "customerPhone", "source", "externalId", "saleDate"
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW())
-      RETURNING *`,
-      [
-        companyId,
-        userId,
-        trackingId,
-        orderId,
-        orderValue,
-        utmParams.utmSource || null,
-        utmParams.utmMedium || null,
-        utmParams.utmCampaign || null,
-        utmParams.utmContent || null,
-        utmParams.utmTerm || null,
-        utmParams.customerEmail || null,
-        utmParams.customerPhone || null,
-        source,
-        utmParams.externalId || null,
-      ]
+export function extractUtmFields(record: any): UTMFields {
+  const metadata = getUtmMetadata(record);
+  const landingPage = asString(record?.landing_site ?? record?.landingSite ?? record?.landing_page);
+  let urlParams: URLSearchParams | undefined;
+  if (landingPage) {
+    try { urlParams = new URL(landingPage).searchParams; } catch { /* Ignore non-absolute landing URLs. */ }
+  }
+  const read = (camel: string, snake: string): string | undefined =>
+    asString(record?.[camel] ?? record?.[snake] ?? record?.[`_${snake}`]) ??
+    metadata.get(snake) ??
+    asString(urlParams?.get(snake));
+
+  return {
+    utmId: read("utmId", "utm_id"),
+    utmSession: read("utmSession", "utm_session") ?? metadata.get("session_id"),
+    utmSource: read("utmSource", "utm_source"),
+    utmMedium: read("utmMedium", "utm_medium"),
+    utmCampaign: read("utmCampaign", "utm_campaign"),
+    utmContent: read("utmContent", "utm_content"),
+    utmTerm: read("utmTerm", "utm_term"),
+  };
+}
+
+async function activeWebhookConfig(companyId: number, platform: string, webhookId?: number) {
+  const pool = await getRawPool();
+  if (!pool) return null;
+  const result = webhookId
+    ? await pool.query(
+        `SELECT * FROM "webhookConfigs" WHERE "id" = $1 AND "companyId" = $2 AND "platform" = $3 AND "status" = 'active' LIMIT 1`,
+        [webhookId, companyId, platform]
+      )
+    : await pool.query(
+        `SELECT * FROM "webhookConfigs" WHERE "companyId" = $1 AND "platform" = $2 AND "status" = 'active' ORDER BY "createdAt" DESC LIMIT 1`,
+        [companyId, platform]
+      );
+  return result.rows[0] ?? null;
+}
+
+async function persistSale(companyId: number, platform: string, payload: SalePayload) {
+  const company = await getCompanyById(companyId);
+  if (!company) throw new Error("Empresa não encontrada");
+  const pool = await getRawPool();
+  if (!pool) throw new Error("Banco de dados indisponível");
+
+  const externalId = payload.externalId || payload.orderId;
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`${companyId}:${platform}:${externalId}`]);
+    const duplicate = await client.query(
+      `SELECT id FROM "trackedSales" WHERE "companyId" = $1 AND "source" = $2 AND "externalId" = $3 LIMIT 1`,
+      [companyId, platform, externalId]
     );
+    if (duplicate.rows.length) {
+      await client.query("COMMIT");
+      return { saleId: duplicate.rows[0].id as number, duplicate: true, trackingFound: false };
+    }
 
-    const saleId = saleResult.rows[0].id;
-    const message = trackingId
-      ? "Venda rastreada com sucesso"
-      : "Venda registrada mas UTM não encontrada";
+    let sessionRow: any = null;
+    if (payload.utmSession) {
+      const result = await client.query(
+        `SELECT s.id AS "sessionRowId", t.*
+         FROM "utmSessions" s JOIN "utmTracking" t ON t.id = s."trackingId"
+         WHERE s."sessionId" = $1 AND t."companyId" = $2
+         ORDER BY s."clickedAt" DESC LIMIT 1`,
+        [payload.utmSession, companyId]
+      );
+      sessionRow = result.rows[0] ?? null;
+    }
 
-    await logWebhookEvent({
-      companyId,
-      platform,
-      success: true,
-      saleId,
-      trackingFound: !!trackingId,
-      message,
-      payloadSummary: `order=${orderId} valor=${orderValue}`,
-    });
+    let tracking = sessionRow;
+    if (!tracking && payload.utmId) {
+      const result = await client.query(
+        `SELECT * FROM "utmTracking" WHERE "companyId" = $1 AND ("shortCode" = $2 OR "id"::text = $2) LIMIT 1`,
+        [companyId, payload.utmId]
+      );
+      tracking = result.rows[0] ?? null;
+    }
+    if (!tracking && payload.utmCampaign) {
+      const result = await client.query(
+        `SELECT * FROM "utmTracking"
+         WHERE "companyId" = $1 AND lower(trim("utmCampaign")) = lower(trim($2))
+           AND ($3::text IS NULL OR lower(trim(COALESCE("utmSource", ''))) = lower(trim($3)))
+           AND ($4::text IS NULL OR lower(trim(COALESCE("utmMedium", ''))) = lower(trim($4)))
+         ORDER BY "createdAt" DESC LIMIT 2`,
+        [companyId, payload.utmCampaign, payload.utmSource ?? null, payload.utmMedium ?? null]
+      );
+      tracking = result.rows.length === 1 ? result.rows[0] : null;
+    }
 
-    return res.status(200).json({
-      success: true,
-      saleId,
-      trackingFound: !!trackingId,
-      message,
-    });
-  } catch (err: any) {
-    console.error("[Webhook] Error:", err);
-    await logWebhookEvent({
-      companyId: Number.isFinite(companyId) ? companyId : null,
-      platform,
-      success: false,
-      message: err?.message || "Erro ao processar webhook",
-    });
-    return res.status(500).json({
-      error: err.message || "Erro ao processar webhook",
-    });
+    const trackingId = tracking?.id ?? null;
+    const values = {
+      utmSource: payload.utmSource ?? tracking?.utmSource ?? null,
+      utmMedium: payload.utmMedium ?? tracking?.utmMedium ?? null,
+      utmCampaign: payload.utmCampaign ?? tracking?.utmCampaign ?? null,
+      utmContent: payload.utmContent ?? tracking?.utmContent ?? null,
+      utmTerm: payload.utmTerm ?? tracking?.utmTerm ?? null,
+    };
+    const sale = await client.query(
+      `INSERT INTO "trackedSales" (
+        "companyId", "userId", "sessionId", "trackingId", "utmSource", "utmMedium",
+        "utmCampaign", "utmContent", "utmTerm", "orderId", "orderValue", "currency",
+        "saleDate", "customerName", "customerEmail", "customerPhone", "source", "externalId", "status"
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'confirmed')
+      RETURNING id`,
+      [companyId, company.userId, sessionRow?.sessionRowId ?? null, trackingId,
+        values.utmSource, values.utmMedium, values.utmCampaign, values.utmContent, values.utmTerm,
+        payload.orderId, payload.orderValue, payload.currency || "BRL", payload.saleDate || new Date(),
+        payload.customerName ?? null, payload.customerEmail ?? null, payload.customerPhone ?? null,
+        platform, externalId]
+    );
+    const saleId = sale.rows[0].id as number;
+
+    if (trackingId) {
+      await client.query(`UPDATE "utmTracking" SET "conversionCount" = "conversionCount" + 1 WHERE id = $1`, [trackingId]);
+    }
+    if (sessionRow?.sessionRowId) {
+      await client.query(
+        `UPDATE "utmSessions" SET "convertedAt" = COALESCE("convertedAt", NOW()),
+          "conversionValue" = $2, "conversionType" = 'purchase', "externalConversionId" = $3 WHERE id = $1`,
+        [sessionRow.sessionRowId, payload.orderValue, externalId]
+      );
+    }
+    await client.query("COMMIT");
+    return { saleId, duplicate: false, trackingFound: !!trackingId };
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => undefined);
+    throw error;
+  } finally {
+    client.release();
   }
 }
 
-/**
- * Handler específico para Shopify
- */
-export async function handleShopifyWebhook(req: Request, res: Response) {
+function getCompanyId(req: Request, allowBody = false): number {
+  const raw = req.query.companyId ?? (allowBody ? req.body?.companyId : undefined);
+  const id = Number(raw);
+  return Number.isInteger(id) && id > 0 ? id : 0;
+}
+
+async function logRejected(companyId: number, platform: string, message: string) {
+  await logWebhookEvent({ companyId: companyId || null, platform, success: false, message });
+}
+
+async function saveAndRespond(res: Response, companyId: number, platform: string, payload: SalePayload) {
+  if (!payload.orderId || !Number.isFinite(payload.orderValue) || payload.orderValue <= 0) {
+    await logRejected(companyId, platform, "Pedido sem identificador ou valor válido");
+    return res.status(400).json({ error: "orderId e orderValue positivo são obrigatórios" });
+  }
+  const result = await persistSale(companyId, platform, payload);
+  const message = result.duplicate
+    ? "Entrega duplicada ignorada"
+    : result.trackingFound ? "Venda recebida e UTM atribuída" : "Venda recebida sem atribuição de UTM";
+  await logWebhookEvent({
+    companyId, platform, success: true, saleId: result.saleId,
+    trackingFound: result.trackingFound, message,
+    payloadSummary: `pedido=${payload.orderId} valor=${payload.orderValue}`,
+  });
+  return res.status(200).json({ success: true, ...result, message });
+}
+
+function normalizeGenericSale(body: any): SalePayload {
+  const record = body?.data?.order ?? body?.order ?? body?.data ?? body ?? {};
+  const utm = extractUtmFields(record);
+  const orderId = asString(record.orderId ?? record.order_id ?? record.id) ?? "";
+  const orderValue = Number(record.orderValue ?? record.order_value ?? record.total ?? record.amount);
+  return {
+    ...utm,
+    orderId,
+    externalId: asString(record.externalId ?? record.external_id ?? record.id) ?? orderId,
+    orderValue,
+    currency: asString(record.currency)?.toUpperCase(),
+    customerName: asString(record.customerName ?? record.customer_name),
+    customerEmail: asString(record.customerEmail ?? record.customer_email ?? record.email),
+    customerPhone: asString(record.customerPhone ?? record.customer_phone ?? record.phone),
+    saleDate: parseDate(record.saleDate ?? record.created_at ?? record.createdAt),
+  };
+}
+
+/** Webhook genérico autenticado por Bearer token ou X-Webhook-Secret. */
+export async function handleSaleWebhook(req: Request, res: Response) {
+  const companyId = getCompanyId(req, true);
+  const platform = "custom";
   try {
-    // Validar assinatura Shopify
-    const signature = req.headers["x-shopify-hmac-sha256"] as string;
-    const body = req.rawBody || JSON.stringify(req.body);
-
-    // Nota: Você precisa configurar a variável de ambiente SHOPIFY_WEBHOOK_SECRET
-    // const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
-    // if (!validateWebhookSignature(body, signature, secret)) {
-    //   return res.status(401).json({ error: "Invalid signature" });
-    // }
-
-    const order = req.body;
-
-    // Mapear dados Shopify para nosso formato
-    const payload = {
-      companyId: req.query.companyId || 1,
-      orderId: order.id.toString(),
-      orderValue: parseFloat(order.total_price),
-      source: "shopify",
-      customerEmail: order.email,
-      customerPhone: order.shipping_address?.phone,
-      externalId: order.id.toString(),
-      // UTMs viriam de custom fields ou checkout
-      utmSource: order.metafields?.find((m: any) => m.key === "utm_source")?.value,
-      utmMedium: order.metafields?.find((m: any) => m.key === "utm_medium")?.value,
-      utmCampaign: order.metafields?.find((m: any) => m.key === "utm_campaign")?.value,
-      utmContent: order.metafields?.find((m: any) => m.key === "utm_content")?.value,
-      utmTerm: order.metafields?.find((m: any) => m.key === "utm_term")?.value,
-    };
-
-    // Usar handler genérico
-    return handleSaleWebhook({ body: payload } as Request, res);
-  } catch (err: any) {
-    console.error("[Shopify Webhook] Error:", err);
-    return res.status(500).json({ error: err.message });
+    if (!companyId) return res.status(400).json({ error: "companyId inválido" });
+    const webhookId = Number(req.query.webhookId) || undefined;
+    const config = await activeWebhookConfig(companyId, platform, webhookId);
+    if (!config) return res.status(404).json({ error: "Webhook ativo não encontrado" });
+    const bearer = /^Bearer\s+(.+)$/i.exec(req.get("authorization") || "")?.[1];
+    const provided = req.get("x-webhook-secret") || bearer || "";
+    if (!safeEqual(provided, config.webhookSecret)) {
+      await logRejected(companyId, platform, "Credencial inválida");
+      return res.status(401).json({ error: "Credencial inválida" });
+    }
+    return await saveAndRespond(res, companyId, platform, normalizeGenericSale(req.body));
+  } catch (error: any) {
+    console.error("[Webhook custom] falha ao processar venda:", error?.message || error);
+    await logRejected(companyId, platform, "Falha ao processar pedido");
+    return res.status(500).json({ error: "Falha ao processar venda" });
   }
 }
 
-/**
- * Handler específico para WooCommerce
- */
-export async function handleWooCommerceWebhook(req: Request, res: Response) {
+function shopifyCustomerName(order: any): string | undefined {
+  const customer = order?.customer ?? order?.billing_address ?? order?.shipping_address;
+  return [customer?.first_name, customer?.last_name].filter(Boolean).join(" ") || asString(customer?.name);
+}
+
+/** Shopify signs raw JSON with the app's shared secret. */
+export async function handleShopifyWebhook(req: RawBodyRequest, res: Response) {
+  const companyId = getCompanyId(req);
+  const platform = "shopify";
   try {
-    const order = req.body;
+    if (!companyId) return res.status(400).json({ error: "companyId inválido" });
+    const config = await activeWebhookConfig(companyId, platform, Number(req.query.webhookId) || undefined);
+    if (!config) return res.status(404).json({ error: "Webhook ativo não encontrado" });
+    const signature = req.get("x-shopify-hmac-sha256") || "";
+    if (!validateWebhookSignature(req.rawBody || "", signature, config.webhookSecret)) {
+      await logRejected(companyId, platform, "Assinatura Shopify inválida");
+      return res.status(401).json({ error: "Assinatura inválida" });
+    }
+    const order = req.body?.order ?? req.body;
+    const paymentStatus = asString(order?.financial_status)?.toLowerCase();
+    if (paymentStatus !== "paid") {
+      await logWebhookEvent({ companyId, platform, success: true, message: "Pedido ignorado: pagamento ainda não confirmado" });
+      return res.status(200).json({ success: true, ignored: true, reason: "Pagamento não confirmado" });
+    }
+    const utm = extractUtmFields(order);
+    const orderId = asString(order?.id ?? order?.name) ?? "";
+    const value = Number(order?.current_total_price ?? order?.total_price ?? 0);
+    return await saveAndRespond(res, companyId, platform, {
+      ...utm, orderId, externalId: orderId, orderValue: value,
+      currency: asString(order?.currency)?.toUpperCase(),
+      customerName: shopifyCustomerName(order), customerEmail: asString(order?.email ?? order?.customer?.email),
+      customerPhone: asString(order?.phone ?? order?.shipping_address?.phone),
+      saleDate: parseDate(order?.processed_at ?? order?.created_at),
+    });
+  } catch (error: any) {
+    console.error("[Webhook Shopify] falha ao processar pedido:", error?.message || error);
+    await logRejected(companyId, platform, "Falha ao processar pedido Shopify");
+    return res.status(500).json({ error: "Falha ao processar pedido Shopify" });
+  }
+}
 
-    const payload = {
-      companyId: req.query.companyId || 1,
-      orderId: order.id.toString(),
-      orderValue: parseFloat(order.total),
-      source: "woocommerce",
-      customerEmail: order.billing.email,
-      customerPhone: order.billing.phone,
-      externalId: order.id.toString(),
-      utmSource: order.meta_data?.find((m: any) => m.key === "_utm_source")?.value,
-      utmMedium: order.meta_data?.find((m: any) => m.key === "_utm_medium")?.value,
-      utmCampaign: order.meta_data?.find((m: any) => m.key === "_utm_campaign")?.value,
-      utmContent: order.meta_data?.find((m: any) => m.key === "_utm_content")?.value,
-      utmTerm: order.meta_data?.find((m: any) => m.key === "_utm_term")?.value,
-    };
-
-    return handleSaleWebhook({ body: payload } as Request, res);
-  } catch (err: any) {
-    console.error("[WooCommerce Webhook] Error:", err);
-    return res.status(500).json({ error: err.message });
+/** WooCommerce signs the raw body with the webhook secret configured in Woo. */
+export async function handleWooCommerceWebhook(req: RawBodyRequest, res: Response) {
+  const companyId = getCompanyId(req);
+  const platform = "woocommerce";
+  try {
+    if (!companyId) return res.status(400).json({ error: "companyId inválido" });
+    const config = await activeWebhookConfig(companyId, platform, Number(req.query.webhookId) || undefined);
+    if (!config) return res.status(404).json({ error: "Webhook ativo não encontrado" });
+    const signature = req.get("x-wc-webhook-signature") || "";
+    if (!validateWebhookSignature(req.rawBody || "", signature, config.webhookSecret)) {
+      await logRejected(companyId, platform, "Assinatura WooCommerce inválida");
+      return res.status(401).json({ error: "Assinatura inválida" });
+    }
+    const order = req.body?.order ?? req.body;
+    const status = asString(order?.status)?.toLowerCase();
+    if (!["processing", "completed"].includes(status || "")) {
+      await logWebhookEvent({ companyId, platform, success: true, message: "Pedido ignorado: status não representa venda paga" });
+      return res.status(200).json({ success: true, ignored: true, reason: "Pedido ainda não pago" });
+    }
+    const utm = extractUtmFields(order);
+    const orderId = asString(order?.id) ?? "";
+    const billing = order?.billing ?? {};
+    return await saveAndRespond(res, companyId, platform, {
+      ...utm, orderId, externalId: orderId, orderValue: Number(order?.total),
+      currency: asString(order?.currency)?.toUpperCase(),
+      customerName: [billing.first_name, billing.last_name].filter(Boolean).join(" ") || undefined,
+      customerEmail: asString(billing.email), customerPhone: asString(billing.phone),
+      saleDate: parseDate(order?.date_paid ?? order?.date_created),
+    });
+  } catch (error: any) {
+    console.error("[Webhook WooCommerce] falha ao processar pedido:", error?.message || error);
+    await logRejected(companyId, platform, "Falha ao processar pedido WooCommerce");
+    return res.status(500).json({ error: "Falha ao processar pedido WooCommerce" });
   }
 }

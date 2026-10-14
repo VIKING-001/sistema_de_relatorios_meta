@@ -39,6 +39,8 @@ const recordSaleSchema = z.object({
   utmSource: z.string().optional(),
   utmMedium: z.string().optional(),
   utmCampaign: z.string().optional(),
+  utmId: z.string().optional(),
+  utmSession: z.string().optional(),
   utmContent: z.string().optional(),
   utmTerm: z.string().optional(),
   customerEmail: z.string().email().optional(),
@@ -73,14 +75,10 @@ export const utmRouter = router({
       urlObj.searchParams.set("utm_campaign", input.utmCampaign);
       if (input.utmContent) urlObj.searchParams.set("utm_content", input.utmContent);
       if (input.utmTerm) urlObj.searchParams.set("utm_term", input.utmTerm);
-      // ID único do rastreamento
-      const trackingId = nanoid(12);
-      urlObj.searchParams.set("utm_id", trackingId);
-
-      const trackingUrl = urlObj.toString();
-
       // Gerar short code (opcional, para encurtador)
       const shortCode = nanoid(8);
+      urlObj.searchParams.set("utm_id", shortCode);
+      const trackingUrl = urlObj.toString();
 
       // Inserir no banco
       const result = await executeQuery(
@@ -135,8 +133,8 @@ export const utmRouter = router({
   clickRedirect: publicProcedure
     .input(
       z.object({
-        utm_id: z.string(),
-        sessionId: z.string().optional(),
+        utm_id: z.string().min(1).max(64),
+        sessionId: z.string().min(1).max(255).optional(),
       })
     )
     .query(async ({ input }) => {
@@ -165,9 +163,13 @@ export const utmRouter = router({
         [tracking.id]
       );
 
+      const redirect = new URL(tracking.trackingUrl || tracking.baseUrl);
+      if (tracking.shortCode) redirect.searchParams.set("utm_id", tracking.shortCode);
+      redirect.searchParams.set("utm_session", sessionId);
+
       // Retornar URL de redirecionamento
       return {
-        redirectUrl: tracking.baseUrl,
+        redirectUrl: redirect.toString(),
         sessionId,
         trackingId: tracking.id,
       };
@@ -177,68 +179,91 @@ export const utmRouter = router({
    * Webhook para registrar conversão/venda
    * POST /api/trpc/utm.recordSale
    */
-  recordSale: publicProcedure
+  recordSale: protectedProcedure
     .input(recordSaleSchema)
-    .mutation(async ({ input }) => {
-      // Validar que a empresa existe
-      const companyResult = await executeQuery(
-        `SELECT id FROM "companies" WHERE "id" = $1`,
-        [input.companyId]
-      );
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.user?.id;
+      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+      const company = await db.getCompanyById(input.companyId);
+      if (!company || company.userId !== userId) throw new TRPCError({ code: "FORBIDDEN" });
 
-      if (companyResult.rows.length === 0) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Empresa não encontrada" });
+      let tracking: any = null;
+      let sessionRowId: number | null = null;
+      if (input.utmSession) {
+        const session = await executeQuery(
+          `SELECT s.id AS "sessionRowId", t.* FROM "utmSessions" s
+           JOIN "utmTracking" t ON t.id = s."trackingId"
+           WHERE s."sessionId" = $1 AND t."companyId" = $2
+           ORDER BY s."clickedAt" DESC LIMIT 1`,
+          [input.utmSession, input.companyId]
+        );
+        if (session.rows[0]) {
+          tracking = session.rows[0];
+          sessionRowId = tracking.sessionRowId;
+        }
       }
-
-      // Procurar tracking ID baseado nos parâmetros UTM
-      let trackingId = null;
-      if (input.utmCampaign) {
+      if (!tracking && input.utmId) {
+        const byId = await executeQuery(
+          `SELECT * FROM "utmTracking" WHERE "companyId" = $1 AND ("shortCode" = $2 OR "id"::text = $2) LIMIT 1`,
+          [input.companyId, input.utmId]
+        );
+        tracking = byId.rows[0] ?? null;
+      }
+      if (!tracking && input.utmCampaign) {
         const trackResult = await executeQuery(
-          `SELECT id FROM "utmTracking"
+          `SELECT * FROM "utmTracking"
            WHERE "companyId" = $1
-             AND "utmCampaign" = $2
-             AND "utmSource" IS NOT DISTINCT FROM $3
-             AND "utmMedium" IS NOT DISTINCT FROM $4
-           ORDER BY "createdAt" DESC LIMIT 1`,
+             AND lower(trim("utmCampaign")) = lower(trim($2))
+             AND ($3::text IS NULL OR lower(trim(COALESCE("utmSource", ''))) = lower(trim($3)))
+             AND ($4::text IS NULL OR lower(trim(COALESCE("utmMedium", ''))) = lower(trim($4)))
+           ORDER BY "createdAt" DESC LIMIT 2`,
           [input.companyId, input.utmCampaign, input.utmSource || null, input.utmMedium || null]
         );
 
-        if (trackResult.rows.length > 0) {
-          trackingId = trackResult.rows[0].id;
-
-          // Incrementar contador de conversões
-          await executeQuery(
-            `UPDATE "utmTracking" SET "conversionCount" = "conversionCount" + 1 WHERE "id" = $1`,
-            [trackingId]
-          );
-        }
+        if (trackResult.rows.length === 1) tracking = trackResult.rows[0];
       }
+      const trackingId = tracking?.id ?? null;
 
       // Registrar a venda
       const saleResult = await executeQuery(
         `INSERT INTO "trackedSales" (
-          "companyId", "userId", "trackingId", "orderId", "orderValue",
+          "companyId", "userId", "sessionId", "trackingId", "orderId", "orderValue",
           "utmSource", "utmMedium", "utmCampaign", "utmContent", "utmTerm",
           "customerEmail", "customerPhone", "source", "externalId", "saleDate"
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW())
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW())
         RETURNING *`,
         [
           input.companyId,
-          null, // userId será preenchido pelo webhook
+          userId,
+          sessionRowId,
           trackingId,
           input.orderId,
           input.orderValue,
-          input.utmSource || null,
-          input.utmMedium || null,
-          input.utmCampaign || null,
-          input.utmContent || null,
-          input.utmTerm || null,
+          input.utmSource || tracking?.utmSource || null,
+          input.utmMedium || tracking?.utmMedium || null,
+          input.utmCampaign || tracking?.utmCampaign || null,
+          input.utmContent || tracking?.utmContent || null,
+          input.utmTerm || tracking?.utmTerm || null,
           input.customerEmail || null,
           input.customerPhone || null,
           input.source,
           input.externalId || null,
         ]
       );
+
+      if (trackingId) {
+        await executeQuery(
+          `UPDATE "utmTracking" SET "conversionCount" = "conversionCount" + 1 WHERE "id" = $1`,
+          [trackingId]
+        );
+      }
+      if (sessionRowId) {
+        await executeQuery(
+          `UPDATE "utmSessions" SET "convertedAt" = COALESCE("convertedAt", NOW()),
+            "conversionValue" = $2, "conversionType" = 'purchase', "externalConversionId" = $3 WHERE id = $1`,
+          [sessionRowId, input.orderValue, input.externalId || input.orderId]
+        );
+      }
 
       return {
         success: true,
