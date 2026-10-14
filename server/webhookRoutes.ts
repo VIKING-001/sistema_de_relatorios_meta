@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import {
   handleSaleWebhook,
+  handleFacilzapWebhook,
   handleShopifyWebhook,
   handleWooCommerceWebhook,
 } from "./webhookHandler";
@@ -12,6 +13,11 @@ const router = Router();
  */
 router.post("/webhook/sale", handleSaleWebhook);
 router.post("/webhook/custom", handleSaleWebhook);
+
+/** FácilZap sends order JSON and authenticates through the secret callback URL. */
+router.post("/webhook/facilzap", (req: Request, res: Response) => {
+  handleFacilzapWebhook(req, res);
+});
 
 /**
  * POST /webhook/shopify

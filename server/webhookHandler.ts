@@ -248,6 +248,72 @@ function normalizeGenericSale(body: any): SalePayload {
   };
 }
 
+export function normalizeFacilzapSale(body: any): SalePayload | null {
+  const event = asString(body?.evento)?.toLowerCase();
+  if (event && !event.startsWith("pedido_")) return null;
+
+  const order = body?.dados;
+  if (!order || typeof order !== "object" || Array.isArray(order)) return null;
+
+  const paid = order.status_pago === true || order.status_pago === 1 ||
+    ["true", "1", "sim"].includes(String(order.status_pago ?? "").toLowerCase());
+  if (!paid) return null;
+
+  const utm = order.utm && typeof order.utm === "object" ? order.utm : {};
+  const customer = order.cliente && typeof order.cliente === "object" ? order.cliente : {};
+  const orderId = asString(order.id ?? order.codigo) ?? "";
+
+  return {
+    orderId,
+    externalId: orderId,
+    orderValue: Number(order.total ?? order.valor_total),
+    currency: "BRL",
+    customerName: asString(customer.nome),
+    customerEmail: asString(customer.email),
+    customerPhone: asString(customer.whatsapp_e164 ?? customer.telefone_e164 ?? customer.whatsapp ?? customer.telefone),
+    saleDate: parseDate(order.data),
+    utmSource: asString(utm.source ?? order.utm_source),
+    utmMedium: asString(utm.medium ?? order.utm_medium),
+    utmCampaign: asString(utm.campaign ?? order.utm_campaign),
+    utmContent: asString(utm.content ?? order.utm_content),
+    utmTerm: asString(utm.term ?? order.utm_term),
+  };
+}
+
+/** FácilZap does not document a signature header; authenticate with the per-webhook URL token. */
+export async function handleFacilzapWebhook(req: Request, res: Response) {
+  const companyId = getCompanyId(req);
+  const platform = "facilzap";
+  try {
+    if (!companyId) return res.status(400).json({ error: "companyId inválido" });
+    const webhookId = Number(req.query.webhookId) || undefined;
+    const config = await activeWebhookConfig(companyId, platform, webhookId);
+    if (!config) return res.status(404).json({ error: "Webhook FácilZap ativo não encontrado" });
+
+    const providedToken = asString(req.query.token) ?? "";
+    if (!safeEqual(providedToken, config.webhookSecret)) {
+      await logRejected(companyId, platform, "Token do webhook inválido");
+      return res.status(401).json({ error: "Token inválido" });
+    }
+
+    const event = asString(req.body?.evento) ?? "evento desconhecido";
+    const sale = normalizeFacilzapSale(req.body);
+    if (!sale) {
+      await logWebhookEvent({
+        companyId, platform, success: true,
+        message: `Evento FácilZap ignorado (${event}): não é pedido pago`,
+      });
+      return res.status(200).json({ success: true, ignored: true, reason: "Evento não representa um pedido pago" });
+    }
+
+    return await saveAndRespond(res, companyId, platform, sale);
+  } catch (error: any) {
+    console.error("[Webhook FácilZap] falha ao processar pedido:", error?.message || error);
+    await logRejected(companyId, platform, "Falha ao processar pedido FácilZap");
+    return res.status(500).json({ error: "Falha ao processar pedido FácilZap" });
+  }
+}
+
 /** Webhook genérico autenticado por Bearer token ou X-Webhook-Secret. */
 export async function handleSaleWebhook(req: Request, res: Response) {
   const companyId = getCompanyId(req, true);

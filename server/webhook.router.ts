@@ -17,7 +17,7 @@ async function executeQuery(sql: string, params: any[] = []) {
 
 const createWebhookSchema = z.object({
   companyId: z.number().int().positive(),
-  platform: z.enum(["shopify", "woocommerce", "custom"]),
+  platform: z.enum(["shopify", "woocommerce", "custom", "facilzap"]),
   signingSecret: z.string().trim().min(8).optional(),
 }).superRefine((input, ctx) => {
   if (input.platform === "shopify" && !input.signingSecret) {
@@ -30,7 +30,7 @@ const updateWebhookStatusSchema = z.object({
   status: z.enum(["active", "inactive"]),
 });
 
-const supportedWebhookPlatforms = new Set(["shopify", "woocommerce", "custom"]);
+const supportedWebhookPlatforms = new Set(["shopify", "woocommerce", "custom", "facilzap"]);
 
 // ─── Router ────────────────────────────────────────────────────────────────
 
@@ -78,6 +78,9 @@ export const webhookRouter = router({
       const created = result.rows[0];
       const url = new URL(webhookUrl);
       url.searchParams.set("webhookId", String(created.id));
+      if (input.platform === "facilzap") {
+        url.searchParams.set("token", webhookSecret);
+      }
       const updated = await executeQuery(
         `UPDATE "webhookConfigs" SET "webhookUrl" = $1, "updatedAt" = NOW() WHERE "id" = $2 RETURNING *`,
         [url.toString(), created.id]
@@ -140,8 +143,17 @@ export const webhookRouter = router({
       if (input.status === "active" && !supportedWebhookPlatforms.has(webhook.platform)) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Esta plataforma ainda não possui adaptador de recebimento. Use Shopify, WooCommerce ou API Genérica.",
+          message: "Esta plataforma ainda não possui adaptador de recebimento.",
         });
+      }
+      if (input.status === "active" && webhook.platform === "facilzap") {
+        const url = new URL(webhook.webhookUrl);
+        if (!url.searchParams.get("token")) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Esta configuração FácilZap é antiga. Exclua-a e crie novamente para gerar uma URL segura.",
+          });
+        }
       }
 
       // Atualizar status

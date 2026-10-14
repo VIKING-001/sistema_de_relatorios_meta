@@ -21,7 +21,7 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 // OAuth callback
 registerOAuthRoutes(app);
 
-// Webhooks de venda (Shopify, WooCommerce, Hotmart, Kiwify, genérico, teste)
+// Webhooks de venda (Shopify, WooCommerce, FácilZap, genérico, teste)
 // Recebe em /webhook/* — precisa do rewrite correspondente em vercel.json
 app.use(webhookRoutes);
 

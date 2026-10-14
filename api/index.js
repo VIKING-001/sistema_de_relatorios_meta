@@ -62620,7 +62620,7 @@ async function executeQuery2(sql2, params = []) {
 }
 var createWebhookSchema = external_exports.object({
   companyId: external_exports.number().int().positive(),
-  platform: external_exports.enum(["shopify", "woocommerce", "custom"]),
+  platform: external_exports.enum(["shopify", "woocommerce", "custom", "facilzap"]),
   signingSecret: external_exports.string().trim().min(8).optional()
 }).superRefine((input, ctx) => {
   if (input.platform === "shopify" && !input.signingSecret) {
@@ -62631,7 +62631,7 @@ var updateWebhookStatusSchema = external_exports.object({
   webhookId: external_exports.number().int().positive(),
   status: external_exports.enum(["active", "inactive"])
 });
-var supportedWebhookPlatforms = /* @__PURE__ */ new Set(["shopify", "woocommerce", "custom"]);
+var supportedWebhookPlatforms = /* @__PURE__ */ new Set(["shopify", "woocommerce", "custom", "facilzap"]);
 var webhookRouter = router({
   /**
    * Criar uma nova configuração de webhook
@@ -62664,6 +62664,9 @@ var webhookRouter = router({
     const created = result.rows[0];
     const url2 = new URL(webhookUrl);
     url2.searchParams.set("webhookId", String(created.id));
+    if (input.platform === "facilzap") {
+      url2.searchParams.set("token", webhookSecret);
+    }
     const updated = await executeQuery2(
       `UPDATE "webhookConfigs" SET "webhookUrl" = $1, "updatedAt" = NOW() WHERE "id" = $2 RETURNING *`,
       [url2.toString(), created.id]
@@ -62710,8 +62713,17 @@ var webhookRouter = router({
     if (input.status === "active" && !supportedWebhookPlatforms.has(webhook.platform)) {
       throw new TRPCError({
         code: "BAD_REQUEST",
-        message: "Esta plataforma ainda n\xE3o possui adaptador de recebimento. Use Shopify, WooCommerce ou API Gen\xE9rica."
+        message: "Esta plataforma ainda n\xE3o possui adaptador de recebimento."
       });
+    }
+    if (input.status === "active" && webhook.platform === "facilzap") {
+      const url2 = new URL(webhook.webhookUrl);
+      if (!url2.searchParams.get("token")) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Esta configura\xE7\xE3o F\xE1cilZap \xE9 antiga. Exclua-a e crie novamente para gerar uma URL segura."
+        });
+      }
     }
     const result = await executeQuery2(
       `UPDATE "webhookConfigs"
@@ -74218,6 +74230,63 @@ function normalizeGenericSale(body) {
     saleDate: parseDate(record2.saleDate ?? record2.created_at ?? record2.createdAt)
   };
 }
+function normalizeFacilzapSale(body) {
+  const event = asString(body?.evento)?.toLowerCase();
+  if (event && !event.startsWith("pedido_")) return null;
+  const order = body?.dados;
+  if (!order || typeof order !== "object" || Array.isArray(order)) return null;
+  const paid = order.status_pago === true || order.status_pago === 1 || ["true", "1", "sim"].includes(String(order.status_pago ?? "").toLowerCase());
+  if (!paid) return null;
+  const utm = order.utm && typeof order.utm === "object" ? order.utm : {};
+  const customer = order.cliente && typeof order.cliente === "object" ? order.cliente : {};
+  const orderId = asString(order.id ?? order.codigo) ?? "";
+  return {
+    orderId,
+    externalId: orderId,
+    orderValue: Number(order.total ?? order.valor_total),
+    currency: "BRL",
+    customerName: asString(customer.nome),
+    customerEmail: asString(customer.email),
+    customerPhone: asString(customer.whatsapp_e164 ?? customer.telefone_e164 ?? customer.whatsapp ?? customer.telefone),
+    saleDate: parseDate(order.data),
+    utmSource: asString(utm.source ?? order.utm_source),
+    utmMedium: asString(utm.medium ?? order.utm_medium),
+    utmCampaign: asString(utm.campaign ?? order.utm_campaign),
+    utmContent: asString(utm.content ?? order.utm_content),
+    utmTerm: asString(utm.term ?? order.utm_term)
+  };
+}
+async function handleFacilzapWebhook(req, res) {
+  const companyId = getCompanyId(req);
+  const platform = "facilzap";
+  try {
+    if (!companyId) return res.status(400).json({ error: "companyId inv\xE1lido" });
+    const webhookId = Number(req.query.webhookId) || void 0;
+    const config2 = await activeWebhookConfig(companyId, platform, webhookId);
+    if (!config2) return res.status(404).json({ error: "Webhook F\xE1cilZap ativo n\xE3o encontrado" });
+    const providedToken = asString(req.query.token) ?? "";
+    if (!safeEqual(providedToken, config2.webhookSecret)) {
+      await logRejected(companyId, platform, "Token do webhook inv\xE1lido");
+      return res.status(401).json({ error: "Token inv\xE1lido" });
+    }
+    const event = asString(req.body?.evento) ?? "evento desconhecido";
+    const sale = normalizeFacilzapSale(req.body);
+    if (!sale) {
+      await logWebhookEvent({
+        companyId,
+        platform,
+        success: true,
+        message: `Evento F\xE1cilZap ignorado (${event}): n\xE3o \xE9 pedido pago`
+      });
+      return res.status(200).json({ success: true, ignored: true, reason: "Evento n\xE3o representa um pedido pago" });
+    }
+    return await saveAndRespond(res, companyId, platform, sale);
+  } catch (error46) {
+    console.error("[Webhook F\xE1cilZap] falha ao processar pedido:", error46?.message || error46);
+    await logRejected(companyId, platform, "Falha ao processar pedido F\xE1cilZap");
+    return res.status(500).json({ error: "Falha ao processar pedido F\xE1cilZap" });
+  }
+}
 async function handleSaleWebhook(req, res) {
   const companyId = getCompanyId(req, true);
   const platform = "custom";
@@ -74324,6 +74393,9 @@ async function handleWooCommerceWebhook(req, res) {
 var router2 = (0, import_express.Router)();
 router2.post("/webhook/sale", handleSaleWebhook);
 router2.post("/webhook/custom", handleSaleWebhook);
+router2.post("/webhook/facilzap", (req, res) => {
+  handleFacilzapWebhook(req, res);
+});
 router2.post("/webhook/shopify", (req, res) => {
   handleShopifyWebhook(req, res);
 });

@@ -24,8 +24,17 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WEBHOOK_PLATFORMS, PLATFORMS_BY_CATEGORY, CATEGORY_LABELS } from "@/lib/platforms";
 
-const IMPLEMENTED_WEBHOOKS = new Set(["shopify", "woocommerce", "custom"]);
+const IMPLEMENTED_WEBHOOKS = new Set(["shopify", "woocommerce", "custom", "facilzap"]);
 const IMPLEMENTED_WEBHOOK_PLATFORMS = WEBHOOK_PLATFORMS.filter((platform) => IMPLEMENTED_WEBHOOKS.has(platform.id));
+
+function webhookHasRequiredSetup(webhook: any) {
+  if (webhook.platform !== "facilzap") return true;
+  try {
+    return Boolean(new URL(webhook.webhookUrl).searchParams.get("token"));
+  } catch {
+    return false;
+  }
+}
 
 const INTEGRATIONS = [
   {
@@ -447,7 +456,9 @@ export default function Integracoes() {
                     ? "Use o segredo do app Shopify para validar a assinatura dos eventos."
                     : selectedPlatform === "woocommerce"
                       ? "Após criar, copie o segredo e configure-o no webhook do WooCommerce."
-                      : "API genérica para Zapier, Make, n8n ou seu sistema: envie JSON padronizado e o segredo no cabeçalho Authorization."}
+                      : selectedPlatform === "facilzap"
+                        ? "No painel FácilZap, vá em Integrações > Webhooks e cole a URL segura gerada. O sistema só registra pedidos com pagamento confirmado."
+                        : "API genérica para Zapier, Make, n8n ou seu sistema: envie JSON padronizado e o segredo no cabeçalho Authorization."}
                 </p>
               </div>
 
@@ -481,7 +492,8 @@ export default function Integracoes() {
             ) : webhooks && webhooks.length > 0 ? (
               webhooks.map((webhook: any) => {
                 const implemented = IMPLEMENTED_WEBHOOKS.has(webhook.platform);
-                const active = implemented && webhook.status === "active";
+                const ready = implemented && webhookHasRequiredSetup(webhook);
+                const active = ready && webhook.status === "active";
                 const last = lastEventByPlatform(webhook.platform);
                 return (
                   <Card
@@ -503,18 +515,22 @@ export default function Integracoes() {
                           <Badge
                             variant="outline"
                             className={`text-[9px] h-4 ${
-                              !implemented
+                              !implemented || !ready
                                 ? "border-amber-400/30 bg-amber-400/10 text-amber-300"
                                 : active
                                 ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-400"
                                 : "border-amber-400/30 bg-amber-400/10 text-amber-400"
                             }`}
                           >
-                            {!implemented ? "Sem adaptador" : active ? "Ativo" : "Desativado"}
+                            {!implemented ? "Sem adaptador" : !ready ? "Recriar URL" : active ? "Ativo" : "Desativado"}
                           </Badge>
                         </div>
-                        {implemented ? (
+                        {ready ? (
                           <p className="text-xs text-muted-foreground mt-1 break-all">{webhook.webhookUrl}</p>
+                        ) : implemented ? (
+                          <p className="text-[11px] mt-1.5 text-amber-300">
+                            Esta configuração FácilZap antiga não tem o token obrigatório na URL. Exclua e crie novamente.
+                          </p>
                         ) : (
                           <p className="text-[11px] mt-1.5 text-amber-300">
                             Esta configuração antiga não tem rota de recebimento e não registra vendas.
@@ -522,9 +538,9 @@ export default function Integracoes() {
                         )}
                         {!implemented ? (
                           <p className="text-[11px] mt-1.5 text-white/50">
-                            Use Shopify, WooCommerce ou API Genérica para receber pedidos neste momento.
+                            Esta plataforma ainda não tem adaptador para receber pedidos.
                           </p>
-                        ) : last?.success && last.saleId ? (
+                        ) : !ready ? null : last?.success && last.saleId ? (
                           <p className="text-[11px] mt-1.5 flex items-center gap-1.5 text-emerald-400">
                             <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
                             Venda recebida {timeAgo(last.createdAt)}
@@ -548,7 +564,7 @@ export default function Integracoes() {
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap">
-                      {implemented && <Button
+                      {ready && <Button
                         size="sm"
                         variant="outline"
                         className="rounded-lg text-xs h-7 gap-1 text-primary border-primary/30 hover:border-primary/50"
@@ -557,7 +573,7 @@ export default function Integracoes() {
                       >
                         {testingPlatform === webhook.platform ? "Testando..." : "Testar servidor"}
                       </Button>}
-                      {(implemented || webhook.status === "active") && <Button
+                      {(ready || webhook.status === "active") && <Button
                         size="sm"
                         variant={webhook.status === "active" ? "outline" : "default"}
                         className="rounded-lg text-xs h-7 gap-1"
@@ -566,15 +582,15 @@ export default function Integracoes() {
                       >
                         {webhook.status === "active" ? "Desativar" : "Ativar"}
                       </Button>}
-                      {implemented && <Button
+                      {ready && <Button
                         size="sm"
                         variant="outline"
                         className="rounded-lg text-xs h-7 gap-1"
                         onClick={() => copyToClipboard(webhook.webhookUrl)}
                       >
-                        <Copy className="h-3 w-3" /> Copiar URL
+                        <Copy className="h-3 w-3" /> {webhook.platform === "facilzap" ? "Copiar URL segura" : "Copiar URL"}
                       </Button>}
-                      {implemented && <Button
+                      {ready && webhook.platform !== "facilzap" && <Button
                         size="sm"
                         variant="outline"
                         className="rounded-lg text-xs h-7 gap-1"
@@ -615,8 +631,10 @@ export default function Integracoes() {
               <ul className="text-xs text-white/60 mt-2 space-y-1 ml-2">
                 <li>Shopify: configure o evento <code>orders/paid</code> e use o segredo do app para validar a assinatura.</li>
                 <li>WooCommerce: configure o webhook de pedido para estados pagos e copie o segredo gerado no sistema.</li>
+                <li>FácilZap: em Integrações &gt; Webhooks, cole a URL segura e habilite eventos de pedido. Só <code>status_pago=true</code> entra como venda; pedidos repetidos não duplicam.</li>
                 <li>API Genérica: envie pedido pago em JSON com <code>orderId</code> e <code>orderValue</code>, autenticando com o segredo.</li>
                 <li>Para atribuir UTM, envie também <code>utm_id</code>, <code>utm_session</code> ou os campos UTM no pedido.</li>
+                <li>FácilZap: a origem e a campanha vêm no objeto <code>utm</code>; se houver campanhas com nomes iguais, a venda entra sem atribuição para evitar associação errada.</li>
                 <li>"Testar servidor" verifica apenas se o endpoint responde; uma venda de teste valida a integração ponta a ponta.</li>
               </ul>
               <pre className="mt-3 overflow-x-auto rounded-md border border-white/10 bg-black/20 p-3 text-[11px] text-white/70">{`{
@@ -627,7 +645,7 @@ export default function Integracoes() {
   "utm_session": "SESSAO_DO_VISITANTE"
 }`}</pre>
               <p className="mt-2 text-[11px] text-white/50">
-                Envie por POST e use o segredo copiado no cabeçalho <code>Authorization: Bearer …</code> ou <code>X-Webhook-Secret</code>.
+                API Genérica: envie por POST e use o segredo copiado no cabeçalho <code>Authorization: Bearer …</code> ou <code>X-Webhook-Secret</code>. FácilZap usa o token já incorporado na URL segura.
               </p>
             </CardContent>
           </Card>

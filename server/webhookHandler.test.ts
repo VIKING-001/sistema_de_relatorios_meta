@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { describe, expect, it } from "vitest";
-import { extractUtmFields, validateWebhookSignature } from "./webhookHandler";
+import { extractUtmFields, normalizeFacilzapSale, validateWebhookSignature } from "./webhookHandler";
 
 describe("webhook security and UTM normalization", () => {
   it("validates an HMAC signature for the exact raw payload", () => {
@@ -40,5 +40,41 @@ describe("webhook security and UTM normalization", () => {
       utmCampaign: "campaign-1",
       utmSession: "session-1",
     });
+  });
+
+  it("normalizes a paid FácilZap order and its customer and UTM fields", () => {
+    expect(normalizeFacilzapSale({
+      evento: "pedido_atualizado",
+      dados: {
+        id: 123456,
+        data: "2026-10-14 10:30:00",
+        total: 149.9,
+        status_pago: true,
+        cliente: { nome: "Maria Silva", email: "maria@example.com", whatsapp_e164: "+5511999999999" },
+        utm: { source: "instagram", medium: "paid", campaign: "colecao-outubro" },
+      },
+    })).toMatchObject({
+      orderId: "123456",
+      externalId: "123456",
+      orderValue: 149.9,
+      currency: "BRL",
+      customerName: "Maria Silva",
+      customerEmail: "maria@example.com",
+      customerPhone: "+5511999999999",
+      utmSource: "instagram",
+      utmMedium: "paid",
+      utmCampaign: "colecao-outubro",
+    });
+  });
+
+  it("does not count unpaid or non-order FácilZap events as sales", () => {
+    expect(normalizeFacilzapSale({
+      evento: "pedido_criado",
+      dados: { id: 1, total: 100, status_pago: false },
+    })).toBeNull();
+    expect(normalizeFacilzapSale({
+      evento: "carrinho_abandonado_criado",
+      dados: { id: 1, total: 100, status_pago: true },
+    })).toBeNull();
   });
 });
