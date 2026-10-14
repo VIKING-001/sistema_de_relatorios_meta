@@ -87,6 +87,9 @@ export const reportMetrics = pgTable("reportMetrics", {
   ctr: decimal("ctr", { precision: 5, scale: 2 }).notNull().default("0.00"),
   /** Conversões / Compras */
   purchases: integer("purchases").notNull().default(0),
+  /** Divisão manual opcional das compras por canal; null = ainda não informado */
+  sitePurchases: integer("sitePurchases"),
+  whatsappPurchases: integer("whatsappPurchases"),
   purchaseValue: decimal("purchaseValue", { precision: 12, scale: 2 }).notNull().default("0.00"),
   costPerPurchase: decimal("costPerPurchase", { precision: 10, scale: 2 }).notNull().default("0.00"),
   /** Custo por mensagem iniciada */

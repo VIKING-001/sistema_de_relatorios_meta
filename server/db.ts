@@ -77,6 +77,8 @@ async function ensureTables(pool: InstanceType<typeof Pool>) {
       "cpm" numeric(10, 2) DEFAULT '0.00' NOT NULL,
       "ctr" numeric(5, 2) DEFAULT '0.00' NOT NULL,
       "purchases" integer DEFAULT 0 NOT NULL,
+      "sitePurchases" integer,
+      "whatsappPurchases" integer,
       "purchaseValue" numeric(12, 2) DEFAULT '0.00' NOT NULL,
       "costPerPurchase" numeric(10, 2) DEFAULT '0.00' NOT NULL,
       "costPerMessage" numeric(10, 2) DEFAULT '0.00' NOT NULL,
@@ -85,6 +87,8 @@ async function ensureTables(pool: InstanceType<typeof Pool>) {
     )`,
     // Adiciona novas colunas de conversão em tabelas já existentes (idempotente)
     `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "purchases" integer DEFAULT 0 NOT NULL`,
+    `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "sitePurchases" integer`,
+    `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "whatsappPurchases" integer`,
     `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "purchaseValue" numeric(12, 2) DEFAULT '0.00' NOT NULL`,
     `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "costPerPurchase" numeric(10, 2) DEFAULT '0.00' NOT NULL`,
     `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "costPerMessage" numeric(10, 2) DEFAULT '0.00' NOT NULL`,
@@ -622,7 +626,8 @@ export async function getClientPortalDataByToken(token: string) {
             m."instagramProfileVisits", m."newInstagramFollowers", m."messagesInitiated",
             m."totalClicks", m."costPerClick", m."videoRetentionRate",
             m."profileVisitsThroughCampaigns", m."costPerProfileVisit", m."cpm", m."ctr",
-            m."purchases", m."purchaseValue", m."costPerPurchase", m."costPerMessage",
+            m."purchases", m."sitePurchases", m."whatsappPurchases",
+            m."purchaseValue", m."costPerPurchase", m."costPerMessage",
             COALESCE(sales."count", 0)::int AS "trackedSalesCount",
             COALESCE(sales."revenue", 0)::numeric AS "trackedSalesRevenue"
      FROM "clientPortalLinks" portal
@@ -686,6 +691,8 @@ export async function getClientPortalDataByToken(token: string) {
         cpm: asNumber(row.cpm),
         ctr: asNumber(row.ctr),
         purchases: asNumber(row.purchases),
+        sitePurchases: row.sitePurchases == null ? null : asNumber(row.sitePurchases),
+        whatsappPurchases: row.whatsappPurchases == null ? null : asNumber(row.whatsappPurchases),
         purchaseValue: asNumber(row.purchaseValue),
         costPerPurchase: asNumber(row.costPerPurchase),
         costPerMessage: asNumber(row.costPerMessage),

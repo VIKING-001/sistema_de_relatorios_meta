@@ -198,10 +198,12 @@ export default function PublicReport() {
 
   const purchases       = isTracked ? trackedCount : (dm.purchases ?? 0);
   const purchaseValue   = isTracked ? trackedRevenue : (dm.purchaseValue ?? 0);
+  const sitePurchases = m?.sitePurchases == null ? null : Number(m.sitePurchases);
+  const whatsappPurchases = m?.whatsappPurchases == null ? null : Number(m.whatsappPurchases);
   const costPerPurchase = isTracked
     ? (totalSpent > 0 && trackedCount > 0 ? totalSpent / trackedCount : 0)
     : (dm.costPerPurchase ?? 0);
-  const hasPurchases    = purchases > 0 || purchaseValue > 0;
+  const hasPurchases    = purchases > 0 || purchaseValue > 0 || sitePurchases !== null || whatsappPurchases !== null;
   const roas            = totalSpent > 0 && purchaseValue > 0 ? (purchaseValue / totalSpent).toFixed(2) : null;
 
   return (
@@ -405,6 +407,20 @@ export default function PublicReport() {
                     large
                   />
                 </div>
+                {(sitePurchases !== null || whatsappPurchases !== null) && (
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-10" aria-label="Vendas por canal">
+                    <MetricCard
+                      label="Vendas pelo site"
+                      value={sitePurchases === null ? "Não informado" : formatNumber(sitePurchases)}
+                      accent="blue"
+                    />
+                    <MetricCard
+                      label="Vendas pelo WhatsApp"
+                      value={whatsappPurchases === null ? "Não informado" : formatNumber(whatsappPurchases)}
+                      accent="pink"
+                    />
+                  </div>
+                )}
               </>
             )}
 

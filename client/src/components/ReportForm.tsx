@@ -66,6 +66,8 @@ export default function ReportForm({
 
   // Métricas — Conversões / Compras
   const [purchases, setPurchases] = useState("0");
+  const [sitePurchases, setSitePurchases] = useState("0");
+  const [whatsappPurchases, setWhatsappPurchases] = useState("0");
   const [purchaseValue, setPurchaseValue] = useState("0");
   const [costPerPurchase, setCostPerPurchase] = useState("0");
   const [costPerMessage, setCostPerMessage] = useState("0");
@@ -144,6 +146,12 @@ export default function ReportForm({
     e.preventDefault();
     if (!title.trim()) { toast.error("Título é obrigatório"); return; }
     if (!startDate || !endDate) { toast.error("Selecione o período"); return; }
+    const siteCount = Number(sitePurchases);
+    const whatsappCount = Number(whatsappPurchases);
+    if (!Number.isInteger(siteCount) || siteCount < 0 || !Number.isInteger(whatsappCount) || whatsappCount < 0) {
+      toast.error("Informe números inteiros iguais ou maiores que zero para as vendas por canal.");
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -168,6 +176,8 @@ export default function ReportForm({
           cpm: 0,
           ctr: 0,
           purchases: Math.floor(parseBrazilianNumber(purchases)) || 0,
+          sitePurchases: siteCount,
+          whatsappPurchases: whatsappCount,
           purchaseValue: parseBrazilianNumber(purchaseValue) || 0,
           costPerPurchase: parseBrazilianNumber(costPerPurchase) || 0,
           costPerMessage: parseBrazilianNumber(costPerMessage) || 0,
@@ -434,6 +444,22 @@ export default function ReportForm({
               Nº de Compras
             </label>
             <Input type="text" value={purchases} onChange={(e) => setPurchases(e.target.value)}
+              disabled={isLoading} className={`${inputClass} bg-white/[0.03]`} />
+          </div>
+
+          <div className="group">
+            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5 ml-1 block group-focus-within:text-emerald-400 transition-colors">
+              Vendas pelo site
+            </label>
+            <Input type="number" min="0" step="1" value={sitePurchases} onChange={(e) => setSitePurchases(e.target.value)}
+              disabled={isLoading} className={`${inputClass} bg-white/[0.03]`} />
+          </div>
+
+          <div className="group">
+            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5 ml-1 block group-focus-within:text-emerald-400 transition-colors">
+              Vendas pelo WhatsApp
+            </label>
+            <Input type="number" min="0" step="1" value={whatsappPurchases} onChange={(e) => setWhatsappPurchases(e.target.value)}
               disabled={isLoading} className={`${inputClass} bg-white/[0.03]`} />
           </div>
 

@@ -47733,6 +47733,9 @@ var reportMetrics = pgTable("reportMetrics", {
   ctr: decimal("ctr", { precision: 5, scale: 2 }).notNull().default("0.00"),
   /** Conversões / Compras */
   purchases: integer("purchases").notNull().default(0),
+  /** Divisão manual opcional das compras por canal; null = ainda não informado */
+  sitePurchases: integer("sitePurchases"),
+  whatsappPurchases: integer("whatsappPurchases"),
   purchaseValue: decimal("purchaseValue", { precision: 12, scale: 2 }).notNull().default("0.00"),
   costPerPurchase: decimal("costPerPurchase", { precision: 10, scale: 2 }).notNull().default("0.00"),
   /** Custo por mensagem iniciada */
@@ -48162,6 +48165,8 @@ async function ensureTables(pool2) {
       "cpm" numeric(10, 2) DEFAULT '0.00' NOT NULL,
       "ctr" numeric(5, 2) DEFAULT '0.00' NOT NULL,
       "purchases" integer DEFAULT 0 NOT NULL,
+      "sitePurchases" integer,
+      "whatsappPurchases" integer,
       "purchaseValue" numeric(12, 2) DEFAULT '0.00' NOT NULL,
       "costPerPurchase" numeric(10, 2) DEFAULT '0.00' NOT NULL,
       "costPerMessage" numeric(10, 2) DEFAULT '0.00' NOT NULL,
@@ -48170,6 +48175,8 @@ async function ensureTables(pool2) {
     )`,
     // Adiciona novas colunas de conversão em tabelas já existentes (idempotente)
     `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "purchases" integer DEFAULT 0 NOT NULL`,
+    `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "sitePurchases" integer`,
+    `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "whatsappPurchases" integer`,
     `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "purchaseValue" numeric(12, 2) DEFAULT '0.00' NOT NULL`,
     `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "costPerPurchase" numeric(10, 2) DEFAULT '0.00' NOT NULL`,
     `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "costPerMessage" numeric(10, 2) DEFAULT '0.00' NOT NULL`,
@@ -48610,7 +48617,8 @@ async function getClientPortalDataByToken(token) {
             m."instagramProfileVisits", m."newInstagramFollowers", m."messagesInitiated",
             m."totalClicks", m."costPerClick", m."videoRetentionRate",
             m."profileVisitsThroughCampaigns", m."costPerProfileVisit", m."cpm", m."ctr",
-            m."purchases", m."purchaseValue", m."costPerPurchase", m."costPerMessage",
+            m."purchases", m."sitePurchases", m."whatsappPurchases",
+            m."purchaseValue", m."costPerPurchase", m."costPerMessage",
             COALESCE(sales."count", 0)::int AS "trackedSalesCount",
             COALESCE(sales."revenue", 0)::numeric AS "trackedSalesRevenue"
      FROM "clientPortalLinks" portal
@@ -48669,6 +48677,8 @@ async function getClientPortalDataByToken(token) {
       cpm: asNumber(row.cpm),
       ctr: asNumber(row.ctr),
       purchases: asNumber(row.purchases),
+      sitePurchases: row.sitePurchases == null ? null : asNumber(row.sitePurchases),
+      whatsappPurchases: row.whatsappPurchases == null ? null : asNumber(row.whatsappPurchases),
       purchaseValue: asNumber(row.purchaseValue),
       costPerPurchase: asNumber(row.costPerPurchase),
       costPerMessage: asNumber(row.costPerMessage)
@@ -72890,6 +72900,8 @@ async function generateAiAnalysis(input) {
   const num = (v) => v.toLocaleString("pt-BR");
   const pct = (v) => `${v.toFixed(2)}%`;
   const purchases = input.purchases ?? 0;
+  const sitePurchases = input.sitePurchases;
+  const whatsappPurchases = input.whatsappPurchases;
   const purchaseValue = input.purchaseValue ?? 0;
   const costPerPurchase = input.costPerPurchase ?? 0;
   const roas = input.roas ?? 0;
@@ -72921,6 +72933,10 @@ ${purchases > 0 ? `
 - Faturamento: ${brl(purchaseValue)}
 - ROAS: ${roas.toFixed(2)}x
 - Custo por venda: ${brl(costPerPurchase)}` : ""}
+${sitePurchases != null || whatsappPurchases != null ? `
+\u{1F4CD} VENDAS POR CANAL (detalhamento informado manualmente, n\xE3o somar novamente ao total):
+- Site: ${sitePurchases == null ? "n\xE3o informado" : num(sitePurchases)}
+- WhatsApp: ${whatsappPurchases == null ? "n\xE3o informado" : num(whatsappPurchases)}` : ""}
 ${messagesInitiated > 0 ? `
 \u{1F4AC} MENSAGENS:
 - Mensagens iniciadas: ${num(messagesInitiated)}
@@ -73244,6 +73260,8 @@ var metricsSchema = external_exports.object({
   ctr: external_exports.number().min(0).max(100).default(0),
   // Conversões / Compras
   purchases: external_exports.number().int().min(0).default(0),
+  sitePurchases: external_exports.number().int().min(0).nullable().optional(),
+  whatsappPurchases: external_exports.number().int().min(0).nullable().optional(),
   purchaseValue: external_exports.number().min(0).default(0),
   costPerPurchase: external_exports.number().min(0).default(0),
   costPerMessage: external_exports.number().min(0).default(0)
@@ -73558,6 +73576,8 @@ var appRouter = router({
             totalReach: input.metrics.totalReach,
             totalClicks: input.metrics.totalClicks,
             purchases,
+            sitePurchases: input.metrics.sitePurchases ?? null,
+            whatsappPurchases: input.metrics.whatsappPurchases ?? null,
             purchaseValue,
             costPerPurchase: dm.costPerPurchase ?? 0,
             roas,
@@ -73736,6 +73756,8 @@ var appRouter = router({
             totalReach: metrics.totalReach,
             totalClicks: metrics.totalClicks,
             purchases,
+            sitePurchases: metrics.sitePurchases ?? null,
+            whatsappPurchases: metrics.whatsappPurchases ?? null,
             purchaseValue,
             costPerPurchase: dm.costPerPurchase ?? 0,
             roas,

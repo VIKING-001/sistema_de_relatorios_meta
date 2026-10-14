@@ -43,6 +43,8 @@ type ReportMetrics = {
   cpm: number;
   ctr: number;
   purchases: number;
+  sitePurchases: number | null;
+  whatsappPurchases: number | null;
   purchaseValue: number;
   costPerPurchase: number;
   costPerMessage: number;
@@ -68,6 +70,8 @@ type MetricValue = {
   clicks: number;
   messages: number;
   purchases: number;
+  sitePurchases: number | null;
+  whatsappPurchases: number | null;
   revenue: number;
   roas: number;
   cpa: number;
@@ -132,6 +136,8 @@ function metricsFor(report: PortalReport): MetricValue {
     clicks: m?.totalClicks ?? 0,
     messages: m?.messagesInitiated ?? 0,
     purchases,
+    sitePurchases: m?.sitePurchases == null ? null : Number(m.sitePurchases),
+    whatsappPurchases: m?.whatsappPurchases == null ? null : Number(m.whatsappPurchases),
     revenue,
     roas: m && m.totalSpent > 0 ? revenue / m.totalSpent : 0,
     cpa: purchases > 0 ? (m?.totalSpent ?? 0) / purchases : 0,
@@ -530,6 +536,32 @@ function PeriodPerformance({
             </div>
           </section>
 
+          {(values.sitePurchases !== null || values.whatsappPurchases !== null) && (
+            <section aria-label="Vendas por canal">
+              <SectionHeading
+                icon={ShoppingBag}
+                title="Vendas por canal"
+                description="Contagem informada no relatório; não altera o total de compras nem as vendas rastreadas."
+              />
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <MetricCard
+                  icon={ShoppingBag}
+                  label="Vendas pelo site"
+                  value={values.sitePurchases === null ? "Não informado" : formatNumber(values.sitePurchases)}
+                  tone="blue"
+                  compact={compact}
+                />
+                <MetricCard
+                  icon={MessageCircle}
+                  label="Vendas pelo WhatsApp"
+                  value={values.whatsappPurchases === null ? "Não informado" : formatNumber(values.whatsappPurchases)}
+                  tone="pink"
+                  compact={compact}
+                />
+              </div>
+            </section>
+          )}
+
           <section aria-labelledby={`funnel-${report.id}`}>
             <SectionHeading
               id={`funnel-${report.id}`}
@@ -659,6 +691,16 @@ const comparisonRows: Array<{
     direction: "lower",
   },
   { label: "Compras registradas", key: "purchases", format: formatNumber },
+  {
+    label: "Vendas pelo site",
+    key: "sitePurchases",
+    format: formatNumber,
+  },
+  {
+    label: "Vendas pelo WhatsApp",
+    key: "whatsappPurchases",
+    format: formatNumber,
+  },
   { label: "Faturamento", key: "revenue", format: formatCurrency },
   {
     label: "Retorno sobre anúncios",
@@ -709,21 +751,21 @@ function CompareSummary({
               <span className="text-sm text-[#c4cbd2]">{row.label}</span>
               <span className="text-right text-xs tabular-nums text-[#a4afbb] sm:text-sm">
                 <span className="sm:hidden">Anterior · </span>
-                {row.format(oldValue)}
+                {oldValue == null ? "Não informado" : row.format(oldValue)}
               </span>
               <span className="text-right text-sm font-semibold tabular-nums text-white">
                 <span className="font-normal text-[#a4afbb] sm:hidden">
                   Atual ·{" "}
                 </span>
-                {row.format(newValue)}
+                {newValue == null ? "Não informado" : row.format(newValue)}
               </span>
               <span className="col-span-2 text-right text-xs sm:col-span-1">
                 <span className="sm:hidden text-[#a4afbb]">Variação · </span>
-                <Variation
-                  before={oldValue}
-                  after={newValue}
-                  direction={row.direction}
-                />
+                {oldValue == null || newValue == null ? (
+                  <span className="text-[#a4afbb]">Sem base de comparação</span>
+                ) : (
+                  <Variation before={oldValue} after={newValue} direction={row.direction} />
+                )}
               </span>
             </div>
           );

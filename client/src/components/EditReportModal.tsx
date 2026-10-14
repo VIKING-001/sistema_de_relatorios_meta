@@ -18,10 +18,11 @@ interface FieldProps {
   val: string;
   set: (v: string) => void;
   money?: boolean;
+  numeric?: boolean;
   disabled?: boolean;
 }
 
-const Field = memo(({ label, val, set, money = false, disabled = false }: FieldProps) => (
+const Field = memo(({ label, val, set, money = false, numeric = false, disabled = false }: FieldProps) => (
   <div>
     <label className="block text-[10px] font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">
       {label}
@@ -33,7 +34,10 @@ const Field = memo(({ label, val, set, money = false, disabled = false }: FieldP
         </span>
       )}
       <Input
-        type="text"
+        type={numeric ? "number" : "text"}
+        min={numeric ? "0" : undefined}
+        step={numeric ? "1" : undefined}
+        placeholder={numeric ? "Não informado" : undefined}
         value={val}
         onChange={e => set(e.target.value)}
         disabled={disabled}
@@ -100,6 +104,8 @@ export default function EditReportModal({ report, onClose, onSuccess }: EditRepo
 
   // Conversões
   const [purchases,       setPurchases]       = useState("0");
+  const [sitePurchases,   setSitePurchases]   = useState("");
+  const [whatsappPurchases, setWhatsappPurchases] = useState("");
   const [purchaseValue,   setPurchaseValue]   = useState("0");
   const [costPerPurchase, setCostPerPurchase] = useState("0");
 
@@ -129,6 +135,8 @@ export default function EditReportModal({ report, onClose, onSuccess }: EditRepo
     setMessagesInitiated(metrics.messagesInitiated?.toString() ?? "0");
     setCostPerMessage((metrics as any).costPerMessage?.toString() ?? "0");
     setPurchases((metrics as any).purchases?.toString() ?? "0");
+    setSitePurchases((metrics as any).sitePurchases?.toString() ?? "");
+    setWhatsappPurchases((metrics as any).whatsappPurchases?.toString() ?? "");
     setPurchaseValue((metrics as any).purchaseValue?.toString() ?? "0");
     setCostPerPurchase((metrics as any).costPerPurchase?.toString() ?? "0");
   }, [metrics]);
@@ -144,6 +152,13 @@ export default function EditReportModal({ report, onClose, onSuccess }: EditRepo
     const start = parseLocalDate(startDate);
     const end   = parseLocalDate(endDate);
     if (start > end) { toast.error("Data de início não pode ser maior que data de fim"); return; }
+    const parseOptionalCount = (value: string) => value.trim() === "" ? null : Number(value);
+    const siteCount = parseOptionalCount(sitePurchases);
+    const whatsappCount = parseOptionalCount(whatsappPurchases);
+    if ([siteCount, whatsappCount].some(value => value !== null && (!Number.isInteger(value) || value < 0))) {
+      toast.error("As vendas por canal devem ser números inteiros iguais ou maiores que zero.");
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -169,6 +184,8 @@ export default function EditReportModal({ report, onClose, onSuccess }: EditRepo
           cpm:                         0,
           ctr:                         0,
           purchases:                   Math.floor(parseBrazilianNumber(purchases))                || 0,
+          sitePurchases:                siteCount,
+          whatsappPurchases:            whatsappCount,
           purchaseValue:               parseBrazilianNumber(purchaseValue)                        || 0,
           costPerPurchase:             parseBrazilianNumber(costPerPurchase)                      || 0,
           costPerMessage:              parseBrazilianNumber(costPerMessage)                       || 0,
@@ -301,6 +318,8 @@ export default function EditReportModal({ report, onClose, onSuccess }: EditRepo
             <Section icon={ShoppingBag} label="Conversões e Compras" color="text-emerald-400" />
             <div className="grid grid-cols-2 gap-3">
               <Field label="Nº de Compras"          val={purchases}       set={setPurchases}       disabled={isLoading} />
+              <Field label="Vendas pelo site"        val={sitePurchases}     set={setSitePurchases}     numeric disabled={isLoading} />
+              <Field label="Vendas pelo WhatsApp"    val={whatsappPurchases} set={setWhatsappPurchases} numeric disabled={isLoading} />
               <Field label="Valor Faturado (R$)"    val={purchaseValue}   set={setPurchaseValue}   money disabled={isLoading} />
               <Field label="Custo por Compra (R$)"  val={costPerPurchase} set={setCostPerPurchase} money disabled={isLoading} />
             </div>

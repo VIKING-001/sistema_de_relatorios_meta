@@ -10,6 +10,8 @@ export interface AiAnalysisInput {
   totalReach: number;
   totalClicks: number;
   purchases?: number;
+  sitePurchases?: number | null;
+  whatsappPurchases?: number | null;
   purchaseValue?: number;
   costPerPurchase?: number;
   roas?: number;
@@ -67,6 +69,8 @@ export async function generateAiAnalysis(input: AiAnalysisInput): Promise<AiAnal
   const pct = (v: number) => `${v.toFixed(2)}%`;
 
   const purchases           = input.purchases          ?? 0;
+  const sitePurchases       = input.sitePurchases;
+  const whatsappPurchases   = input.whatsappPurchases;
   const purchaseValue       = input.purchaseValue      ?? 0;
   const costPerPurchase     = input.costPerPurchase    ?? 0;
   const roas                = input.roas               ?? 0;
@@ -99,6 +103,10 @@ ${purchases > 0 ? `
 - Faturamento: ${brl(purchaseValue)}
 - ROAS: ${roas.toFixed(2)}x
 - Custo por venda: ${brl(costPerPurchase)}` : ""}
+${sitePurchases != null || whatsappPurchases != null ? `
+📍 VENDAS POR CANAL (detalhamento informado manualmente, não somar novamente ao total):
+- Site: ${sitePurchases == null ? "não informado" : num(sitePurchases)}
+- WhatsApp: ${whatsappPurchases == null ? "não informado" : num(whatsappPurchases)}` : ""}
 ${messagesInitiated > 0 ? `
 💬 MENSAGENS:
 - Mensagens iniciadas: ${num(messagesInitiated)}
