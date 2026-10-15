@@ -13,6 +13,7 @@ import {
   WHATSAPP_CONVERSATION_STAGES,
   WHATSAPP_BOARD_STAGES,
   WHATSAPP_EDITABLE_STATUSES,
+  WHATSAPP_SESSION_IDLE_HOURS,
   WHATSAPP_STAGE_LABELS,
   WHATSAPP_STATUS_LABELS,
   filterWhatsappConversations,
@@ -45,6 +46,9 @@ export default function Conversas() {
   const [companyId, setCompanyId] = useState<number | null>(null);
   const [showConfig, setShowConfig] = useState(false);
   const [selectedConv, setSelectedConv] = useState<any | null>(null);
+  const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
+  const [recordMode, setRecordMode] = useState<"contacts" | "sessions">("contacts");
+  const [sessionOffset, setSessionOffset] = useState(0);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
@@ -61,13 +65,26 @@ export default function Conversas() {
     { enabled: !!companyId }
   );
   const { data: msgData, isLoading: loadingMsgs } = trpc.whatsapp.listMessages.useQuery(
-    { companyId: companyId ?? 0, waId: selectedConv?.waId ?? "" },
+    { companyId: companyId ?? 0, waId: selectedConv?.waId ?? "", sessionId: selectedSessionId ?? undefined },
     { enabled: !!companyId && !!selectedConv, refetchInterval: 5000 }
+  );
+  const { data: sessionData, isLoading: loadingSessions } = trpc.whatsapp.listSessions.useQuery(
+    {
+      companyId: companyId ?? 0,
+      limit: 50,
+      offset: sessionOffset,
+      search: search.trim() || undefined,
+      status: statusFilter === "all" ? undefined : statusFilter as "open" | "pending" | "closed" | "converted",
+      source: sourceFilter === "all" ? undefined : sourceFilter as "ads" | "organic",
+      stage: stageFilter === "all" ? undefined : stageFilter as (typeof WHATSAPP_CONVERSATION_STAGES)[number] | "converted",
+    },
+    { enabled: !!companyId && recordMode === "sessions", refetchInterval: 15_000 },
   );
   const updateConversation = trpc.whatsapp.updateConversation.useMutation({
     onSuccess: ({ conversation }, variables) => {
-      setSelectedConv((current: any) => current?.id === conversation.id ? conversation : current);
+      setSelectedConv((current: any) => current?.id === conversation.id ? { ...current, ...conversation } : current);
       void utils.whatsapp.listConversations.invalidate({ companyId: variables.companyId });
+      void utils.whatsapp.listSessions.invalidate();
       toast.success("Conversa atualizada.");
     },
     onError: (error) => toast.error(error.message || "Não foi possível atualizar a conversa."),
@@ -76,6 +93,8 @@ export default function Conversas() {
   const conversations = convData?.conversations ?? [];
   const summary = convData?.summary ?? { total: 0, attributed: 0, converted: 0, open: 0, pending: 0, closed: 0 };
   const messages = msgData?.messages ?? [];
+  const sessions = sessionData?.sessions ?? [];
+  const sessionSummary = sessionData?.summary ?? { total: 0, attributed: 0, organic: 0 };
   const filteredConversations = useMemo(() => {
     return filterWhatsappConversations(conversations, {
       search,
@@ -84,10 +103,25 @@ export default function Conversas() {
       stage: stageFilter,
     });
   }, [conversations, search, statusFilter, sourceFilter, stageFilter]);
+  const visibleRecords = recordMode === "sessions" ? sessions : filteredConversations;
+  const isLoadingRecords = recordMode === "sessions" ? loadingSessions : loadingConvs;
   const conversationsByStage = useMemo(
-    () => groupWhatsappConversationsByStage(filteredConversations),
-    [filteredConversations],
+    () => groupWhatsappConversationsByStage(recordMode === "sessions" ? sessions : filteredConversations),
+    [recordMode, sessions, filteredConversations],
   );
+
+  const openContact = (contact: any) => {
+    setSelectedSessionId(null);
+    setSelectedConv(contact);
+  };
+  const openSession = (session: any) => {
+    setSelectedSessionId(session.id);
+    setSelectedConv({ ...session, id: session.conversationId, sessionMessageCount: session.messageCount });
+  };
+  const closeMessages = () => {
+    setSelectedConv(null);
+    setSelectedSessionId(null);
+  };
 
   // Agrupa mensagens por dia para separadores visuais
   const msgsByDay: { day: string; msgs: any[] }[] = [];
@@ -107,7 +141,7 @@ export default function Conversas() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2 flex-wrap">
             {selectedConv ? (
-              <button onClick={() => setSelectedConv(null)} className="flex items-center gap-2 hover:text-white/70 transition-colors">
+              <button onClick={closeMessages} className="flex items-center gap-2 hover:text-white/70 transition-colors">
                 <ArrowLeft className="h-5 w-5" />
                 {selectedConv.customerName || selectedConv.waId}
               </button>
@@ -143,7 +177,7 @@ export default function Conversas() {
           </Label>
           <select
             value={companyId ?? ""}
-            onChange={(e) => { setCompanyId(e.target.value ? Number(e.target.value) : null); setSelectedConv(null); }}
+            onChange={(e) => { setCompanyId(e.target.value ? Number(e.target.value) : null); closeMessages(); setSessionOffset(0); }}
             disabled={loadingCompanies}
             className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white/90 focus:outline-none focus:border-primary/50"
           >
@@ -176,7 +210,12 @@ export default function Conversas() {
               {selectedConv.campaignName
                 ? <span className="inline-flex items-center gap-1 text-[11px] text-cyan-300/80"><Megaphone className="h-3 w-3" />{selectedConv.campaignName}</span>
                 : <span className="inline-flex items-center gap-1 text-[11px] text-white/30"><Tag className="h-3 w-3" />orgânica</span>}
-              <p className="text-[10px] text-white/25 mt-0.5">{selectedConv.messageCount} msg(s)</p>
+              <p className="text-[10px] text-white/25 mt-0.5">{selectedSessionId ? selectedConv.sessionMessageCount : selectedConv.messageCount} msg(s)</p>
+              {selectedSessionId && (
+                <p className="text-[10px] text-white/35 mt-0.5">
+                  {fmtDate(selectedConv.startedAt)} – {fmtDate(selectedConv.lastMessageAt)}
+                </p>
+              )}
             </div>
           </div>
 
@@ -232,8 +271,8 @@ export default function Conversas() {
             {!loadingMsgs && messages.length === 0 && (
               <div className="text-center py-12 text-white/30 text-sm space-y-2">
                 <MessageCircle className="h-8 w-8 mx-auto opacity-20" />
-                <p>Nenhuma mensagem registrada ainda.</p>
-                <p className="text-[11px] text-white/20">As próximas mensagens recebidas aparecerão aqui automaticamente.</p>
+                <p>{selectedSessionId ? "Nenhuma mensagem está vinculada a este atendimento." : "Nenhuma mensagem registrada ainda."}</p>
+                <p className="text-[11px] text-white/20">{selectedSessionId ? "Mensagens anteriores à ativação das sessões continuam no histórico do contato." : "As próximas mensagens recebidas aparecerão aqui automaticamente."}</p>
               </div>
             )}
             {msgsByDay.map(({ day, msgs }) => (
@@ -270,7 +309,9 @@ export default function Conversas() {
           {/* Rodapé */}
           <div className="px-4 py-2.5 border-t border-white/8 bg-black/20">
             <p className="text-[11px] text-white/25 text-center">
-              Visualização somente leitura · Responda pelo WhatsApp Business
+              {selectedSessionId
+                ? `Atendimento agrupado até ${WHATSAPP_SESSION_IDLE_HOURS}h sem nova mensagem · Visualização somente leitura`
+                : "Histórico do contato · Visualização somente leitura · Responda pelo WhatsApp Business"}
             </p>
           </div>
         </div>
@@ -280,12 +321,17 @@ export default function Conversas() {
 
           {/* Resumo */}
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            {[
+            {(recordMode === "sessions" ? [
+              { label: "Atendimentos", value: String(sessionSummary.total), icon: MessageCircle, color: "text-white" },
+              { label: "Via anúncio", value: String(sessionSummary.attributed), icon: Megaphone, color: "text-cyan-400" },
+              { label: "Orgânicos", value: String(sessionSummary.organic), icon: Tag, color: "text-emerald-400" },
+              { label: "Nesta página", value: String(sessions.length), icon: List, color: "text-amber-300" },
+            ] : [
               { label: "Contatos", value: String(summary.total), icon: Users, color: "text-white" },
               { label: "Via anúncio", value: String(summary.attributed), icon: Megaphone, color: "text-cyan-400" },
               { label: "Pendentes", value: String(summary.pending), icon: Clock, color: "text-amber-300" },
               { label: "Convertidas", value: String(summary.converted), icon: CheckCircle2, color: "text-emerald-400" },
-            ].map((c, index) => (
+            ]).map((c) => (
               <div key={c.label} className="glass-card min-w-0 rounded-xl border border-white/10 p-3 sm:p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <c.icon className={`h-3.5 w-3.5 shrink-0 ${c.color}`} />
@@ -296,32 +342,49 @@ export default function Conversas() {
             ))}
           </div>
           <p className="-mt-3 text-[11px] text-white/35">
-            Totais do histórico completo. Lista e quadro mostram os 200 contatos mais recentes; os filtros atuam sobre eles.
+            {recordMode === "sessions"
+              ? `Atendimentos agrupados até ${WHATSAPP_SESSION_IDLE_HOURS}h sem nova mensagem. ${sessionData?.summary.total ?? 0} no histórico completo.`
+              : "Totais do histórico completo. Lista e quadro mostram os 200 contatos mais recentes; os filtros atuam sobre eles."}
           </p>
+
+          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Tipo de registro">
+            <button
+              type="button"
+              aria-pressed={recordMode === "contacts"}
+              onClick={() => setRecordMode("contacts")}
+              className={`min-h-10 rounded-lg border px-4 text-sm font-medium transition-colors ${recordMode === "contacts" ? "border-primary/40 bg-primary/10 text-primary" : "border-white/10 text-white/55 hover:bg-white/5"}`}
+            >Contatos</button>
+            <button
+              type="button"
+              aria-pressed={recordMode === "sessions"}
+              onClick={() => { setRecordMode("sessions"); setSessionOffset(0); }}
+              className={`min-h-10 rounded-lg border px-4 text-sm font-medium transition-colors ${recordMode === "sessions" ? "border-primary/40 bg-primary/10 text-primary" : "border-white/10 text-white/55 hover:bg-white/5"}`}
+            >Atendimentos</button>
+          </div>
 
           {/* Lista de conversas — clicável */}
           <div className="glass-card rounded-xl border border-white/10 overflow-hidden">
             <div className="grid grid-cols-1 gap-2 border-b border-white/8 bg-black/20 p-3 sm:grid-cols-2 xl:grid-cols-4">
               <Input
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => { setSearch(event.target.value); setSessionOffset(0); }}
                 placeholder="Buscar nome, telefone ou campanha"
                 aria-label="Buscar conversas"
                 className="h-10 min-w-0 border-white/10 bg-white/[0.04] text-sm"
               />
-              <select aria-label="Filtrar por status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className={filterSelectClass}>
+              <select aria-label="Filtrar por status" value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); setSessionOffset(0); }} className={filterSelectClass}>
                 <option value="all">Todos os status</option>
                 <option value="open">Abertas</option>
                 <option value="pending">Pendentes</option>
                 <option value="closed">Fechadas</option>
                 <option value="converted">Convertidas</option>
               </select>
-              <select aria-label="Filtrar por origem" value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value)} className={filterSelectClass}>
+              <select aria-label="Filtrar por origem" value={sourceFilter} onChange={(event) => { setSourceFilter(event.target.value); setSessionOffset(0); }} className={filterSelectClass}>
                 <option value="all">Todas as origens</option>
                 <option value="ads">Anúncios</option>
                 <option value="organic">Orgânicas</option>
               </select>
-              <select aria-label="Filtrar por etapa comercial" value={stageFilter} onChange={(event) => setStageFilter(event.target.value)} className={filterSelectClass}>
+              <select aria-label="Filtrar por etapa comercial" value={stageFilter} onChange={(event) => { setStageFilter(event.target.value); setSessionOffset(0); }} className={filterSelectClass}>
                 <option value="all">Todas as etapas</option>
                 {WHATSAPP_CONVERSATION_STAGES.map((stage) => (
                   <option key={stage} value={stage}>{WHATSAPP_STAGE_LABELS[stage]}</option>
@@ -330,7 +393,9 @@ export default function Conversas() {
               </select>
               <div className="flex flex-col gap-2 sm:col-span-2 sm:flex-row sm:items-center sm:justify-between xl:col-span-4">
                 <p className="text-[11px] text-white/35" aria-live="polite">
-                  Exibindo {filteredConversations.length} dos {conversations.length} contatos carregados
+                  {recordMode === "sessions"
+                    ? `Exibindo ${sessions.length} dos ${sessionData?.total ?? 0} atendimentos filtrados`
+                    : `Exibindo ${filteredConversations.length} dos ${conversations.length} contatos carregados`}
                 </p>
                 <div className="flex items-center gap-1 self-start rounded-lg border border-white/10 bg-black/20 p-1 sm:self-auto" role="group" aria-label="Modo de visualização">
                   <button
@@ -361,40 +426,42 @@ export default function Conversas() {
               <div className="w-[100px] text-center">Status</div>
             </div>}
 
-            {loadingConvs && (
+            {isLoadingRecords && (
               <div className="flex items-center gap-2 px-4 py-10 text-white/30 text-xs">
-                <Loader2 className="h-4 w-4 animate-spin text-primary" /> Carregando conversas...
+                <Loader2 className="h-4 w-4 animate-spin text-primary" /> {recordMode === "sessions" ? "Carregando atendimentos..." : "Carregando contatos..."}
               </div>
             )}
-            {!loadingConvs && conversations.length === 0 && (
+            {!isLoadingRecords && visibleRecords.length === 0 && (
               <div className="px-4 py-12 text-center text-sm text-white/30">
                 <MessageCircle className="h-10 w-10 mx-auto mb-3 opacity-20" />
-                <p>Nenhuma conversa ainda. Configure a conexão e rode anúncios Click-to-WhatsApp.</p>
+                <p>{recordMode === "sessions"
+                  ? "Nenhum atendimento encontrado para estes filtros. As novas mensagens criarão atendimentos automaticamente."
+                  : "Nenhum contato encontrado para estes filtros. Configure a conexão e receba uma mensagem de WhatsApp."}</p>
               </div>
             )}
-            {!loadingConvs && conversations.length > 0 && filteredConversations.length === 0 && (
-              <div className="px-4 py-10 text-center text-sm text-white/40">Nenhuma conversa corresponde aos filtros.</div>
-            )}
-            {viewMode === "list" && filteredConversations.map((c: any) => (
+            {viewMode === "list" && visibleRecords.map((c: any) => (
               <button
                 key={c.id}
-                onClick={() => setSelectedConv(c)}
+                onClick={() => recordMode === "sessions" ? openSession(c) : openContact(c)}
                 className="flex w-full flex-col gap-3 border-b border-white/8 px-4 py-4 text-left transition-colors last:border-0 hover:bg-white/[0.06] active:bg-white/10 xl:flex-row xl:items-center xl:gap-2 xl:py-3"
               >
                 <div className="flex min-w-0 items-start justify-between gap-3 xl:flex-1">
                   <div className="min-w-0">
                     <p className="flex items-center gap-1.5 truncate text-sm font-medium text-white/90">
                       <Phone className="h-3 w-3 shrink-0 text-white/30" />
-                      {c.customerName || c.waId}
+                    {c.customerName || c.waId}
                     </p>
                     {c.customerName && <p className="truncate pl-[18px] text-[11px] text-white/35">{c.waId}</p>}
                     {c.lastMessageText && (
                       <p className="mt-0.5 truncate pl-[18px] text-[11px] italic text-white/45">{c.lastMessageText}</p>
                     )}
+                    {recordMode === "sessions" && (
+                      <p className="mt-0.5 pl-[18px] text-[10px] text-white/30">Atendimento #{c.id}</p>
+                    )}
                   </div>
                   <span className="shrink-0 xl:hidden">
                     {c.status === "converted"
-                      ? <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2 py-1 text-[10px] font-semibold text-emerald-300"><CheckCircle2 className="h-2.5 w-2.5" /> Vendeu</span>
+                      ? <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2 py-1 text-[10px] font-semibold text-emerald-300"><CheckCircle2 className="h-2.5 w-2.5" /> {recordMode === "sessions" ? "Contato com venda" : "Vendeu"}</span>
                       : <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold ${c.status === "pending" ? "border-amber-400/25 bg-amber-400/10 text-amber-200" : c.status === "closed" ? "border-white/15 bg-white/5 text-white/50" : "border-cyan-400/25 bg-cyan-400/10 text-cyan-200"}`}>{WHATSAPP_STATUS_LABELS[c.status ?? "open"] ?? "Aberta"}</span>}
                   </span>
                 </div>
@@ -422,13 +489,13 @@ export default function Conversas() {
                 </div>
                 <div className="hidden xl:flex xl:w-[100px] xl:justify-center">
                   {c.status === "converted"
-                    ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border text-emerald-300 bg-emerald-400/10 border-emerald-400/25"><CheckCircle2 className="h-2.5 w-2.5" /> Vendeu</span>
+                    ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border text-emerald-300 bg-emerald-400/10 border-emerald-400/25"><CheckCircle2 className="h-2.5 w-2.5" /> {recordMode === "sessions" ? "Contato com venda" : "Vendeu"}</span>
                     : <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${c.status === "pending" ? "border-amber-400/25 bg-amber-400/10 text-amber-200" : c.status === "closed" ? "border-white/15 bg-white/5 text-white/50" : "border-cyan-400/25 bg-cyan-400/10 text-cyan-200"}`}>{WHATSAPP_STATUS_LABELS[c.status ?? "open"] ?? "Aberta"}</span>}
                 </div>
                 </div>
               </button>
             ))}
-            {viewMode === "board" && !loadingConvs && filteredConversations.length > 0 && (
+            {viewMode === "board" && !isLoadingRecords && visibleRecords.length > 0 && (
               <div className="grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 2xl:grid-cols-3">
                 {WHATSAPP_BOARD_STAGES.map((stage) => (
                   <section key={stage} aria-labelledby={`stage-${stage}`} className="min-w-0 rounded-lg border border-white/10 bg-black/15">
@@ -445,7 +512,7 @@ export default function Conversas() {
                         <button
                           key={c.id}
                           type="button"
-                          onClick={() => setSelectedConv(c)}
+                          onClick={() => recordMode === "sessions" ? openSession(c) : openContact(c)}
                           className="block w-full min-w-0 rounded-lg border border-white/8 bg-[#111820] p-3 text-left transition-colors hover:border-primary/30 hover:bg-white/[0.06]"
                         >
                           <span className="block truncate text-sm font-medium text-white/85">{c.customerName || c.waId}</span>
@@ -453,7 +520,7 @@ export default function Conversas() {
                             {c.campaignName ? `Anúncio · ${c.campaignName}` : "Origem orgânica"}
                           </span>
                           <span className="mt-2 flex items-center justify-between gap-2 text-[10px] text-white/35">
-                            <span>{c.messageCount} mensagem(ns)</span>
+                            <span>{c.messageCount} mensagem(ns){recordMode === "sessions" ? ` · #${c.id}` : ""}</span>
                             <span>{fmtDate(c.lastMessageAt)}</span>
                           </span>
                         </button>
@@ -461,6 +528,21 @@ export default function Conversas() {
                     </div>
                   </section>
                 ))}
+              </div>
+            )}
+            {recordMode === "sessions" && (sessionData?.total ?? 0) > 50 && (
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/8 px-4 py-3">
+                <p className="text-xs text-white/40">
+                  {sessionOffset + 1}–{Math.min(sessionOffset + sessions.length, sessionData?.total ?? 0)} de {sessionData?.total} atendimentos
+                </p>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" disabled={sessionOffset === 0 || loadingSessions} onClick={() => setSessionOffset(Math.max(0, sessionOffset - 50))}>
+                    Anteriores
+                  </Button>
+                  <Button variant="outline" size="sm" disabled={sessionOffset + 50 >= (sessionData?.total ?? 0) || loadingSessions} onClick={() => setSessionOffset(sessionOffset + 50)}>
+                    Próximos
+                  </Button>
+                </div>
               </div>
             )}
           </div>

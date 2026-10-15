@@ -25,11 +25,9 @@ router.get("/webhook/whatsapp", async (req: Request, res: Response) => {
 
 // ── Recebimento de mensagens (POST) ──────────────────────────────────────────
 router.post("/webhook/whatsapp", async (req: Request, res: Response) => {
-  res.sendStatus(200);
-
   try {
     const body = req.body;
-    if (body?.object !== "whatsapp_business_account") return;
+    if (body?.object !== "whatsapp_business_account") return res.sendStatus(200);
 
     for (const entry of body.entry ?? []) {
       for (const change of entry.changes ?? []) {
@@ -50,8 +48,17 @@ router.post("/webhook/whatsapp", async (req: Request, res: Response) => {
         }
 
         for (const msg of messages) {
-          const waId: string = msg.from;
+          const waId: string = String(msg.from ?? "");
+          const wamid: string = String(msg.id ?? "");
+          if (!waId || !wamid) {
+            console.warn("[WhatsApp] Mensagem ignorada: remetente ou ID ausente.");
+            continue;
+          }
           const ts = msg.timestamp ? new Date(Number(msg.timestamp) * 1000) : new Date();
+          if (Number.isNaN(ts.getTime())) {
+            console.warn("[WhatsApp] Mensagem ignorada: timestamp inválido.");
+            continue;
+          }
           const text =
             msg.text?.body ??
             msg.button?.text ??
@@ -64,56 +71,44 @@ router.post("/webhook/whatsapp", async (req: Request, res: Response) => {
               ? (ref?.headline || ref?.source_id || "Anúncio WhatsApp")
               : null;
 
-          const conv = await db.upsertWhatsappConversation({
-            companyId: cfg.companyId,
-            waId,
-            customerName: contactName.get(waId) || null,
-            sourceType: campaignName ? "ctwa" : "organic",
-            campaignName,
-            adId: ref?.source_id ?? null,
-            adHeadline: ref?.headline ?? null,
-            ctwaClid: ref?.ctwa_clid ?? null,
-            sourceUrl: ref?.source_url ?? null,
-            lastMessageText: text,
-            messageTime: ts,
-          }).catch((e: any) => {
-            console.error("[WhatsApp] upsertWhatsappConversation ERRO:", e?.message, e?.code);
-            return null;
-          });
-
-          // Salva a mensagem individual para exibir no histórico
-          console.log(`[WhatsApp] step:saveMsg fn=${typeof (db as any).saveWhatsappMessage} wamid=${msg.id} convId=${conv?.id}`);
           try {
-            await (db as any).saveWhatsappMessage({
-              conversationId: conv?.id ?? null,
+            const saved = await db.recordWhatsappInboundMessage({
               companyId: cfg.companyId,
               waId,
-              wamid: msg.id ?? null,
-              direction: "inbound",
+              wamid,
+              customerName: contactName.get(waId) || null,
               type: msg.type ?? "text",
               text,
               timestamp: ts,
+              campaignName,
+              adId: ref?.source_id ?? null,
+              adHeadline: ref?.headline ?? null,
+              ctwaClid: ref?.ctwa_clid ?? null,
+              sourceUrl: ref?.source_url ?? null,
             });
-            console.log(`[WhatsApp] step:saveMsg OK`);
-          } catch (se: any) {
-            console.error("[WhatsApp] saveWhatsappMessage ERRO:", se?.message, se?.code, se?.detail);
-          }
+            if (saved.duplicate) continue;
 
-          await db.logWebhookEvent({
-            companyId: cfg.companyId,
-            platform: "whatsapp",
-            success: true,
-            trackingFound: !!campaignName,
-            message: campaignName
-              ? `Conversa de ${waId} via anúncio: ${campaignName}`
-              : `Conversa de ${waId} (orgânica)`,
-            payloadSummary: text?.slice(0, 200) ?? null,
-          });
+            await db.logWebhookEvent({
+              companyId: cfg.companyId,
+              platform: "whatsapp",
+              success: true,
+              trackingFound: !!campaignName,
+              message: campaignName
+                ? `Atendimento via anúncio: ${campaignName}`
+                : "Atendimento orgânico registrado",
+              payloadSummary: text?.slice(0, 200) ?? null,
+            });
+          } catch (error: any) {
+            console.error("[WhatsApp] Falha ao registrar mensagem/atendimento:", error?.message || error);
+            throw error;
+          }
         }
       }
     }
+    return res.sendStatus(200);
   } catch (err: any) {
     console.error("[WhatsApp] Erro processando webhook:", err?.stack?.split("\n").slice(0,2).join(" | ") || err?.message || String(err));
+    return res.sendStatus(500);
   }
 });
 

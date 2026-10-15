@@ -48097,6 +48097,19 @@ if (!ENV.databaseUrl) {
   console.error("[ENV] CRITICAL: DATABASE_URL is missing!");
 }
 
+// shared/whatsapp.ts
+var WHATSAPP_EDITABLE_STATUSES = ["open", "pending", "closed"];
+var WHATSAPP_SESSION_IDLE_HOURS = 24;
+var WHATSAPP_SESSION_IDLE_MS = WHATSAPP_SESSION_IDLE_HOURS * 60 * 60 * 1e3;
+var WHATSAPP_CONVERSATION_STAGES = [
+  "lead",
+  "contacted",
+  "qualified",
+  "negotiation",
+  "lost"
+];
+var WHATSAPP_BOARD_STAGES = [...WHATSAPP_CONVERSATION_STAGES, "converted"];
+
 // server/db.ts
 var dbInstance;
 var rawPool = null;
@@ -48339,10 +48352,33 @@ async function ensureTables(pool2) {
     `CREATE INDEX IF NOT EXISTS "idx_whatsappConversations_companyId" ON "whatsappConversations"("companyId")`,
     `CREATE INDEX IF NOT EXISTS "idx_whatsappConversations_waId" ON "whatsappConversations"("waId")`,
     `CREATE INDEX IF NOT EXISTS "idx_whatsappConfigs_companyId" ON "whatsappConfigs"("companyId")`,
+    // Atendimentos separados por janelas de inatividade, sem substituir o contato consolidado.
+    `CREATE TABLE IF NOT EXISTS "whatsappSessions" (
+      "id" serial PRIMARY KEY NOT NULL,
+      "companyId" integer NOT NULL,
+      "conversationId" integer NOT NULL,
+      "waId" varchar(32) NOT NULL,
+      "customerName" varchar(255),
+      "sourceType" varchar(20) DEFAULT 'organic',
+      "campaignName" varchar(255),
+      "adId" varchar(64),
+      "adHeadline" text,
+      "ctwaClid" varchar(255),
+      "sourceUrl" text,
+      "startedAt" timestamptz NOT NULL,
+      "lastMessageAt" timestamptz NOT NULL,
+      "lastMessageText" text,
+      "messageCount" integer DEFAULT 0 NOT NULL,
+      "createdAt" timestamptz DEFAULT NOW() NOT NULL,
+      "updatedAt" timestamptz DEFAULT NOW() NOT NULL
+    )`,
+    `CREATE INDEX IF NOT EXISTS "idx_whatsappSessions_companyStarted" ON "whatsappSessions"("companyId","startedAt" DESC,"id" DESC)`,
+    `CREATE INDEX IF NOT EXISTS "idx_whatsappSessions_contactLast" ON "whatsappSessions"("companyId","waId","lastMessageAt" DESC)`,
     // Mensagens individuais de WhatsApp (uma linha por mensagem recebida)
     `CREATE TABLE IF NOT EXISTS "whatsappMessages" (
       "id" serial PRIMARY KEY NOT NULL,
       "conversationId" integer,
+      "sessionId" integer,
       "companyId" integer NOT NULL,
       "waId" varchar(32) NOT NULL,
       "wamid" text UNIQUE,
@@ -48352,8 +48388,10 @@ async function ensureTables(pool2) {
       "timestamp" timestamptz NOT NULL DEFAULT NOW(),
       "createdAt" timestamptz DEFAULT NOW()
     )`,
+    `ALTER TABLE "whatsappMessages" ADD COLUMN IF NOT EXISTS "sessionId" integer`,
     `CREATE INDEX IF NOT EXISTS "idx_whatsappMessages_companyWaId" ON "whatsappMessages"("companyId","waId")`,
     `CREATE INDEX IF NOT EXISTS "idx_whatsappMessages_conversationId" ON "whatsappMessages"("conversationId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_whatsappMessages_sessionTimestamp" ON "whatsappMessages"("sessionId","timestamp")`,
     // ─── PWA Push Notifications ──────────────────────────────────────────────
     // Subscriptions de push por usuário/dispositivo (chave = endpoint da subscription)
     `CREATE TABLE IF NOT EXISTS "pushSubscriptions" (
@@ -48865,45 +48903,168 @@ async function getWhatsappConfigByCompany(companyId) {
   );
   return r.rows[0] ?? null;
 }
-async function upsertWhatsappConversation(c) {
+async function recordWhatsappInboundMessage(m) {
   const pool2 = await getRawPool();
-  if (!pool2) return null;
-  const when = c.messageTime ?? /* @__PURE__ */ new Date();
-  const r = await pool2.query(
-    `INSERT INTO "whatsappConversations"
-       ("companyId", "waId", "customerName", "sourceType", "campaignName", "adId",
-        "adHeadline", "ctwaClid", "sourceUrl", "firstMessageAt", "lastMessageAt",
-        "lastMessageText", "messageCount")
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10, $11, 1)
-     ON CONFLICT ("companyId", "waId") DO UPDATE SET
-       "customerName"   = COALESCE("whatsappConversations"."customerName", EXCLUDED."customerName"),
-       "lastMessageAt"  = EXCLUDED."lastMessageAt",
-       "lastMessageText"= EXCLUDED."lastMessageText",
-       "messageCount"   = "whatsappConversations"."messageCount" + 1,
-       -- s\xF3 preenche atribui\xE7\xE3o se ainda n\xE3o houver e veio referral agora
-       "sourceType"  = CASE WHEN "whatsappConversations"."campaignName" IS NULL AND EXCLUDED."campaignName" IS NOT NULL THEN EXCLUDED."sourceType" ELSE "whatsappConversations"."sourceType" END,
-       "campaignName"= COALESCE("whatsappConversations"."campaignName", EXCLUDED."campaignName"),
-       "adId"        = COALESCE("whatsappConversations"."adId", EXCLUDED."adId"),
-       "adHeadline"  = COALESCE("whatsappConversations"."adHeadline", EXCLUDED."adHeadline"),
-       "ctwaClid"    = COALESCE("whatsappConversations"."ctwaClid", EXCLUDED."ctwaClid"),
-       "sourceUrl"   = COALESCE("whatsappConversations"."sourceUrl", EXCLUDED."sourceUrl"),
-       "updatedAt"   = NOW()
-     RETURNING *`,
-    [
-      c.companyId,
-      c.waId,
-      c.customerName ?? null,
-      c.campaignName ? c.sourceType ?? "ctwa" : c.sourceType ?? "organic",
-      c.campaignName ?? null,
-      c.adId ?? null,
-      c.adHeadline ?? null,
-      c.ctwaClid ?? null,
-      c.sourceUrl ?? null,
-      when,
-      c.lastMessageText ?? null
-    ]
-  );
-  return r.rows[0] ?? null;
+  if (!pool2) return { duplicate: false, conversation: null, session: null, message: null };
+  const client = await pool2.connect();
+  const when = m.timestamp;
+  const sourceType = m.campaignName ? "ctwa" : "organic";
+  try {
+    await client.query("BEGIN");
+    const contactResult = await client.query(
+      `INSERT INTO "whatsappConversations"
+         ("companyId","waId","customerName","sourceType","campaignName","adId","adHeadline",
+          "ctwaClid","sourceUrl","firstMessageAt","lastMessageAt","messageCount")
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$10,0)
+       ON CONFLICT ("companyId","waId") DO UPDATE SET
+         "customerName" = COALESCE("whatsappConversations"."customerName", EXCLUDED."customerName"),
+         "sourceType" = CASE WHEN "whatsappConversations"."campaignName" IS NULL AND EXCLUDED."campaignName" IS NOT NULL THEN EXCLUDED."sourceType" ELSE "whatsappConversations"."sourceType" END,
+         "campaignName" = COALESCE("whatsappConversations"."campaignName", EXCLUDED."campaignName"),
+         "adId" = COALESCE("whatsappConversations"."adId", EXCLUDED."adId"),
+         "adHeadline" = COALESCE("whatsappConversations"."adHeadline", EXCLUDED."adHeadline"),
+         "ctwaClid" = COALESCE("whatsappConversations"."ctwaClid", EXCLUDED."ctwaClid"),
+         "sourceUrl" = COALESCE("whatsappConversations"."sourceUrl", EXCLUDED."sourceUrl"),
+         "updatedAt" = NOW()
+       RETURNING *`,
+      [
+        m.companyId,
+        m.waId,
+        m.customerName ?? null,
+        sourceType,
+        m.campaignName ?? null,
+        m.adId ?? null,
+        m.adHeadline ?? null,
+        m.ctwaClid ?? null,
+        m.sourceUrl ?? null,
+        when
+      ]
+    );
+    let conversation = contactResult.rows[0] ?? null;
+    if (!conversation) throw new Error("N\xE3o foi poss\xEDvel carregar o contato do WhatsApp.");
+    const messageResult = await client.query(
+      `INSERT INTO "whatsappMessages"
+         ("conversationId","companyId","waId","wamid","direction","type","text","timestamp")
+       VALUES ($1,$2,$3,$4,'inbound',$5,$6,$7)
+       ON CONFLICT ("wamid") DO NOTHING
+       RETURNING *`,
+      [conversation.id, m.companyId, m.waId, m.wamid, m.type ?? "text", m.text ?? null, when]
+    );
+    const savedMessage = messageResult.rows[0] ?? null;
+    if (!savedMessage) {
+      await client.query("COMMIT");
+      return { duplicate: true, conversation, session: null, message: null };
+    }
+    const sessionResult = await client.query(
+      `SELECT * FROM "whatsappSessions"
+       WHERE "companyId" = $1 AND "waId" = $2
+         AND (("startedAt" <= $3 AND "lastMessageAt" >= $3 - ($4::double precision * INTERVAL '1 hour'))
+           OR ("startedAt" > $3 AND "startedAt" <= $3 + ($4::double precision * INTERVAL '1 hour')))
+       ORDER BY CASE WHEN "startedAt" <= $3 THEN 0 ELSE 1 END,
+                ABS(EXTRACT(EPOCH FROM ("lastMessageAt" - $3)))
+       LIMIT 1 FOR UPDATE`,
+      [m.companyId, m.waId, when, WHATSAPP_SESSION_IDLE_HOURS]
+    );
+    let session = sessionResult.rows[0] ?? null;
+    if (!session) {
+      const created = await client.query(
+        `INSERT INTO "whatsappSessions"
+           ("companyId","conversationId","waId","customerName","sourceType","campaignName","adId",
+            "adHeadline","ctwaClid","sourceUrl","startedAt","lastMessageAt","lastMessageText","messageCount")
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$11,$12,1)
+         RETURNING *`,
+        [
+          m.companyId,
+          conversation.id,
+          m.waId,
+          m.customerName ?? null,
+          sourceType,
+          m.campaignName ?? null,
+          m.adId ?? null,
+          m.adHeadline ?? null,
+          m.ctwaClid ?? null,
+          m.sourceUrl ?? null,
+          when,
+          m.text ?? null
+        ]
+      );
+      session = created.rows[0] ?? null;
+    } else {
+      const updated = await client.query(
+        `UPDATE "whatsappSessions" SET
+           "customerName" = COALESCE("customerName", $2),
+           "sourceType" = CASE WHEN "campaignName" IS NULL AND $3 IS NOT NULL THEN $4 ELSE "sourceType" END,
+           "campaignName" = COALESCE("campaignName", $3),
+           "adId" = COALESCE("adId", $5),
+           "adHeadline" = COALESCE("adHeadline", $6),
+           "ctwaClid" = COALESCE("ctwaClid", $7),
+           "sourceUrl" = COALESCE("sourceUrl", $8),
+           "startedAt" = LEAST("startedAt", $9),
+           "lastMessageAt" = GREATEST("lastMessageAt", $9),
+           "lastMessageText" = CASE WHEN $9 >= "lastMessageAt" THEN $10 ELSE "lastMessageText" END,
+           "messageCount" = "messageCount" + 1,
+           "updatedAt" = NOW()
+         WHERE "id" = $1 AND "companyId" = $11
+         RETURNING *`,
+        [
+          session.id,
+          m.customerName ?? null,
+          m.campaignName ?? null,
+          sourceType,
+          m.adId ?? null,
+          m.adHeadline ?? null,
+          m.ctwaClid ?? null,
+          m.sourceUrl ?? null,
+          when,
+          m.text ?? null,
+          m.companyId
+        ]
+      );
+      session = updated.rows[0] ?? null;
+    }
+    if (!session) throw new Error("N\xE3o foi poss\xEDvel registrar o atendimento do WhatsApp.");
+    const updatedContact = await client.query(
+      `UPDATE "whatsappConversations" SET
+         "customerName" = COALESCE("customerName", $2),
+         "firstMessageAt" = LEAST("firstMessageAt", $3),
+         "lastMessageAt" = GREATEST("lastMessageAt", $3),
+         "lastMessageText" = CASE WHEN $3 >= "lastMessageAt" THEN $4 ELSE "lastMessageText" END,
+         "messageCount" = "messageCount" + 1,
+         "sourceType" = CASE WHEN "campaignName" IS NULL AND $5 IS NOT NULL THEN $6 ELSE "sourceType" END,
+         "campaignName" = COALESCE("campaignName", $5),
+         "adId" = COALESCE("adId", $7),
+         "adHeadline" = COALESCE("adHeadline", $8),
+         "ctwaClid" = COALESCE("ctwaClid", $9),
+         "sourceUrl" = COALESCE("sourceUrl", $10),
+         "updatedAt" = NOW()
+       WHERE "id" = $1 AND "companyId" = $11
+       RETURNING *`,
+      [
+        conversation.id,
+        m.customerName ?? null,
+        when,
+        m.text ?? null,
+        m.campaignName ?? null,
+        sourceType,
+        m.adId ?? null,
+        m.adHeadline ?? null,
+        m.ctwaClid ?? null,
+        m.sourceUrl ?? null,
+        m.companyId
+      ]
+    );
+    conversation = updatedContact.rows[0] ?? conversation;
+    const linkedMessage = await client.query(
+      `UPDATE "whatsappMessages" SET "sessionId" = $2 WHERE "id" = $1 RETURNING *`,
+      [savedMessage.id, session.id]
+    );
+    await client.query("COMMIT");
+    return { duplicate: false, conversation, session, message: linkedMessage.rows[0] ?? savedMessage };
+  } catch (error46) {
+    await client.query("ROLLBACK").catch(() => void 0);
+    throw error46;
+  } finally {
+    client.release();
+  }
 }
 async function listWhatsappConversations(companyId, limit2 = 200) {
   const pool2 = await getRawPool();
@@ -48951,28 +49112,6 @@ async function updateWhatsappConversation(companyId, conversationId, update) {
   );
   return r.rows[0] ?? null;
 }
-async function saveWhatsappMessage(m) {
-  const pool2 = await getRawPool();
-  if (!pool2) return null;
-  const r = await pool2.query(
-    `INSERT INTO "whatsappMessages"
-       ("conversationId","companyId","waId","wamid","direction","type","text","timestamp")
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-     ON CONFLICT ("wamid") DO NOTHING
-     RETURNING *`,
-    [
-      m.conversationId ?? null,
-      m.companyId,
-      m.waId,
-      m.wamid ?? null,
-      m.direction ?? "inbound",
-      m.type ?? "text",
-      m.text ?? null,
-      m.timestamp
-    ]
-  );
-  return r.rows[0] ?? null;
-}
 async function listWhatsappMessages(companyId, waId, limit2 = 100) {
   const pool2 = await getRawPool();
   if (!pool2) return [];
@@ -48983,6 +49122,66 @@ async function listWhatsappMessages(companyId, waId, limit2 = 100) {
     [companyId, waId, limit2]
   );
   return r.rows;
+}
+async function listWhatsappSessionMessages(companyId, waId, sessionId, limit2 = 200) {
+  const pool2 = await getRawPool();
+  if (!pool2) return [];
+  const r = await pool2.query(
+    `SELECT * FROM "whatsappMessages"
+     WHERE "companyId" = $1 AND "waId" = $2 AND "sessionId" = $3
+     ORDER BY "timestamp" ASC, "id" ASC LIMIT $4`,
+    [companyId, waId, sessionId, limit2]
+  );
+  return r.rows;
+}
+async function listWhatsappSessions(input) {
+  const pool2 = await getRawPool();
+  if (!pool2) return { sessions: [], total: 0 };
+  const r = await pool2.query(
+    `SELECT s.*, c."status", c."stage", c."saleId",
+            COUNT(*) OVER()::int AS "totalCount"
+     FROM "whatsappSessions" s
+     LEFT JOIN "whatsappConversations" c
+       ON c."id" = s."conversationId" AND c."companyId" = s."companyId"
+     WHERE s."companyId" = $1
+       AND ($4::text IS NULL OR CONCAT_WS(' ', s."customerName", s."waId", s."campaignName", s."adHeadline") ILIKE '%' || $4 || '%')
+       AND ($5::text IS NULL OR COALESCE(c."status", 'open') = $5)
+       AND ($6::text IS NULL OR ($6 = 'ads' AND s."campaignName" IS NOT NULL) OR ($6 = 'organic' AND s."campaignName" IS NULL))
+       AND ($7::text IS NULL OR (CASE WHEN c."status" = 'converted' THEN 'converted' ELSE COALESCE(c."stage", 'lead') END) = $7)
+     ORDER BY s."lastMessageAt" DESC, s."id" DESC
+     LIMIT $2 OFFSET $3`,
+    [
+      input.companyId,
+      input.limit,
+      input.offset,
+      input.search || null,
+      input.status || null,
+      input.source || null,
+      input.stage || null
+    ]
+  );
+  return {
+    sessions: r.rows,
+    total: Number(r.rows[0]?.totalCount ?? 0)
+  };
+}
+async function getWhatsappSessionSummary(companyId) {
+  const pool2 = await getRawPool();
+  if (!pool2) return { total: 0, attributed: 0, organic: 0 };
+  const r = await pool2.query(
+    `SELECT COUNT(*)::int AS total,
+            COUNT(*) FILTER (WHERE s."campaignName" IS NOT NULL)::int AS attributed,
+            COUNT(*) FILTER (WHERE s."campaignName" IS NULL)::int AS organic
+     FROM "whatsappSessions" s
+     WHERE s."companyId" = $1`,
+    [companyId]
+  );
+  const row = r.rows[0] ?? {};
+  return {
+    total: Number(row.total ?? 0),
+    attributed: Number(row.attributed ?? 0),
+    organic: Number(row.organic ?? 0)
+  };
 }
 async function deleteWhatsappConfig(companyId) {
   const pool2 = await getRawPool();
@@ -73000,17 +73199,6 @@ REGRAS: m\xE1ximo 4 itens por lista | cada item = 1 frase com o n\xFAmero real |
 }
 var aiAnalysisRouter = router({});
 
-// shared/whatsapp.ts
-var WHATSAPP_EDITABLE_STATUSES = ["open", "pending", "closed"];
-var WHATSAPP_CONVERSATION_STAGES = [
-  "lead",
-  "contacted",
-  "qualified",
-  "negotiation",
-  "lost"
-];
-var WHATSAPP_BOARD_STAGES = [...WHATSAPP_CONVERSATION_STAGES, "converted"];
-
 // server/whatsapp.router.ts
 var GRAPH = "https://graph.facebook.com/v21.0";
 async function exchangeEmbeddedSignupCode(code) {
@@ -73147,6 +73335,30 @@ var whatsappRouter = router({
       summary: await getWhatsappConversationSummary(input.companyId)
     };
   }),
+  listSessions: protectedProcedure.input(external_exports.object({
+    companyId: external_exports.number().int().positive(),
+    limit: external_exports.number().int().min(1).max(100).default(50),
+    offset: external_exports.number().int().min(0).max(1e5).default(0),
+    search: external_exports.string().trim().max(120).optional(),
+    status: external_exports.enum(["open", "pending", "closed", "converted"]).optional(),
+    source: external_exports.enum(["ads", "organic"]).optional(),
+    stage: external_exports.enum([...WHATSAPP_CONVERSATION_STAGES, "converted"]).optional()
+  })).query(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) throw new TRPCError({ code: "FORBIDDEN" });
+    const [result, summary] = await Promise.all([
+      listWhatsappSessions(input),
+      getWhatsappSessionSummary(input.companyId)
+    ]);
+    return {
+      ...result,
+      summary,
+      limit: input.limit,
+      offset: input.offset
+    };
+  }),
   updateConversation: protectedProcedure.input(external_exports.object({
     companyId: external_exports.number().int().positive(),
     conversationId: external_exports.number().int().positive(),
@@ -73184,13 +73396,14 @@ var whatsappRouter = router({
   }),
   listMessages: protectedProcedure.input(external_exports.object({
     companyId: external_exports.number().int().positive(),
-    waId: external_exports.string().min(1)
+    waId: external_exports.string().min(1),
+    sessionId: external_exports.number().int().positive().optional()
   })).query(async ({ input, ctx }) => {
     const userId = ctx.user?.id;
     if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
     const company = await getCompanyById(input.companyId);
     if (!company || company.userId !== userId) throw new TRPCError({ code: "FORBIDDEN" });
-    const messages = await listWhatsappMessages(input.companyId, input.waId);
+    const messages = input.sessionId ? await listWhatsappSessionMessages(input.companyId, input.waId, input.sessionId) : await listWhatsappMessages(input.companyId, input.waId);
     return { messages };
   })
 });
@@ -74888,10 +75101,9 @@ router4.get("/webhook/whatsapp", async (req, res) => {
   return res.sendStatus(403);
 });
 router4.post("/webhook/whatsapp", async (req, res) => {
-  res.sendStatus(200);
   try {
     const body = req.body;
-    if (body?.object !== "whatsapp_business_account") return;
+    if (body?.object !== "whatsapp_business_account") return res.sendStatus(200);
     for (const entry of body.entry ?? []) {
       for (const change of entry.changes ?? []) {
         const value = change.value ?? {};
@@ -74908,56 +75120,55 @@ router4.post("/webhook/whatsapp", async (req, res) => {
           if (c?.wa_id) contactName.set(c.wa_id, c?.profile?.name ?? "");
         }
         for (const msg of messages) {
-          const waId = msg.from;
+          const waId = String(msg.from ?? "");
+          const wamid = String(msg.id ?? "");
+          if (!waId || !wamid) {
+            console.warn("[WhatsApp] Mensagem ignorada: remetente ou ID ausente.");
+            continue;
+          }
           const ts = msg.timestamp ? new Date(Number(msg.timestamp) * 1e3) : /* @__PURE__ */ new Date();
+          if (Number.isNaN(ts.getTime())) {
+            console.warn("[WhatsApp] Mensagem ignorada: timestamp inv\xE1lido.");
+            continue;
+          }
           const text2 = msg.text?.body ?? msg.button?.text ?? msg.interactive?.button_reply?.title ?? `[${msg.type}]`;
           const ref = msg.referral;
           const campaignName = ref?.source_type === "ad" || ref?.source_id ? ref?.headline || ref?.source_id || "An\xFAncio WhatsApp" : null;
-          const conv = await upsertWhatsappConversation({
-            companyId: cfg.companyId,
-            waId,
-            customerName: contactName.get(waId) || null,
-            sourceType: campaignName ? "ctwa" : "organic",
-            campaignName,
-            adId: ref?.source_id ?? null,
-            adHeadline: ref?.headline ?? null,
-            ctwaClid: ref?.ctwa_clid ?? null,
-            sourceUrl: ref?.source_url ?? null,
-            lastMessageText: text2,
-            messageTime: ts
-          }).catch((e) => {
-            console.error("[WhatsApp] upsertWhatsappConversation ERRO:", e?.message, e?.code);
-            return null;
-          });
-          console.log(`[WhatsApp] step:saveMsg fn=${typeof saveWhatsappMessage} wamid=${msg.id} convId=${conv?.id}`);
           try {
-            await saveWhatsappMessage({
-              conversationId: conv?.id ?? null,
+            const saved = await recordWhatsappInboundMessage({
               companyId: cfg.companyId,
               waId,
-              wamid: msg.id ?? null,
-              direction: "inbound",
+              wamid,
+              customerName: contactName.get(waId) || null,
               type: msg.type ?? "text",
               text: text2,
-              timestamp: ts
+              timestamp: ts,
+              campaignName,
+              adId: ref?.source_id ?? null,
+              adHeadline: ref?.headline ?? null,
+              ctwaClid: ref?.ctwa_clid ?? null,
+              sourceUrl: ref?.source_url ?? null
             });
-            console.log(`[WhatsApp] step:saveMsg OK`);
-          } catch (se) {
-            console.error("[WhatsApp] saveWhatsappMessage ERRO:", se?.message, se?.code, se?.detail);
+            if (saved.duplicate) continue;
+            await logWebhookEvent({
+              companyId: cfg.companyId,
+              platform: "whatsapp",
+              success: true,
+              trackingFound: !!campaignName,
+              message: campaignName ? `Atendimento via an\xFAncio: ${campaignName}` : "Atendimento org\xE2nico registrado",
+              payloadSummary: text2?.slice(0, 200) ?? null
+            });
+          } catch (error46) {
+            console.error("[WhatsApp] Falha ao registrar mensagem/atendimento:", error46?.message || error46);
+            throw error46;
           }
-          await logWebhookEvent({
-            companyId: cfg.companyId,
-            platform: "whatsapp",
-            success: true,
-            trackingFound: !!campaignName,
-            message: campaignName ? `Conversa de ${waId} via an\xFAncio: ${campaignName}` : `Conversa de ${waId} (org\xE2nica)`,
-            payloadSummary: text2?.slice(0, 200) ?? null
-          });
         }
       }
     }
+    return res.sendStatus(200);
   } catch (err) {
     console.error("[WhatsApp] Erro processando webhook:", err?.stack?.split("\n").slice(0, 2).join(" | ") || err?.message || String(err));
+    return res.sendStatus(500);
   }
 });
 var whatsappRoutes_default = router4;

@@ -175,6 +175,34 @@ export const whatsappRouter = router({
       };
     }),
 
+  listSessions: protectedProcedure
+    .input(z.object({
+      companyId: z.number().int().positive(),
+      limit: z.number().int().min(1).max(100).default(50),
+      offset: z.number().int().min(0).max(100000).default(0),
+      search: z.string().trim().max(120).optional(),
+      status: z.enum(["open", "pending", "closed", "converted"]).optional(),
+      source: z.enum(["ads", "organic"]).optional(),
+      stage: z.enum([...WHATSAPP_CONVERSATION_STAGES, "converted"]).optional(),
+    }))
+    .query(async ({ input, ctx }) => {
+      const userId = ctx.user?.id;
+      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+      const company = await db.getCompanyById(input.companyId);
+      if (!company || company.userId !== userId) throw new TRPCError({ code: "FORBIDDEN" });
+
+      const [result, summary] = await Promise.all([
+        db.listWhatsappSessions(input),
+        db.getWhatsappSessionSummary(input.companyId),
+      ]);
+      return {
+        ...result,
+        summary,
+        limit: input.limit,
+        offset: input.offset,
+      };
+    }),
+
   updateConversation: protectedProcedure
     .input(z.object({
       companyId: z.number().int().positive(),
@@ -221,6 +249,7 @@ export const whatsappRouter = router({
     .input(z.object({
       companyId: z.number().int().positive(),
       waId: z.string().min(1),
+      sessionId: z.number().int().positive().optional(),
     }))
     .query(async ({ input, ctx }) => {
       const userId = ctx.user?.id;
@@ -228,7 +257,9 @@ export const whatsappRouter = router({
       const company = await db.getCompanyById(input.companyId);
       if (!company || company.userId !== userId) throw new TRPCError({ code: "FORBIDDEN" });
 
-      const messages = await db.listWhatsappMessages(input.companyId, input.waId);
+      const messages = input.sessionId
+        ? await db.listWhatsappSessionMessages(input.companyId, input.waId, input.sessionId)
+        : await db.listWhatsappMessages(input.companyId, input.waId);
       return { messages };
     }),
 });

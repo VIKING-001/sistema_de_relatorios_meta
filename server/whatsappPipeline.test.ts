@@ -3,6 +3,8 @@ import {
   filterWhatsappConversations,
   getWhatsappBoardStage,
   groupWhatsappConversationsByStage,
+  isWithinWhatsappSessionWindow,
+  WHATSAPP_SESSION_IDLE_MS,
 } from "../shared/whatsapp";
 
 const conversations = [
@@ -31,5 +33,20 @@ describe("WhatsApp conversation pipeline helpers", () => {
     expect(groups.qualified.map((row) => row.id)).toEqual([2]);
     expect(groups.converted.map((row) => row.id)).toEqual([3]);
     expect(Object.values(groups).flat()).toHaveLength(conversations.length);
+  });
+
+  it("keeps messages in one attendance through the 24-hour inactivity boundary", () => {
+    const start = new Date("2026-10-01T10:00:00.000Z");
+    const last = new Date("2026-10-01T12:00:00.000Z");
+    expect(isWithinWhatsappSessionWindow(start, last, new Date(last.getTime() + WHATSAPP_SESSION_IDLE_MS))).toBe(true);
+    expect(isWithinWhatsappSessionWindow(start, last, new Date(last.getTime() + WHATSAPP_SESSION_IDLE_MS + 1))).toBe(false);
+  });
+
+  it("accepts an out-of-order webhook timestamp when it falls inside the attendance window", () => {
+    const start = new Date("2026-10-01T10:00:00.000Z");
+    const last = new Date("2026-10-01T12:00:00.000Z");
+    expect(isWithinWhatsappSessionWindow(start, last, new Date("2026-10-01T11:00:00.000Z"))).toBe(true);
+    expect(isWithinWhatsappSessionWindow(start, last, new Date(start.getTime() - WHATSAPP_SESSION_IDLE_MS))).toBe(true);
+    expect(isWithinWhatsappSessionWindow(start, last, new Date(start.getTime() - WHATSAPP_SESSION_IDLE_MS - 1))).toBe(false);
   });
 });

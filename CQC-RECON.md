@@ -53,7 +53,7 @@ Objetivo: registrar padroes funcionais que podem inspirar o Sistema de Relatorio
 | Venda manual e separacao de canal site/WhatsApp | Existe | Preservar; canal da venda nao substitui origem da campanha |
 | WhatsApp: receber e ler mensagens, atribuicao CTWA e vinculo de venda | Existe parcialmente; mensagens recebidas ficam no historico por telefone | Nao afirmar que envia/responde mensagens pelo painel |
 | Etapa/status por contato e quadro | Implementados nesta entrega como primeira versao local | Dados antigos recebem etapa padrao `Lead`; conversoes por venda vinculada ficam bloqueadas como estado derivado |
-| Historico por sessao, nao apenas por telefone | Nao existe: o modelo atual consolida um registro por empresa + telefone | Lacuna estrutural; nao reportar contatos unicos como quantidade de sessoes |
+| Historico por sessao, nao apenas por telefone | Implementado para novas mensagens: atendimento novo apos 24h sem mensagem recebida; mensagens antigas continuam no historico do contato e nao sao reclassificadas | A janela e uma regra de agrupamento operacional, nao uma afirmacao sobre cobranca Meta; etapas/status continuam no nivel do contato |
 | Tempos de primeira resposta/tempo entre mensagens | Nao confiaveis: o fluxo atual nao garante registro completo das mensagens do atendente | So implementar apos capturar eventos inbound e outbound com timestamps |
 | Funil e segmentacao temporal de conversas | Parcial: ha dados de mensagem/CTWA, mas faltam sessao e eventos completos de etapa | Fase futura, apos modelo de sessoes |
 | CAPI Meta / conversoes offline Google | Nao identificado no fluxo atual do nosso app | Integracao futura; depende de requisitos e permissao do usuario |
@@ -70,13 +70,17 @@ Objetivo: registrar padroes funcionais que podem inspirar o Sistema de Relatorio
 - Mudancas de status/etapa autorizadas por empresa e validadas no servidor.
 - Conversao por venda vinculada e estado derivado, sem permitir que a interface sobrescreva essa conversao.
 - Resumo calculado em SQL sobre o historico inteiro, nao somente sobre os 200 contatos carregados na lista.
-- A interface informa que a lista/quadro mostram somente os 200 contatos mais recentes, pois o sistema ainda nao tem paginacao.
+- A interface informa que a lista/quadro de contatos mostram somente os 200 mais recentes; atendimentos novos tem paginacao de 50 por pagina.
+- Novas mensagens recebidas sao deduplicadas por `wamid` e gravadas com sessao e contato na mesma transacao; retentativas nao incrementam contagens novamente.
+- O webhook confirma sucesso somente apos persistir; falhas retornam erro para permitir retry sem duplicar o processamento.
+- Visao separada de atendimentos com filtros no servidor e paginas de 50; o historico antigo continua acessivel na visao de contatos.
+- A janela de 24h agrupa mensagens recebidas para separar atendimentos; mensagens enviadas pela equipe ainda nao sao capturadas de forma confiavel e nao alimentam metricas de resposta.
 - Testes unitarios para filtro, agrupamento e precedencia de conversao.
 
 ## Proximas fases recomendadas
 
-1. Modelar sessoes de conversa separadas por janela de atendimento, preservando o historico atual por telefone.
-2. Registrar eventos inbound e outbound de forma consistente; so entao calcular resposta inicial, ritmo e SLA.
-3. Adicionar paginacao/filtragem no servidor e tags por empresa.
-4. Criar webhooks de saida com assinatura, retentativas, idempotencia e tela de entregas.
-5. Avaliar CAPI/Google offline e captura de formularios como integracoes independentes, com consentimento, configuracao e diagnostico.
+1. Capturar eventos outbound (API de envio ou callbacks de status que tragam evidencia suficiente), com correlacao por `wamid`; so entao calcular resposta inicial, ritmo e SLA.
+2. Adicionar tags por empresa e paginacao/filtragem no servidor tambem para a lista de contatos.
+3. Criar webhooks de saida com assinatura, retentativas, idempotencia e tela de entregas.
+4. Avaliar CAPI/Google offline e captura de formularios como integracoes independentes, com consentimento, configuracao e diagnostico.
+5. Avaliar IA de qualificacao/transcricao separada da analise de relatorios, com controle de consentimento e custo.

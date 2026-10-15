@@ -1,4 +1,6 @@
 export const WHATSAPP_EDITABLE_STATUSES = ["open", "pending", "closed"] as const;
+export const WHATSAPP_SESSION_IDLE_HOURS = 24;
+export const WHATSAPP_SESSION_IDLE_MS = WHATSAPP_SESSION_IDLE_HOURS * 60 * 60 * 1000;
 export const WHATSAPP_CONVERSATION_STAGES = [
   "lead",
   "contacted",
@@ -28,6 +30,20 @@ export type WhatsappConversationStage = (typeof WHATSAPP_CONVERSATION_STAGES)[nu
 
 export const WHATSAPP_BOARD_STAGES = [...WHATSAPP_CONVERSATION_STAGES, "converted"] as const;
 export type WhatsappBoardStage = (typeof WHATSAPP_BOARD_STAGES)[number];
+
+export function isWithinWhatsappSessionWindow(
+  startedAt: Date | string,
+  lastMessageAt: Date | string,
+  messageAt: Date | string,
+): boolean {
+  const start = new Date(startedAt).getTime();
+  const last = new Date(lastMessageAt).getTime();
+  const message = new Date(messageAt).getTime();
+  if (![start, last, message].every(Number.isFinite)) return false;
+  if (message >= start && message <= last) return true;
+  if (message > last) return message - last <= WHATSAPP_SESSION_IDLE_MS;
+  return start - message <= WHATSAPP_SESSION_IDLE_MS;
+}
 
 export interface WhatsappConversationSummaryItem {
   status?: string | null;
