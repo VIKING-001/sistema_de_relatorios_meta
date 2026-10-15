@@ -4,6 +4,7 @@ import {
   BarChart3,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
   Eye,
   Gauge,
   MessageCircle,
@@ -137,7 +138,8 @@ function metricsFor(report: PortalReport): MetricValue {
     messages: m?.messagesInitiated ?? 0,
     purchases,
     sitePurchases: m?.sitePurchases == null ? null : Number(m.sitePurchases),
-    whatsappPurchases: m?.whatsappPurchases == null ? null : Number(m.whatsappPurchases),
+    whatsappPurchases:
+      m?.whatsappPurchases == null ? null : Number(m.whatsappPurchases),
     revenue,
     roas: m && m.totalSpent > 0 ? revenue / m.totalSpent : 0,
     cpa: purchases > 0 ? (m?.totalSpent ?? 0) / purchases : 0,
@@ -213,6 +215,115 @@ function SectionHeading({
   );
 }
 
+function PeriodFunnel({
+  report,
+  compact = false,
+}: {
+  report: PortalReport;
+  compact?: boolean;
+}) {
+  const values = metricsFor(report);
+  const hasData =
+    [
+      values.impressions,
+      values.reach,
+      values.clicks,
+      values.visits,
+      values.messages,
+      values.purchases,
+    ].filter(value => value > 0).length >= 2;
+
+  return (
+    <section aria-labelledby={`funnel-${report.id}`}>
+      <SectionHeading
+        id={`funnel-${report.id}`}
+        icon={Target}
+        title="Funil de marketing"
+        description="Acompanhe a jornada do público, das exibições até as conversas e compras registradas."
+      />
+      {hasData ? (
+        <FunnelChart
+          dark
+          compact={compact}
+          totalImpressions={values.impressions}
+          totalReach={values.reach}
+          totalClicks={values.clicks}
+          instagramProfileVisits={values.visits}
+          messagesInitiated={values.messages}
+          purchases={values.purchases}
+          totalSpent={values.spend}
+          costPerClick={values.cpc}
+          costPerProfileVisit={values.costPerVisit}
+          costPerMessage={values.costPerMessage}
+          costPerPurchase={values.cpa}
+          purchaseValue={values.revenue}
+        />
+      ) : (
+        <div
+          className="rounded-xl border border-white/10 bg-[#111820] p-4 text-sm leading-6 text-[#c4cbd2]"
+          role="status"
+        >
+          Ainda não há dados suficientes para desenhar o funil deste período.
+          Quando pelo menos duas etapas tiverem volume registrado, o gráfico
+          aparecerá aqui.
+        </div>
+      )}
+      <p className="mt-2 text-xs leading-5 text-[#a4afbb]">
+        As etapas mostram os volumes registrados em cada indicador. Uma mesma
+        pessoa pode aparecer em mais de uma etapa.
+      </p>
+    </section>
+  );
+}
+
+function PeriodAnalysis({ report }: { report: PortalReport }) {
+  const values = metricsFor(report);
+
+  if (!report.metrics) {
+    return (
+      <section
+        className="rounded-xl border border-amber-300/20 bg-amber-300/5 p-4"
+        aria-label={`Análise de performance: ${report.title}`}
+        role="status"
+      >
+        <h3 className="font-semibold text-white">
+          Análise indisponível para este período
+        </h3>
+        <p className="mt-1 text-sm leading-6 text-[#c4cbd2]">
+          Este relatório ainda não tem métricas registradas.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section aria-label={`Análise de performance: ${report.title}`}>
+      <ConsultiveReport
+        periodo={report.title}
+        aiAnalysis={report.aiAnalysis}
+        metrics={{
+          ctr: values.ctr,
+          cpm: values.cpm,
+          totalReach: values.reach,
+          totalImpressions: values.impressions,
+          totalSpent: values.spend,
+          totalClicks: values.clicks,
+          costPerClick: values.cpc,
+          videoRetentionRate: values.videoRetention,
+          newInstagramFollowers: values.followers,
+          messagesInitiated: values.messages,
+          instagramProfileVisits: values.visits,
+          costPerProfileVisit: values.costPerVisit,
+          purchases: values.purchases,
+          purchaseValue: values.revenue,
+          costPerPurchase: values.cpa,
+          costPerMessage: values.costPerMessage,
+        }}
+      />
+    </section>
+  );
+}
+
 function PeriodPerformance({
   report,
   compact = false,
@@ -223,15 +334,6 @@ function PeriodPerformance({
   const values = metricsFor(report);
   const metrics = report.metrics;
   const hasSales = values.purchases > 0 || values.revenue > 0;
-  const funnelHasData =
-    [
-      values.impressions,
-      values.reach,
-      values.clicks,
-      values.visits,
-      values.messages,
-      values.purchases,
-    ].filter(value => value > 0).length >= 2;
   const missing = !metrics;
   const sectionSpace = compact ? "space-y-6" : "space-y-9";
 
@@ -300,40 +402,36 @@ function PeriodPerformance({
                 </span>
               )}
             </div>
-            <div
-              className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${compact ? "2xl:grid-cols-2" : "xl:grid-cols-4"}`}
-            >
+            <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
               <MetricCard
                 icon={Wallet}
                 label="Investimento em anúncios"
                 value={formatCurrency(values.spend)}
                 detail="Total aplicado no período"
                 tone="gold"
-                compact={compact}
-              />
-              <MetricCard
-                icon={MessageCircle}
-                label="Conversas iniciadas"
-                value={formatNumber(values.messages)}
-                detail={
-                  values.costPerMessage > 0
-                    ? `${formatCurrency(values.costPerMessage)} por conversa`
-                    : "Custo por conversa sem referência"
-                }
-                tone="pink"
-                compact={compact}
+                compact
               />
               <MetricCard
                 icon={ShoppingBag}
                 label="Compras registradas"
                 value={formatNumber(values.purchases)}
                 detail={
-                  hasSales
-                    ? formatCurrency(values.revenue) + " em faturamento"
-                    : "Nenhuma compra registrada neste período"
+                  hasSales ? "Compras no período" : "Nenhuma compra registrada"
                 }
                 tone="green"
-                compact={compact}
+                compact
+              />
+              <MetricCard
+                icon={Wallet}
+                label="Faturamento"
+                value={formatCurrency(values.revenue)}
+                detail={
+                  values.trackedSales
+                    ? "Inclui vendas registradas no sistema"
+                    : "Valor informado no relatório"
+                }
+                tone="green"
+                compact
               />
               <MetricCard
                 icon={Gauge}
@@ -349,283 +447,247 @@ function PeriodPerformance({
                     : "Aguardando faturamento registrado"
                 }
                 tone="blue"
-                compact={compact}
+                compact
               />
             </div>
           </section>
 
-          <section aria-labelledby={`visibility-${report.id}`}>
-            <SectionHeading
-              id={`visibility-${report.id}`}
-              icon={Eye}
-              title="Alcance e interesse"
-              description="Quantas pessoas foram alcançadas e como interagiram com os anúncios."
-            />
-            <div
-              className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${compact ? "2xl:grid-cols-2" : "xl:grid-cols-3"}`}
-            >
-              <MetricCard
-                icon={Users}
-                label="Pessoas alcançadas"
-                value={formatNumber(values.reach)}
-                compact={compact}
-              />
-              <MetricCard
-                icon={Eye}
-                label="Exibições dos anúncios"
-                value={formatNumber(values.impressions)}
-                compact={compact}
-              />
-              <MetricCard
-                icon={MousePointerClick}
-                label="Cliques"
-                value={formatNumber(values.clicks)}
-                compact={compact}
-              />
-              <MetricCard
-                icon={Target}
-                label="Taxa de cliques (CTR)"
-                value={
-                  values.ctr > 0
-                    ? formatPercentage(values.ctr)
-                    : "Sem referência"
-                }
-                detail="Percentual de impressões que geraram clique"
-                compact={compact}
-              />
-              <MetricCard
-                icon={Wallet}
-                label="Custo por clique (CPC)"
-                value={
-                  values.cpc > 0 ? formatCurrency(values.cpc) : "Sem referência"
-                }
-                detail="Calculado pelo investimento e cliques"
-                compact={compact}
-              />
-              <MetricCard
-                icon={BarChart3}
-                label="Custo por mil exibições (CPM)"
-                value={
-                  values.cpm > 0 ? formatCurrency(values.cpm) : "Sem referência"
-                }
-                detail="Calculado pelo investimento e impressões"
-                compact={compact}
-              />
-            </div>
-          </section>
-
-          <section aria-labelledby={`conversations-${report.id}`}>
-            <SectionHeading
-              id={`conversations-${report.id}`}
-              icon={MessageCircle}
-              title="Visitas e conversas"
-              description="Ações que aproximam o público da empresa e geram oportunidades."
-            />
-            <div
-              className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${compact ? "2xl:grid-cols-2" : "xl:grid-cols-3"}`}
-            >
-              <MetricCard
-                icon={Eye}
-                label="Visitas ao perfil"
-                value={formatNumber(values.visits)}
-                compact={compact}
-              />
-              <MetricCard
-                icon={Wallet}
-                label="Custo por visita"
-                value={
-                  values.costPerVisit > 0
-                    ? formatCurrency(values.costPerVisit)
-                    : "Sem referência"
-                }
-                detail="Calculado quando há visitas registradas"
-                compact={compact}
-              />
-              <MetricCard
-                icon={Users}
-                label="Novos seguidores"
-                value={formatNumber(values.followers)}
-                compact={compact}
-              />
-              <MetricCard
-                icon={MessageCircle}
-                label="Mensagens iniciadas"
-                value={formatNumber(values.messages)}
-                compact={compact}
-              />
-              <MetricCard
-                icon={Wallet}
-                label="Custo por mensagem"
-                value={
-                  values.costPerMessage > 0
-                    ? formatCurrency(values.costPerMessage)
-                    : "Sem referência"
-                }
-                detail="Investimento dividido pelas conversas"
-                tone="pink"
-                compact={compact}
-              />
-              <MetricCard
-                icon={BarChart3}
-                label="Retenção de vídeo"
-                value={
-                  values.videoRetention > 0
-                    ? formatPercentage(values.videoRetention)
-                    : "Sem dado"
-                }
-                compact={compact}
-              />
-            </div>
-          </section>
-
-          <section aria-labelledby={`sales-${report.id}`}>
-            <SectionHeading
-              id={`sales-${report.id}`}
-              icon={ShoppingBag}
-              title="Vendas e retorno"
-              description="Compras e faturamento associados a este relatório."
-            />
-            <div
-              className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${compact ? "2xl:grid-cols-2" : "xl:grid-cols-4"}`}
-            >
-              <MetricCard
-                icon={ShoppingBag}
-                label="Compras"
-                value={formatNumber(values.purchases)}
-                detail={
-                  values.trackedSales
-                    ? "Registradas no sistema"
-                    : "Conversões informadas no relatório"
-                }
-                tone="green"
-                compact={compact}
-              />
-              <MetricCard
-                icon={Wallet}
-                label="Faturamento"
-                value={formatCurrency(values.revenue)}
-                detail={
-                  values.revenue > 0
-                    ? "Valor total registrado"
-                    : "Nenhum faturamento registrado"
-                }
-                tone="green"
-                compact={compact}
-              />
-              <MetricCard
-                icon={Target}
-                label="Custo médio por compra"
-                value={
-                  values.cpa > 0 ? formatCurrency(values.cpa) : "Sem referência"
-                }
-                detail="Investimento dividido pelas compras"
-                compact={compact}
-              />
-              <MetricCard
-                icon={Gauge}
-                label="Retorno sobre anúncios (ROAS)"
-                value={
-                  values.roas > 0
-                    ? `${values.roas.toFixed(2)}x`
-                    : "Sem referência"
-                }
-                detail="Faturamento dividido pelo investimento"
-                tone="green"
-                compact={compact}
-              />
-            </div>
-          </section>
-
-          {(values.sitePurchases !== null || values.whatsappPurchases !== null) && (
+          {(values.sitePurchases !== null ||
+            values.whatsappPurchases !== null) && (
             <section aria-label="Vendas por canal">
               <SectionHeading
                 icon={ShoppingBag}
-                title="Vendas por canal"
-                description="Contagem informada no relatório; não altera o total de compras nem as vendas rastreadas."
+                title="De onde vieram as vendas"
+                description="Separação informada no relatório; não altera o total de compras."
               />
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-2 gap-3">
                 <MetricCard
                   icon={ShoppingBag}
                   label="Vendas pelo site"
-                  value={values.sitePurchases === null ? "Não informado" : formatNumber(values.sitePurchases)}
+                  value={
+                    values.sitePurchases === null
+                      ? "Não informado"
+                      : formatNumber(values.sitePurchases)
+                  }
                   tone="blue"
-                  compact={compact}
+                  compact
                 />
                 <MetricCard
                   icon={MessageCircle}
                   label="Vendas pelo WhatsApp"
-                  value={values.whatsappPurchases === null ? "Não informado" : formatNumber(values.whatsappPurchases)}
+                  value={
+                    values.whatsappPurchases === null
+                      ? "Não informado"
+                      : formatNumber(values.whatsappPurchases)
+                  }
                   tone="pink"
-                  compact={compact}
+                  compact
                 />
               </div>
             </section>
           )}
 
-          <section aria-labelledby={`funnel-${report.id}`}>
-            <SectionHeading
-              id={`funnel-${report.id}`}
-              icon={Target}
-              title="Funil de marketing"
-              description="Acompanhe a jornada do público, das exibições até as conversas e compras registradas."
-            />
-            {funnelHasData ? (
-              <FunnelChart
-                dark
-                compact={compact}
-                totalImpressions={values.impressions}
-                totalReach={values.reach}
-                totalClicks={values.clicks}
-                instagramProfileVisits={values.visits}
-                messagesInitiated={values.messages}
-                purchases={values.purchases}
-                totalSpent={values.spend}
-                costPerClick={values.cpc}
-                costPerProfileVisit={values.costPerVisit}
-                costPerMessage={values.costPerMessage}
-                costPerPurchase={values.cpa}
-                purchaseValue={values.revenue}
-              />
-            ) : (
-              <div
-                className="rounded-xl border border-white/10 bg-[#111820] p-4 text-sm leading-6 text-[#c4cbd2]"
-                role="status"
-              >
-                Ainda não há dados suficientes para desenhar o funil deste
-                período. Quando pelo menos duas etapas tiverem volume
-                registrado, o gráfico aparecerá aqui.
-              </div>
-            )}
-            <p className="mt-2 text-xs leading-5 text-[#a4afbb]">
-              As etapas mostram os volumes registrados em cada indicador. Uma
-              mesma pessoa pode aparecer em mais de uma etapa.
-            </p>
-          </section>
+          <PeriodFunnel report={report} compact />
+          <PeriodAnalysis report={report} />
 
-          <section aria-label="Análise de performance">
-            <ConsultiveReport
-              periodo={report.title}
-              aiAnalysis={report.aiAnalysis}
-              metrics={{
-                ctr: values.ctr,
-                cpm: values.cpm,
-                totalReach: values.reach,
-                totalImpressions: values.impressions,
-                totalSpent: values.spend,
-                totalClicks: values.clicks,
-                costPerClick: values.cpc,
-                videoRetentionRate: values.videoRetention,
-                newInstagramFollowers: values.followers,
-                messagesInitiated: values.messages,
-                instagramProfileVisits: values.visits,
-                costPerProfileVisit: values.costPerVisit,
-                purchases: values.purchases,
-                purchaseValue: values.revenue,
-                costPerPurchase: values.cpa,
-                costPerMessage: values.costPerMessage,
-              }}
-            />
-          </section>
+          <details className="group mt-7 border-y border-white/10">
+            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-[#dce2e6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffb81a]">
+              Ver outras métricas do período
+              <ChevronDown
+                className="h-4 w-4 shrink-0 text-[#ffcf62] transition-transform group-open:rotate-180"
+                aria-hidden="true"
+              />
+            </summary>
+            <div className="space-y-8 pb-5 pt-2">
+              <section aria-labelledby={`visibility-${report.id}`}>
+                <SectionHeading
+                  id={`visibility-${report.id}`}
+                  icon={Eye}
+                  title="Alcance e interesse"
+                  description="Quantas pessoas foram alcançadas e como interagiram com os anúncios."
+                />
+                <div
+                  className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${compact ? "2xl:grid-cols-2" : "xl:grid-cols-3"}`}
+                >
+                  <MetricCard
+                    icon={Users}
+                    label="Pessoas alcançadas"
+                    value={formatNumber(values.reach)}
+                    compact={compact}
+                  />
+                  <MetricCard
+                    icon={Eye}
+                    label="Exibições dos anúncios"
+                    value={formatNumber(values.impressions)}
+                    compact={compact}
+                  />
+                  <MetricCard
+                    icon={MousePointerClick}
+                    label="Cliques"
+                    value={formatNumber(values.clicks)}
+                    compact={compact}
+                  />
+                  <MetricCard
+                    icon={Target}
+                    label="Taxa de cliques (CTR)"
+                    value={
+                      values.ctr > 0
+                        ? formatPercentage(values.ctr)
+                        : "Sem referência"
+                    }
+                    detail="Percentual de impressões que geraram clique"
+                    compact={compact}
+                  />
+                  <MetricCard
+                    icon={Wallet}
+                    label="Custo por clique (CPC)"
+                    value={
+                      values.cpc > 0
+                        ? formatCurrency(values.cpc)
+                        : "Sem referência"
+                    }
+                    detail="Calculado pelo investimento e cliques"
+                    compact={compact}
+                  />
+                  <MetricCard
+                    icon={BarChart3}
+                    label="Custo por mil exibições (CPM)"
+                    value={
+                      values.cpm > 0
+                        ? formatCurrency(values.cpm)
+                        : "Sem referência"
+                    }
+                    detail="Calculado pelo investimento e impressões"
+                    compact={compact}
+                  />
+                </div>
+              </section>
+
+              <section aria-labelledby={`conversations-${report.id}`}>
+                <SectionHeading
+                  id={`conversations-${report.id}`}
+                  icon={MessageCircle}
+                  title="Visitas e conversas"
+                  description="Ações que aproximam o público da empresa e geram oportunidades."
+                />
+                <div
+                  className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${compact ? "2xl:grid-cols-2" : "xl:grid-cols-3"}`}
+                >
+                  <MetricCard
+                    icon={Eye}
+                    label="Visitas ao perfil"
+                    value={formatNumber(values.visits)}
+                    compact={compact}
+                  />
+                  <MetricCard
+                    icon={Wallet}
+                    label="Custo por visita"
+                    value={
+                      values.costPerVisit > 0
+                        ? formatCurrency(values.costPerVisit)
+                        : "Sem referência"
+                    }
+                    detail="Calculado quando há visitas registradas"
+                    compact={compact}
+                  />
+                  <MetricCard
+                    icon={Users}
+                    label="Novos seguidores"
+                    value={formatNumber(values.followers)}
+                    compact={compact}
+                  />
+                  <MetricCard
+                    icon={MessageCircle}
+                    label="Mensagens iniciadas"
+                    value={formatNumber(values.messages)}
+                    compact={compact}
+                  />
+                  <MetricCard
+                    icon={Wallet}
+                    label="Custo por mensagem"
+                    value={
+                      values.costPerMessage > 0
+                        ? formatCurrency(values.costPerMessage)
+                        : "Sem referência"
+                    }
+                    detail="Investimento dividido pelas conversas"
+                    tone="pink"
+                    compact={compact}
+                  />
+                  <MetricCard
+                    icon={BarChart3}
+                    label="Retenção de vídeo"
+                    value={
+                      values.videoRetention > 0
+                        ? formatPercentage(values.videoRetention)
+                        : "Sem dado"
+                    }
+                    compact={compact}
+                  />
+                </div>
+              </section>
+
+              <section aria-labelledby={`sales-${report.id}`}>
+                <SectionHeading
+                  id={`sales-${report.id}`}
+                  icon={ShoppingBag}
+                  title="Vendas e retorno"
+                  description="Compras e faturamento associados a este relatório."
+                />
+                <div
+                  className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${compact ? "2xl:grid-cols-2" : "xl:grid-cols-4"}`}
+                >
+                  <MetricCard
+                    icon={ShoppingBag}
+                    label="Compras"
+                    value={formatNumber(values.purchases)}
+                    detail={
+                      values.trackedSales
+                        ? "Registradas no sistema"
+                        : "Conversões informadas no relatório"
+                    }
+                    tone="green"
+                    compact={compact}
+                  />
+                  <MetricCard
+                    icon={Wallet}
+                    label="Faturamento"
+                    value={formatCurrency(values.revenue)}
+                    detail={
+                      values.revenue > 0
+                        ? "Valor total registrado"
+                        : "Nenhum faturamento registrado"
+                    }
+                    tone="green"
+                    compact={compact}
+                  />
+                  <MetricCard
+                    icon={Target}
+                    label="Custo médio por compra"
+                    value={
+                      values.cpa > 0
+                        ? formatCurrency(values.cpa)
+                        : "Sem referência"
+                    }
+                    detail="Investimento dividido pelas compras"
+                    compact={compact}
+                  />
+                  <MetricCard
+                    icon={Gauge}
+                    label="Retorno sobre anúncios (ROAS)"
+                    value={
+                      values.roas > 0
+                        ? `${values.roas.toFixed(2)}x`
+                        : "Sem referência"
+                    }
+                    detail="Faturamento dividido pelo investimento"
+                    tone="green"
+                    compact={compact}
+                  />
+                </div>
+              </section>
+            </div>
+          </details>
         </>
       )}
     </article>
@@ -681,15 +743,6 @@ const comparisonRows: Array<{
     format: formatCurrency,
     direction: "neutral",
   },
-  { label: "Pessoas alcançadas", key: "reach", format: formatNumber },
-  { label: "Cliques", key: "clicks", format: formatNumber },
-  { label: "Conversas iniciadas", key: "messages", format: formatNumber },
-  {
-    label: "Custo por conversa",
-    key: "costPerMessage",
-    format: value => (value > 0 ? formatCurrency(value) : "Sem referência"),
-    direction: "lower",
-  },
   { label: "Compras registradas", key: "purchases", format: formatNumber },
   {
     label: "Vendas pelo site",
@@ -707,6 +760,15 @@ const comparisonRows: Array<{
     key: "roas",
     format: value => (value > 0 ? `${value.toFixed(2)}x` : "Sem referência"),
   },
+  { label: "Pessoas alcançadas", key: "reach", format: formatNumber },
+  { label: "Cliques", key: "clicks", format: formatNumber },
+  { label: "Conversas iniciadas", key: "messages", format: formatNumber },
+  {
+    label: "Custo por conversa",
+    key: "costPerMessage",
+    format: value => (value > 0 ? formatCurrency(value) : "Sem referência"),
+    direction: "lower",
+  },
 ];
 
 function CompareSummary({
@@ -718,6 +780,41 @@ function CompareSummary({
 }) {
   const before = metricsFor(previous);
   const after = metricsFor(current);
+  const renderRows = (rows: typeof comparisonRows) =>
+    rows.map(row => {
+      const oldValue = before[row.key];
+      const newValue = after[row.key];
+      return (
+        <div
+          key={row.key}
+          className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(110px,auto)_minmax(110px,auto)_minmax(130px,auto)] sm:px-5"
+        >
+          <span className="text-sm text-[#c4cbd2]">{row.label}</span>
+          <span className="text-right text-xs tabular-nums text-[#a4afbb] sm:text-sm">
+            <span className="sm:hidden">Anterior · </span>
+            {oldValue == null ? "Não informado" : row.format(oldValue)}
+          </span>
+          <span className="text-right text-sm font-semibold tabular-nums text-white">
+            <span className="font-normal text-[#a4afbb] sm:hidden">
+              Atual ·{" "}
+            </span>
+            {newValue == null ? "Não informado" : row.format(newValue)}
+          </span>
+          <span className="col-span-2 text-right text-xs sm:col-span-1">
+            <span className="text-[#a4afbb] sm:hidden">Variação · </span>
+            {oldValue == null || newValue == null ? (
+              <span className="text-[#a4afbb]">Sem base de comparação</span>
+            ) : (
+              <Variation
+                before={oldValue}
+                after={newValue}
+                direction={row.direction}
+              />
+            )}
+          </span>
+        </div>
+      );
+    });
 
   return (
     <section
@@ -729,8 +826,8 @@ function CompareSummary({
           Resumo da comparação
         </h3>
         <p className="mt-1 text-sm text-[#a4afbb]">
-          A mudança do período anterior para o atual, sem esconder os relatórios
-          completos logo abaixo.
+          Compare investimento, compras, faturamento e retorno. Os demais
+          indicadores continuam disponíveis abaixo.
         </p>
         <div className="mt-4 hidden grid-cols-[minmax(0,1fr)_minmax(110px,auto)_minmax(110px,auto)_minmax(130px,auto)] gap-3 text-[11px] font-medium uppercase tracking-wide text-[#a4afbb] sm:grid">
           <span>Indicador</span>
@@ -740,37 +837,20 @@ function CompareSummary({
         </div>
       </div>
       <div className="divide-y divide-white/8">
-        {comparisonRows.map(row => {
-          const oldValue = before[row.key];
-          const newValue = after[row.key];
-          return (
-            <div
-              key={row.key}
-              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(110px,auto)_minmax(110px,auto)_minmax(130px,auto)] sm:px-5"
-            >
-              <span className="text-sm text-[#c4cbd2]">{row.label}</span>
-              <span className="text-right text-xs tabular-nums text-[#a4afbb] sm:text-sm">
-                <span className="sm:hidden">Anterior · </span>
-                {oldValue == null ? "Não informado" : row.format(oldValue)}
-              </span>
-              <span className="text-right text-sm font-semibold tabular-nums text-white">
-                <span className="font-normal text-[#a4afbb] sm:hidden">
-                  Atual ·{" "}
-                </span>
-                {newValue == null ? "Não informado" : row.format(newValue)}
-              </span>
-              <span className="col-span-2 text-right text-xs sm:col-span-1">
-                <span className="sm:hidden text-[#a4afbb]">Variação · </span>
-                {oldValue == null || newValue == null ? (
-                  <span className="text-[#a4afbb]">Sem base de comparação</span>
-                ) : (
-                  <Variation before={oldValue} after={newValue} direction={row.direction} />
-                )}
-              </span>
-            </div>
-          );
-        })}
+        {renderRows(comparisonRows.slice(0, 6))}
       </div>
+      <details className="group border-t border-white/8">
+        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 text-sm font-medium text-[#c4cbd2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#ffb81a] sm:px-5">
+          Ver outras métricas da comparação
+          <ChevronDown
+            className="h-4 w-4 shrink-0 text-[#ffcf62] transition-transform group-open:rotate-180"
+            aria-hidden="true"
+          />
+        </summary>
+        <div className="divide-y divide-white/8 border-t border-white/8">
+          {renderRows(comparisonRows.slice(6))}
+        </div>
+      </details>
     </section>
   );
 }
@@ -951,12 +1031,11 @@ export default function ClientPortal() {
                     </span>
                     <div>
                       <h2 className="font-semibold text-white">
-                        Compare os resultados completos
+                        Compare os períodos
                       </h2>
                       <p className="mt-1 text-sm leading-6 text-[#a4afbb]">
-                        Escolha dois períodos. Você verá o resumo da variação e,
-                        abaixo, os indicadores e funis de cada período lado a
-                        lado.
+                        Veja o que mudou entre os períodos, os funis e a análise
+                        de desempenho de cada um.
                       </p>
                     </div>
                   </div>
@@ -1005,20 +1084,40 @@ export default function ClientPortal() {
                 {previous && current && previous.id !== current.id ? (
                   <>
                     <CompareSummary previous={previous} current={current} />
-                    <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-2">
-                      <section
-                        aria-label={`Desempenho de ${previous.title}`}
-                        className="min-w-0 rounded-xl border border-white/10 bg-[#0d1319] p-3 sm:p-4"
-                      >
-                        <PeriodPerformance report={previous} compact />
-                      </section>
-                      <section
-                        aria-label={`Desempenho de ${current.title}`}
-                        className="min-w-0 rounded-xl border border-[#ffb81a]/25 bg-[#0d1319] p-3 sm:p-4"
-                      >
-                        <PeriodPerformance report={current} compact />
-                      </section>
-                    </div>
+                    <section aria-label="Funis dos períodos comparados">
+                      <h2 className="mb-5 text-lg font-semibold text-white">
+                        Funil de cada período
+                      </h2>
+                      <div className="grid grid-cols-1 items-start gap-7 xl:grid-cols-2">
+                        {[previous, current].map(report => (
+                          <article
+                            key={report.id}
+                            className="min-w-0 border-b border-white/10 pb-6 last:border-0 xl:border-b-0"
+                          >
+                            <header className="mb-5 border-b border-white/10 pb-3">
+                              <h3 className="font-semibold text-white">
+                                {report.title}
+                              </h3>
+                              <p className="mt-1 text-sm text-[#a4afbb]">
+                                {displayDate(report.startDate)} a{" "}
+                                {displayDate(report.endDate)}
+                              </p>
+                            </header>
+                            <PeriodFunnel report={report} compact />
+                          </article>
+                        ))}
+                      </div>
+                    </section>
+                    <section aria-label="Análises dos períodos comparados">
+                      <h2 className="mb-5 text-lg font-semibold text-white">
+                        Análise de performance de cada período
+                      </h2>
+                      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-2">
+                        {[previous, current].map(report => (
+                          <PeriodAnalysis key={report.id} report={report} />
+                        ))}
+                      </div>
+                    </section>
                   </>
                 ) : (
                   <section
@@ -1027,7 +1126,7 @@ export default function ClientPortal() {
                   >
                     {previous && current
                       ? "Escolha dois períodos diferentes para comparar os resultados."
-                      : "Selecione os dois períodos para carregar os funis e indicadores completos."}
+                      : "Selecione os dois períodos para ver os funis e análises lado a lado."}
                   </section>
                 )}
               </div>
