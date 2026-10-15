@@ -488,206 +488,190 @@ function PeriodPerformance({
           )}
 
           <PeriodFunnel report={report} compact />
-          <PeriodAnalysis report={report} />
-
-          <details className="group mt-7 border-y border-white/10">
-            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-[#dce2e6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ffb81a]">
-              Ver outras métricas do período
-              <ChevronDown
-                className="h-4 w-4 shrink-0 text-[#ffcf62] transition-transform group-open:rotate-180"
-                aria-hidden="true"
+          <div className="space-y-7">
+            <section aria-labelledby={`visibility-${report.id}`}>
+              <SectionHeading
+                id={`visibility-${report.id}`}
+                icon={Eye}
+                title="Alcance e interesse"
+                description="Quantas pessoas foram alcançadas e como interagiram com os anúncios."
               />
-            </summary>
-            <div className="space-y-8 pb-5 pt-2">
-              <section aria-labelledby={`visibility-${report.id}`}>
-                <SectionHeading
-                  id={`visibility-${report.id}`}
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-3">
+                <MetricCard
+                  icon={Users}
+                  label="Pessoas alcançadas"
+                  value={formatNumber(values.reach)}
+                  compact
+                />
+                <MetricCard
                   icon={Eye}
-                  title="Alcance e interesse"
-                  description="Quantas pessoas foram alcançadas e como interagiram com os anúncios."
+                  label="Exibições dos anúncios"
+                  value={formatNumber(values.impressions)}
+                  compact
                 />
-                <div
-                  className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${compact ? "2xl:grid-cols-2" : "xl:grid-cols-3"}`}
-                >
-                  <MetricCard
-                    icon={Users}
-                    label="Pessoas alcançadas"
-                    value={formatNumber(values.reach)}
-                    compact={compact}
-                  />
-                  <MetricCard
-                    icon={Eye}
-                    label="Exibições dos anúncios"
-                    value={formatNumber(values.impressions)}
-                    compact={compact}
-                  />
-                  <MetricCard
-                    icon={MousePointerClick}
-                    label="Cliques"
-                    value={formatNumber(values.clicks)}
-                    compact={compact}
-                  />
-                  <MetricCard
-                    icon={Target}
-                    label="Taxa de cliques (CTR)"
-                    value={
-                      values.ctr > 0
-                        ? formatPercentage(values.ctr)
-                        : "Sem referência"
-                    }
-                    detail="Percentual de impressões que geraram clique"
-                    compact={compact}
-                  />
-                  <MetricCard
-                    icon={Wallet}
-                    label="Custo por clique (CPC)"
-                    value={
-                      values.cpc > 0
-                        ? formatCurrency(values.cpc)
-                        : "Sem referência"
-                    }
-                    detail="Calculado pelo investimento e cliques"
-                    compact={compact}
-                  />
-                  <MetricCard
-                    icon={BarChart3}
-                    label="Custo por mil exibições (CPM)"
-                    value={
-                      values.cpm > 0
-                        ? formatCurrency(values.cpm)
-                        : "Sem referência"
-                    }
-                    detail="Calculado pelo investimento e impressões"
-                    compact={compact}
-                  />
-                </div>
-              </section>
+                <MetricCard
+                  icon={MousePointerClick}
+                  label="Cliques"
+                  value={formatNumber(values.clicks)}
+                  compact
+                />
+                <MetricCard
+                  icon={Target}
+                  label="Taxa de cliques (CTR)"
+                  value={
+                    values.ctr > 0
+                      ? formatPercentage(values.ctr)
+                      : "Sem referência"
+                  }
+                  detail="Percentual de impressões que geraram clique"
+                  compact
+                />
+                <MetricCard
+                  icon={Wallet}
+                  label="Custo por clique (CPC)"
+                  value={
+                    values.cpc > 0
+                      ? formatCurrency(values.cpc)
+                      : "Sem referência"
+                  }
+                  detail="Calculado pelo investimento e cliques"
+                  compact
+                />
+                <MetricCard
+                  icon={BarChart3}
+                  label="Custo por mil exibições (CPM)"
+                  value={
+                    values.cpm > 0
+                      ? formatCurrency(values.cpm)
+                      : "Sem referência"
+                  }
+                  detail="Calculado pelo investimento e impressões"
+                  compact
+                />
+              </div>
+            </section>
 
-              <section aria-labelledby={`conversations-${report.id}`}>
-                <SectionHeading
-                  id={`conversations-${report.id}`}
+            <section aria-labelledby={`conversations-${report.id}`}>
+              <SectionHeading
+                id={`conversations-${report.id}`}
+                icon={MessageCircle}
+                title="Visitas e conversas"
+                description="Ações que aproximam o público da empresa e geram oportunidades."
+              />
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-3">
+                <MetricCard
+                  icon={Eye}
+                  label="Visitas ao perfil"
+                  value={formatNumber(values.visits)}
+                  compact
+                />
+                <MetricCard
+                  icon={Wallet}
+                  label="Custo por visita"
+                  value={
+                    values.costPerVisit > 0
+                      ? formatCurrency(values.costPerVisit)
+                      : "Sem referência"
+                  }
+                  detail="Calculado quando há visitas registradas"
+                  compact
+                />
+                <MetricCard
+                  icon={Users}
+                  label="Novos seguidores"
+                  value={formatNumber(values.followers)}
+                  compact
+                />
+                <MetricCard
                   icon={MessageCircle}
-                  title="Visitas e conversas"
-                  description="Ações que aproximam o público da empresa e geram oportunidades."
+                  label="Mensagens iniciadas"
+                  value={formatNumber(values.messages)}
+                  compact
                 />
-                <div
-                  className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${compact ? "2xl:grid-cols-2" : "xl:grid-cols-3"}`}
-                >
-                  <MetricCard
-                    icon={Eye}
-                    label="Visitas ao perfil"
-                    value={formatNumber(values.visits)}
-                    compact={compact}
-                  />
-                  <MetricCard
-                    icon={Wallet}
-                    label="Custo por visita"
-                    value={
-                      values.costPerVisit > 0
-                        ? formatCurrency(values.costPerVisit)
-                        : "Sem referência"
-                    }
-                    detail="Calculado quando há visitas registradas"
-                    compact={compact}
-                  />
-                  <MetricCard
-                    icon={Users}
-                    label="Novos seguidores"
-                    value={formatNumber(values.followers)}
-                    compact={compact}
-                  />
-                  <MetricCard
-                    icon={MessageCircle}
-                    label="Mensagens iniciadas"
-                    value={formatNumber(values.messages)}
-                    compact={compact}
-                  />
-                  <MetricCard
-                    icon={Wallet}
-                    label="Custo por mensagem"
-                    value={
-                      values.costPerMessage > 0
-                        ? formatCurrency(values.costPerMessage)
-                        : "Sem referência"
-                    }
-                    detail="Investimento dividido pelas conversas"
-                    tone="pink"
-                    compact={compact}
-                  />
-                  <MetricCard
-                    icon={BarChart3}
-                    label="Retenção de vídeo"
-                    value={
-                      values.videoRetention > 0
-                        ? formatPercentage(values.videoRetention)
-                        : "Sem dado"
-                    }
-                    compact={compact}
-                  />
-                </div>
-              </section>
+                <MetricCard
+                  icon={Wallet}
+                  label="Custo por mensagem"
+                  value={
+                    values.costPerMessage > 0
+                      ? formatCurrency(values.costPerMessage)
+                      : "Sem referência"
+                  }
+                  detail="Investimento dividido pelas conversas"
+                  tone="pink"
+                  compact
+                />
+                <MetricCard
+                  icon={BarChart3}
+                  label="Retenção de vídeo"
+                  value={
+                    values.videoRetention > 0
+                      ? formatPercentage(values.videoRetention)
+                      : "Sem dado"
+                  }
+                  compact
+                />
+              </div>
+            </section>
 
-              <section aria-labelledby={`sales-${report.id}`}>
-                <SectionHeading
-                  id={`sales-${report.id}`}
+            <section aria-labelledby={`sales-${report.id}`}>
+              <SectionHeading
+                id={`sales-${report.id}`}
+                icon={ShoppingBag}
+                title="Vendas e retorno"
+                description="Compras e faturamento associados a este relatório."
+              />
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
+                <MetricCard
                   icon={ShoppingBag}
-                  title="Vendas e retorno"
-                  description="Compras e faturamento associados a este relatório."
+                  label="Compras"
+                  value={formatNumber(values.purchases)}
+                  detail={
+                    values.trackedSales
+                      ? "Registradas no sistema"
+                      : "Conversões informadas no relatório"
+                  }
+                  tone="green"
+                  compact
                 />
-                <div
-                  className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${compact ? "2xl:grid-cols-2" : "xl:grid-cols-4"}`}
-                >
-                  <MetricCard
-                    icon={ShoppingBag}
-                    label="Compras"
-                    value={formatNumber(values.purchases)}
-                    detail={
-                      values.trackedSales
-                        ? "Registradas no sistema"
-                        : "Conversões informadas no relatório"
-                    }
-                    tone="green"
-                    compact={compact}
-                  />
-                  <MetricCard
-                    icon={Wallet}
-                    label="Faturamento"
-                    value={formatCurrency(values.revenue)}
-                    detail={
-                      values.revenue > 0
-                        ? "Valor total registrado"
-                        : "Nenhum faturamento registrado"
-                    }
-                    tone="green"
-                    compact={compact}
-                  />
-                  <MetricCard
-                    icon={Target}
-                    label="Custo médio por compra"
-                    value={
-                      values.cpa > 0
-                        ? formatCurrency(values.cpa)
-                        : "Sem referência"
-                    }
-                    detail="Investimento dividido pelas compras"
-                    compact={compact}
-                  />
-                  <MetricCard
-                    icon={Gauge}
-                    label="Retorno sobre anúncios (ROAS)"
-                    value={
-                      values.roas > 0
-                        ? `${values.roas.toFixed(2)}x`
-                        : "Sem referência"
-                    }
-                    detail="Faturamento dividido pelo investimento"
-                    tone="green"
-                    compact={compact}
-                  />
-                </div>
-              </section>
-            </div>
-          </details>
+                <MetricCard
+                  icon={Wallet}
+                  label="Faturamento"
+                  value={formatCurrency(values.revenue)}
+                  detail={
+                    values.revenue > 0
+                      ? "Valor total registrado"
+                      : "Nenhum faturamento registrado"
+                  }
+                  tone="green"
+                  compact
+                />
+                <MetricCard
+                  icon={Target}
+                  label="Custo médio por compra"
+                  value={
+                    values.cpa > 0
+                      ? formatCurrency(values.cpa)
+                      : "Sem referência"
+                  }
+                  detail="Investimento dividido pelas compras"
+                  compact
+                />
+                <MetricCard
+                  icon={Gauge}
+                  label="Retorno sobre anúncios (ROAS)"
+                  value={
+                    values.roas > 0
+                      ? `${values.roas.toFixed(2)}x`
+                      : "Sem referência"
+                  }
+                  detail="Faturamento dividido pelo investimento"
+                  tone="green"
+                  compact
+                />
+              </div>
+            </section>
+          </div>
+          <PeriodAnalysis report={report} />
         </>
       )}
     </article>
