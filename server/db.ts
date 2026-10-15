@@ -284,10 +284,18 @@ async function ensureTables(pool: InstanceType<typeof Pool>) {
       "thresholdCents" integer NOT NULL DEFAULT 10000,
       "enabled" boolean NOT NULL DEFAULT TRUE,
       "lastNotifiedAt" timestamptz,
+      "lastCheckedAt" timestamptz,
+      "lastBalanceCents" integer,
+      "lastCheckStatus" varchar(40),
+      "lastCheckMessage" text,
       "createdAt" timestamptz DEFAULT NOW(),
       "updatedAt" timestamptz DEFAULT NOW(),
       CONSTRAINT "balanceAlerts_companyId_unique" UNIQUE("companyId")
     )`,
+    `ALTER TABLE "balanceAlerts" ADD COLUMN IF NOT EXISTS "lastCheckedAt" timestamptz`,
+    `ALTER TABLE "balanceAlerts" ADD COLUMN IF NOT EXISTS "lastBalanceCents" integer`,
+    `ALTER TABLE "balanceAlerts" ADD COLUMN IF NOT EXISTS "lastCheckStatus" varchar(40)`,
+    `ALTER TABLE "balanceAlerts" ADD COLUMN IF NOT EXISTS "lastCheckMessage" text`,
     `CREATE TABLE IF NOT EXISTS "clientPortalLinks" (
       "id" serial PRIMARY KEY NOT NULL,
       "companyId" integer NOT NULL UNIQUE,
@@ -1116,18 +1124,19 @@ export async function getAllEnabledBalanceAlerts() {
   if (!pool) return [];
   const r = await pool.query(
     `SELECT
-       ba."companyId",
-       ba."thresholdCents",
+       c."id" AS "companyId",
+       COALESCE(ba."thresholdCents", 10000) AS "thresholdCents",
        ba."lastNotifiedAt",
        c."userId",
        c."name" AS "companyName",
        c."metaAdAccountId",
        c."metaAccessToken"
-     FROM "balanceAlerts" ba
-     JOIN "companies" c ON c."id" = ba."companyId"
-     WHERE ba."enabled" = TRUE
+     FROM "companies" c
+     LEFT JOIN "balanceAlerts" ba ON ba."companyId" = c."id"
+     WHERE COALESCE(ba."enabled", TRUE) = TRUE
        AND c."metaAdAccountId" IS NOT NULL
-       AND c."metaAccessToken" IS NOT NULL`
+       AND c."metaAccessToken" IS NOT NULL
+       AND c."metaAccessToken" <> ''`
   );
   return r.rows as Array<{
     companyId: number;
@@ -1138,6 +1147,33 @@ export async function getAllEnabledBalanceAlerts() {
     metaAdAccountId: string;
     metaAccessToken: string;
   }>;
+}
+
+/** Persiste o resultado da última consulta sem sobrescrever o limite configurado. */
+export async function recordBalanceAlertCheck(input: {
+  companyId: number;
+  thresholdCents: number;
+  status: string;
+  message: string;
+  balanceCents: number | null;
+  notified: boolean;
+}) {
+  const pool = await getRawPool();
+  if (!pool) throw new Error("Banco de dados indisponível");
+  await pool.query(
+    `INSERT INTO "balanceAlerts" (
+       "companyId", "thresholdCents", "enabled", "lastCheckedAt",
+       "lastBalanceCents", "lastCheckStatus", "lastCheckMessage", "lastNotifiedAt"
+     ) VALUES ($1, $2, TRUE, NOW(), $3, $4, $5, CASE WHEN $6 THEN NOW() ELSE NULL END)
+     ON CONFLICT ("companyId") DO UPDATE SET
+       "lastCheckedAt" = NOW(),
+       "lastBalanceCents" = EXCLUDED."lastBalanceCents",
+       "lastCheckStatus" = EXCLUDED."lastCheckStatus",
+       "lastCheckMessage" = EXCLUDED."lastCheckMessage",
+       "lastNotifiedAt" = CASE WHEN $6 THEN NOW() ELSE "balanceAlerts"."lastNotifiedAt" END,
+       "updatedAt" = NOW()`,
+    [input.companyId, input.thresholdCents, input.balanceCents, input.status, input.message, input.notified]
+  );
 }
 
 /** Atualiza lastNotifiedAt para agora (evita spam: só notifica 1x/dia) */

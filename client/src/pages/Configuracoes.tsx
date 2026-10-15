@@ -11,6 +11,7 @@ import {
   Settings, User, Shield, Bell, Palette,
   Save, LogOut, Eye, EyeOff, CheckCircle2,
   BellRing, BellOff, Smartphone, DollarSign, Download,
+  RefreshCw,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { usePushNotifications } from "@/lib/usePushNotifications";
@@ -29,8 +30,7 @@ function BalanceAlertsSection() {
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-xs text-muted-foreground">
-          Configure o saldo mínimo por conta. Quando o saldo cair abaixo do limite, você receberá uma notificação às 9h.
-          Funciona apenas em contas pré-pagas (boleto/Pix).
+          Contas Meta conectadas entram automaticamente no monitoramento com limite de R$ 100. A checagem automática é diária; use “Verificar agora” para consultar imediatamente. Funciona para saldo pré-pago em reais (boleto/Pix).
         </p>
         {companies.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhuma conta cadastrada.</p>
@@ -51,6 +51,17 @@ function BalanceAlertRow({ company }: { company: any }) {
   );
   const setAlert = trpc.notifications.setBalanceAlert.useMutation({
     onSuccess: () => alertQuery.refetch(),
+  });
+  const checkBalance = trpc.notifications.checkBalanceNow.useMutation({
+    onSuccess: async (result) => {
+      await alertQuery.refetch();
+      if (result.status === "healthy" || result.status === "low_balance_notified" || result.status === "low_balance_cooldown") {
+        toast.success(result.message);
+      } else {
+        toast.error(result.message);
+      }
+    },
+    onError: (error) => toast.error(error.message),
   });
 
   const alert = alertQuery.data;
@@ -80,6 +91,23 @@ function BalanceAlertRow({ company }: { company: any }) {
     toast.success(`Alerta salvo para ${company.name}.`);
   };
 
+  const handleToggle = async () => {
+    const nextEnabled = !enabled;
+    const value = parseFloat(threshold);
+    if (isNaN(value) || value < 0) {
+      toast.error("Informe um limite válido antes de alterar o alerta.");
+      return;
+    }
+    setEnabled(nextEnabled);
+    try {
+      await setAlert.mutateAsync({ companyId: company.id, thresholdReais: value, enabled: nextEnabled });
+      toast.success(nextEnabled ? `Alerta ativado para ${company.name}.` : `Alerta desativado para ${company.name}.`);
+    } catch {
+      setEnabled(!nextEnabled);
+      toast.error("Não foi possível salvar a configuração do alerta.");
+    }
+  };
+
   if (!company.metaAdAccountId) {
     return (
       <div className="py-3 border-b border-white/5 last:border-0 flex items-center justify-between gap-4">
@@ -103,7 +131,10 @@ function BalanceAlertRow({ company }: { company: any }) {
         </div>
         {/* Toggle ativo/inativo */}
         <button
-          onClick={() => setEnabled((v: boolean) => !v)}
+          onClick={handleToggle}
+          aria-label={`${enabled ? "Desativar" : "Ativar"} alerta de saldo para ${company.name}`}
+          aria-pressed={enabled}
+          disabled={setAlert.isPending}
           className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${
             enabled ? "bg-primary" : "bg-white/10"
           }`}
@@ -115,41 +146,56 @@ function BalanceAlertRow({ company }: { company: any }) {
           />
         </button>
       </div>
-      {enabled && (
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        {enabled && (
+          <>
           <Label className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
-            Avisar quando saldo &lt; R$
+            Avisar com saldo em R$
           </Label>
           <Input
             type="number"
             min={0}
             value={threshold}
             onChange={(e) => setThreshold(e.target.value)}
-            className="bg-white/5 border-white/10 rounded-xl h-8 w-28 text-sm"
+            className="bg-white/5 border-white/10 rounded-xl h-8 w-24 text-sm"
             placeholder="100"
           />
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={setAlert.isPending}
-            className="rounded-xl h-8 shrink-0"
-          >
-            <Save className="h-3.5 w-3.5 mr-1" />
-            {setAlert.isPending ? "..." : "Salvar"}
-          </Button>
-        </div>
-      )}
-      {!enabled && (
+          </>
+        )}
         <Button
           size="sm"
-          variant="ghost"
           onClick={handleSave}
           disabled={setAlert.isPending}
-          className="rounded-xl h-7 text-xs text-muted-foreground"
+          className="rounded-xl h-8 shrink-0"
         >
-          Salvar (desativado)
+          <Save className="h-3.5 w-3.5 mr-1" />
+          {setAlert.isPending ? "..." : "Salvar limite"}
         </Button>
-      )}
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => checkBalance.mutate({ companyId: company.id })}
+          disabled={!enabled || checkBalance.isPending}
+          className="rounded-xl h-8 shrink-0"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 mr-1 ${checkBalance.isPending ? "animate-spin" : ""}`} />
+          {checkBalance.isPending ? "Consultando..." : "Verificar agora"}
+        </Button>
+      </div>
+      <div className={`text-xs ${
+        alert?.lastCheckStatus === "error" || alert?.lastCheckStatus === "low_balance_delivery_error"
+          ? "text-red-300"
+          : alert?.lastCheckStatus === "healthy" || alert?.lastCheckStatus === "low_balance_notified"
+          ? "text-emerald-300"
+          : "text-muted-foreground"
+      }`}>
+        {alert?.lastCheckedAt ? (
+          <p>Última verificação: {new Date(alert.lastCheckedAt).toLocaleString("pt-BR")}</p>
+        ) : (
+          <p>Primeira verificação automática ocorrerá no próximo ciclo diário.</p>
+        )}
+        {alert?.lastCheckMessage && <p className="mt-1">{alert.lastCheckMessage}</p>}
+      </div>
     </div>
   );
 }

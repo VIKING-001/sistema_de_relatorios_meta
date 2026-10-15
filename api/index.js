@@ -48372,10 +48372,18 @@ async function ensureTables(pool2) {
       "thresholdCents" integer NOT NULL DEFAULT 10000,
       "enabled" boolean NOT NULL DEFAULT TRUE,
       "lastNotifiedAt" timestamptz,
+      "lastCheckedAt" timestamptz,
+      "lastBalanceCents" integer,
+      "lastCheckStatus" varchar(40),
+      "lastCheckMessage" text,
       "createdAt" timestamptz DEFAULT NOW(),
       "updatedAt" timestamptz DEFAULT NOW(),
       CONSTRAINT "balanceAlerts_companyId_unique" UNIQUE("companyId")
     )`,
+    `ALTER TABLE "balanceAlerts" ADD COLUMN IF NOT EXISTS "lastCheckedAt" timestamptz`,
+    `ALTER TABLE "balanceAlerts" ADD COLUMN IF NOT EXISTS "lastBalanceCents" integer`,
+    `ALTER TABLE "balanceAlerts" ADD COLUMN IF NOT EXISTS "lastCheckStatus" varchar(40)`,
+    `ALTER TABLE "balanceAlerts" ADD COLUMN IF NOT EXISTS "lastCheckMessage" text`,
     `CREATE TABLE IF NOT EXISTS "clientPortalLinks" (
       "id" serial PRIMARY KEY NOT NULL,
       "companyId" integer NOT NULL UNIQUE,
@@ -48995,27 +49003,38 @@ async function getAllEnabledBalanceAlerts() {
   if (!pool2) return [];
   const r = await pool2.query(
     `SELECT
-       ba."companyId",
-       ba."thresholdCents",
+       c."id" AS "companyId",
+       COALESCE(ba."thresholdCents", 10000) AS "thresholdCents",
        ba."lastNotifiedAt",
        c."userId",
        c."name" AS "companyName",
        c."metaAdAccountId",
        c."metaAccessToken"
-     FROM "balanceAlerts" ba
-     JOIN "companies" c ON c."id" = ba."companyId"
-     WHERE ba."enabled" = TRUE
+     FROM "companies" c
+     LEFT JOIN "balanceAlerts" ba ON ba."companyId" = c."id"
+     WHERE COALESCE(ba."enabled", TRUE) = TRUE
        AND c."metaAdAccountId" IS NOT NULL
-       AND c."metaAccessToken" IS NOT NULL`
+       AND c."metaAccessToken" IS NOT NULL
+       AND c."metaAccessToken" <> ''`
   );
   return r.rows;
 }
-async function setBalanceAlertNotified(companyId) {
+async function recordBalanceAlertCheck(input) {
   const pool2 = await getRawPool();
-  if (!pool2) return;
+  if (!pool2) throw new Error("Banco de dados indispon\xEDvel");
   await pool2.query(
-    `UPDATE "balanceAlerts" SET "lastNotifiedAt" = NOW(), "updatedAt" = NOW() WHERE "companyId" = $1`,
-    [companyId]
+    `INSERT INTO "balanceAlerts" (
+       "companyId", "thresholdCents", "enabled", "lastCheckedAt",
+       "lastBalanceCents", "lastCheckStatus", "lastCheckMessage", "lastNotifiedAt"
+     ) VALUES ($1, $2, TRUE, NOW(), $3, $4, $5, CASE WHEN $6 THEN NOW() ELSE NULL END)
+     ON CONFLICT ("companyId") DO UPDATE SET
+       "lastCheckedAt" = NOW(),
+       "lastBalanceCents" = EXCLUDED."lastBalanceCents",
+       "lastCheckStatus" = EXCLUDED."lastCheckStatus",
+       "lastCheckMessage" = EXCLUDED."lastCheckMessage",
+       "lastNotifiedAt" = CASE WHEN $6 THEN NOW() ELSE "balanceAlerts"."lastNotifiedAt" END,
+       "updatedAt" = NOW()`,
+    [input.companyId, input.thresholdCents, input.balanceCents, input.status, input.message, input.notified]
   );
 }
 async function attributeSaleToConversation(companyId, phone, saleId) {
@@ -73098,6 +73117,207 @@ var whatsappRouter = router({
   })
 });
 
+// server/cron/balanceService.ts
+var import_web_push = __toESM(require_src3(), 1);
+var GRAPH2 = "https://graph.facebook.com/v26.0";
+var COOLDOWN_HOURS = 20;
+function isAtOrBelowThreshold(balanceCents, thresholdCents) {
+  return balanceCents <= thresholdCents;
+}
+function toCents(value) {
+  if (value === null || value === void 0 || value === "") return null;
+  const amount = Number(value);
+  return Number.isFinite(amount) ? Math.round(amount * 100) : null;
+}
+function parsePrepayAccountBalance(data) {
+  if (data?.error) {
+    const message2 = String(data.error.message ?? "A Meta recusou a consulta.").slice(0, 300);
+    return { status: "error", message: message2 };
+  }
+  if (data?.is_prepay_account === false || data?.stored_balance_status === "postpay") {
+    return { status: "not_prepaid", message: "Esta conta n\xE3o usa saldo pr\xE9-pago." };
+  }
+  const amount = data?.prepay_account_balance;
+  if (amount === null || amount === void 0) {
+    if (data?.stored_balance_status === "new_user") {
+      return { status: "not_prepaid", message: "A conta ainda n\xE3o tem saldo pr\xE9-pago dispon\xEDvel." };
+    }
+    return { status: "error", message: "A Meta n\xE3o retornou o saldo pr\xE9-pago desta conta." };
+  }
+  const currency = String(
+    (typeof amount === "object" ? amount.currency : void 0) ?? data?.currency ?? ""
+  ).toUpperCase();
+  if (currency !== "BRL") {
+    return {
+      status: "currency_mismatch",
+      currency: currency || "desconhecida",
+      message: `A conta est\xE1 em ${currency || "moeda desconhecida"}; este limite est\xE1 configurado em reais.`
+    };
+  }
+  let balanceCents = null;
+  if (typeof amount === "object") {
+    const hundredths = amount.amount_in_hundredths;
+    if (hundredths !== null && hundredths !== void 0 && hundredths !== "") {
+      const value = Number(hundredths);
+      balanceCents = Number.isFinite(value) ? Math.round(value) : null;
+    }
+    if (balanceCents === null) balanceCents = toCents(amount.amount);
+  } else {
+    balanceCents = toCents(amount);
+  }
+  if (balanceCents === null) {
+    return { status: "error", message: "O formato do saldo retornado pela Meta n\xE3o \xE9 reconhecido." };
+  }
+  return { status: "ok", balanceCents, currency: "BRL" };
+}
+async function fetchPrepayAccountBalance(adAccountId, accessToken) {
+  const numericId = adAccountId.replace(/^act_/, "");
+  if (!/^\d+$/.test(numericId)) {
+    return { status: "error", message: "O identificador da conta de an\xFAncios \xE9 inv\xE1lido." };
+  }
+  try {
+    const url2 = new URL(`${GRAPH2}/act_${numericId}`);
+    url2.searchParams.set(
+      "fields",
+      "currency,is_prepay_account,stored_balance_status,prepay_account_balance{amount,amount_in_hundredths,currency}"
+    );
+    const response = await fetch(url2, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      signal: AbortSignal.timeout(15e3)
+    });
+    const data = await response.json();
+    if (!response.ok && !data?.error) {
+      return { status: "error", message: `A Meta respondeu com erro HTTP ${response.status}.` };
+    }
+    return parsePrepayAccountBalance(data);
+  } catch (error46) {
+    const message2 = error46?.name === "TimeoutError" ? "A consulta \xE0 Meta excedeu o tempo limite." : "N\xE3o foi poss\xEDvel consultar o saldo na Meta.";
+    return { status: "error", message: message2 };
+  }
+}
+function formatReais(cents) {
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
+}
+async function saveResult(alert, result) {
+  await recordBalanceAlertCheck({
+    companyId: alert.companyId,
+    thresholdCents: alert.thresholdCents,
+    status: result.status,
+    message: result.message,
+    balanceCents: result.balanceCents,
+    notified: result.notified
+  });
+  return result;
+}
+async function checkBalanceCandidate(alert) {
+  const read = await fetchPrepayAccountBalance(alert.metaAdAccountId, alert.metaAccessToken);
+  if (read.status !== "ok") {
+    return saveResult(alert, {
+      companyId: alert.companyId,
+      status: read.status,
+      balanceCents: null,
+      message: read.message,
+      notified: false
+    });
+  }
+  const { balanceCents } = read;
+  const threshold = formatReais(alert.thresholdCents);
+  if (!isAtOrBelowThreshold(balanceCents, alert.thresholdCents)) {
+    return saveResult(alert, {
+      companyId: alert.companyId,
+      status: "healthy",
+      balanceCents,
+      message: `Saldo atual ${formatReais(balanceCents)}; limite de alerta ${threshold}.`,
+      notified: false
+    });
+  }
+  if (alert.lastNotifiedAt) {
+    const hoursSince = (Date.now() - new Date(alert.lastNotifiedAt).getTime()) / 36e5;
+    if (hoursSince < COOLDOWN_HOURS) {
+      return saveResult(alert, {
+        companyId: alert.companyId,
+        status: "low_balance_cooldown",
+        balanceCents,
+        message: `Saldo em ${formatReais(balanceCents)}; a notifica\xE7\xE3o j\xE1 foi enviada recentemente.`,
+        notified: false
+      });
+    }
+  }
+  const subscriptions = await getPushSubscriptionsByUser(alert.userId);
+  if (subscriptions.length === 0) {
+    return saveResult(alert, {
+      companyId: alert.companyId,
+      status: "low_balance_no_device",
+      balanceCents,
+      message: `Saldo em ${formatReais(balanceCents)}; ative as notifica\xE7\xF5es neste dispositivo.`,
+      notified: false
+    });
+  }
+  if (!ENV.vapidPublicKey || !ENV.vapidPrivateKey) {
+    return saveResult(alert, {
+      companyId: alert.companyId,
+      status: "low_balance_delivery_error",
+      balanceCents,
+      message: `Saldo em ${formatReais(balanceCents)}; as chaves de notifica\xE7\xE3o do servidor n\xE3o est\xE3o configuradas.`,
+      notified: false
+    });
+  }
+  let sentAny = false;
+  let hadDeliveryError = false;
+  try {
+    import_web_push.default.setVapidDetails(
+      `mailto:${ENV.vapidContactEmail}`,
+      ENV.vapidPublicKey,
+      ENV.vapidPrivateKey
+    );
+  } catch {
+    return saveResult(alert, {
+      companyId: alert.companyId,
+      status: "low_balance_delivery_error",
+      balanceCents,
+      message: `Saldo em ${formatReais(balanceCents)}; a configura\xE7\xE3o VAPID do servidor \xE9 inv\xE1lida.`,
+      notified: false
+    });
+  }
+  const payload = JSON.stringify({
+    title: "Saldo baixo no Meta Ads",
+    body: `${alert.companyName}: saldo de ${formatReais(balanceCents)}, no limite de ${threshold}. Recarregue a conta antes que as campanhas parem.`,
+    url: "/contas",
+    icon: "/icon.svg"
+  });
+  for (const subscription of subscriptions) {
+    try {
+      await import_web_push.default.sendNotification(
+        { endpoint: subscription.endpoint, keys: { p256dh: subscription.p256dh, auth: subscription.auth } },
+        payload
+      );
+      sentAny = true;
+    } catch (error46) {
+      if (error46?.statusCode === 410 || error46?.statusCode === 404) {
+        await deletePushSubscription(subscription.endpoint);
+      } else {
+        hadDeliveryError = true;
+      }
+    }
+  }
+  if (sentAny) {
+    return saveResult(alert, {
+      companyId: alert.companyId,
+      status: "low_balance_notified",
+      balanceCents,
+      message: `Saldo em ${formatReais(balanceCents)}; notifica\xE7\xE3o enviada para este usu\xE1rio.`,
+      notified: true
+    });
+  }
+  return saveResult(alert, {
+    companyId: alert.companyId,
+    status: "low_balance_delivery_error",
+    balanceCents,
+    message: hadDeliveryError ? `Saldo em ${formatReais(balanceCents)}; o servi\xE7o de notifica\xE7\xF5es n\xE3o aceitou o envio. Reative o push no dispositivo.` : `Saldo em ${formatReais(balanceCents)}; n\xE3o h\xE1 dispositivo com inscri\xE7\xE3o push v\xE1lida.`,
+    notified: false
+  });
+}
+
 // server/notifications.router.ts
 var notificationsRouter = router({
   /** Devolve a VAPID public key para o frontend criar a PushSubscription */
@@ -73149,6 +73369,31 @@ var notificationsRouter = router({
     await upsertBalanceAlert(input.companyId, thresholdCents, input.enabled);
     return { success: true };
   }),
+  /** Consulta o saldo agora para confirmar que a integração e o limite estão funcionando. */
+  checkBalanceNow: protectedProcedure.input(external_exports.object({ companyId: external_exports.number().int().positive() })).mutation(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+    if (!company.metaAdAccountId || !company.metaAccessToken) {
+      throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Conecte a conta de an\xFAncios da Meta primeiro." });
+    }
+    const alert = await getBalanceAlert(input.companyId);
+    if (alert?.enabled === false) {
+      throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Ative o alerta antes de verificar o saldo." });
+    }
+    return checkBalanceCandidate({
+      companyId: company.id,
+      thresholdCents: alert?.thresholdCents ?? 1e4,
+      lastNotifiedAt: alert?.lastNotifiedAt ?? null,
+      userId: company.userId,
+      companyName: company.name,
+      metaAdAccountId: company.metaAdAccountId,
+      metaAccessToken: company.metaAccessToken
+    });
+  }),
   /** Retorna a configuração de alerta de saldo de uma empresa */
   getBalanceAlert: protectedProcedure.input(external_exports.object({ companyId: external_exports.number().int().positive() })).query(async ({ input, ctx }) => {
     const userId = ctx.user?.id;
@@ -73158,11 +73403,14 @@ var notificationsRouter = router({
       throw new TRPCError({ code: "FORBIDDEN" });
     }
     const alert = await getBalanceAlert(input.companyId);
-    if (!alert) return null;
     return {
-      thresholdReais: alert.thresholdCents / 100,
-      enabled: alert.enabled,
-      lastNotifiedAt: alert.lastNotifiedAt
+      thresholdReais: alert ? alert.thresholdCents / 100 : 100,
+      enabled: alert?.enabled ?? true,
+      lastNotifiedAt: alert?.lastNotifiedAt ?? null,
+      lastCheckedAt: alert?.lastCheckedAt ?? null,
+      lastBalanceReais: alert?.lastBalanceCents == null ? null : alert.lastBalanceCents / 100,
+      lastCheckStatus: alert?.lastCheckStatus ?? null,
+      lastCheckMessage: alert?.lastCheckMessage ?? null
     };
   })
 });
@@ -74631,88 +74879,44 @@ var whatsappRoutes_default = router4;
 
 // server/cron/checkBalances.ts
 var import_express4 = __toESM(require_express2(), 1);
-var import_web_push = __toESM(require_src3(), 1);
 var router5 = import_express4.default.Router();
-var GRAPH2 = "https://graph.facebook.com/v21.0";
-var COOLDOWN_HOURS = 20;
-async function fetchAdAccountBalance(adAccountId, accessToken) {
-  try {
-    const accountId = adAccountId.startsWith("act_") ? adAccountId : `act_${adAccountId}`;
-    const url2 = `${GRAPH2}/${accountId}?fields=balance,currency&access_token=${accessToken}`;
-    const res = await fetch(url2);
-    const data = await res.json();
-    if (data.error || data.balance === void 0) return null;
-    const balance = parseFloat(data.balance);
-    return isNaN(balance) ? null : Math.round(balance * 100);
-  } catch {
-    return null;
-  }
-}
 router5.get("/api/cron/check-balances", async (req, res) => {
-  const authHeader = req.headers.authorization ?? "";
-  const expected = ENV.cronSecret ? `Bearer ${ENV.cronSecret}` : "";
-  if (expected && authHeader !== expected) {
+  if (!ENV.cronSecret) {
+    return res.status(503).json({ error: "CRON_SECRET n\xE3o configurado" });
+  }
+  if (req.headers.authorization !== `Bearer ${ENV.cronSecret}`) {
     return res.status(401).json({ error: "Unauthorized" });
   }
-  if (!ENV.vapidPublicKey || !ENV.vapidPrivateKey) {
-    return res.status(500).json({ error: "VAPID keys not configured" });
-  }
-  import_web_push.default.setVapidDetails(
-    `mailto:${ENV.vapidContactEmail}`,
-    ENV.vapidPublicKey,
-    ENV.vapidPrivateKey
-  );
-  const alerts = await getAllEnabledBalanceAlerts();
-  let checked = 0;
-  let notified = 0;
-  const errors = [];
-  for (const alert of alerts) {
-    checked++;
-    try {
-      if (alert.lastNotifiedAt) {
-        const hoursSince = (Date.now() - new Date(alert.lastNotifiedAt).getTime()) / (1e3 * 60 * 60);
-        if (hoursSince < COOLDOWN_HOURS) continue;
+  try {
+    const alerts = await getAllEnabledBalanceAlerts();
+    const results = await Promise.all(alerts.map(async (alert) => {
+      try {
+        return await checkBalanceCandidate(alert);
+      } catch (error46) {
+        console.error(`[Cron] falha ao verificar saldo da empresa ${alert.companyId}:`, error46?.message || error46);
+        return {
+          companyId: alert.companyId,
+          status: "error",
+          balanceCents: null,
+          message: "Falha interna ao consultar ou salvar o resultado.",
+          notified: false
+        };
       }
-      const balanceCents = await fetchAdAccountBalance(
-        alert.metaAdAccountId,
-        alert.metaAccessToken
-      );
-      if (balanceCents === null) continue;
-      if (balanceCents < alert.thresholdCents) {
-        const balanceReais = (balanceCents / 100).toFixed(2).replace(".", ",");
-        const thresholdReais = (alert.thresholdCents / 100).toFixed(2).replace(".", ",");
-        const payload = JSON.stringify({
-          title: "\u26A0\uFE0F Saldo baixo no Meta Ads",
-          body: `${alert.companyName}: saldo R$${balanceReais} abaixo do limite de R$${thresholdReais}. Recarregue antes que as campanhas parem.`,
-          url: "/contas",
-          icon: "/icon.svg"
-        });
-        const subscriptions = await getPushSubscriptionsByUser(alert.userId);
-        let sentAny = false;
-        for (const sub of subscriptions) {
-          try {
-            await import_web_push.default.sendNotification(
-              { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-              payload
-            );
-            sentAny = true;
-          } catch (pushErr) {
-            if (pushErr?.statusCode === 410 || pushErr?.statusCode === 404) {
-              await deletePushSubscription(sub.endpoint);
-            }
-          }
-        }
-        if (sentAny) {
-          await setBalanceAlertNotified(alert.companyId);
-          notified++;
-        }
-      }
-    } catch (err) {
-      errors.push(`company ${alert.companyId}: ${err?.message}`);
-    }
+    }));
+    const notified = results.filter((result) => result.notified).length;
+    const errors = results.filter((result) => result.status === "error").length;
+    console.log(`[Cron] check-balances: ${results.length} contas verificadas, ${notified} notifica\xE7\xF5es, ${errors} erros`);
+    return res.json({
+      ok: errors === 0,
+      checked: results.length,
+      notified,
+      errors,
+      results: results.map(({ companyId, status, message: message2 }) => ({ companyId, status, message: message2 }))
+    });
+  } catch (error46) {
+    console.error("[Cron] check-balances falhou:", error46?.message || error46);
+    return res.status(500).json({ error: "Falha ao executar a verifica\xE7\xE3o de saldos." });
   }
-  console.log(`[Cron] check-balances: ${checked} contas verificadas, ${notified} notifica\xE7\xF5es enviadas`);
-  return res.json({ ok: true, checked, notified, errors });
 });
 var checkBalances_default = router5;
 
