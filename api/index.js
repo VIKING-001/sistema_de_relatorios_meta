@@ -48329,11 +48329,13 @@ async function ensureTables(pool2) {
       "lastMessageText" text,
       "messageCount" integer DEFAULT 0 NOT NULL,
       "status" varchar(20) DEFAULT 'open',
+      "stage" varchar(40) DEFAULT 'lead' NOT NULL,
       "saleId" integer,
       "createdAt" timestamp DEFAULT now() NOT NULL,
       "updatedAt" timestamp DEFAULT now() NOT NULL,
       CONSTRAINT "whatsappConversations_company_wa_unique" UNIQUE("companyId", "waId")
     )`,
+    `ALTER TABLE "whatsappConversations" ADD COLUMN IF NOT EXISTS "stage" varchar(40) DEFAULT 'lead' NOT NULL`,
     `CREATE INDEX IF NOT EXISTS "idx_whatsappConversations_companyId" ON "whatsappConversations"("companyId")`,
     `CREATE INDEX IF NOT EXISTS "idx_whatsappConversations_waId" ON "whatsappConversations"("waId")`,
     `CREATE INDEX IF NOT EXISTS "idx_whatsappConfigs_companyId" ON "whatsappConfigs"("companyId")`,
@@ -48912,6 +48914,43 @@ async function listWhatsappConversations(companyId, limit2 = 200) {
   );
   return r.rows;
 }
+async function getWhatsappConversationSummary(companyId) {
+  const pool2 = await getRawPool();
+  if (!pool2) return { total: 0, attributed: 0, converted: 0, open: 0, pending: 0, closed: 0 };
+  const r = await pool2.query(
+    `SELECT COUNT(*)::int AS total,
+            COUNT(*) FILTER (WHERE "campaignName" IS NOT NULL)::int AS attributed,
+            COUNT(*) FILTER (WHERE "status" = 'converted')::int AS converted,
+            COUNT(*) FILTER (WHERE COALESCE("status", 'open') = 'open')::int AS open,
+            COUNT(*) FILTER (WHERE "status" = 'pending')::int AS pending,
+            COUNT(*) FILTER (WHERE "status" = 'closed')::int AS closed
+     FROM "whatsappConversations" WHERE "companyId" = $1`,
+    [companyId]
+  );
+  const row = r.rows[0] ?? {};
+  return {
+    total: Number(row.total ?? 0),
+    attributed: Number(row.attributed ?? 0),
+    converted: Number(row.converted ?? 0),
+    open: Number(row.open ?? 0),
+    pending: Number(row.pending ?? 0),
+    closed: Number(row.closed ?? 0)
+  };
+}
+async function updateWhatsappConversation(companyId, conversationId, update) {
+  const pool2 = await getRawPool();
+  if (!pool2) return null;
+  const r = await pool2.query(
+    `UPDATE "whatsappConversations"
+     SET "status" = COALESCE($3, "status"),
+         "stage" = COALESCE($4, "stage"),
+         "updatedAt" = NOW()
+     WHERE "companyId" = $1 AND "id" = $2 AND COALESCE("status", 'open') <> 'converted'
+     RETURNING *`,
+    [companyId, conversationId, update.status ?? null, update.stage ?? null]
+  );
+  return r.rows[0] ?? null;
+}
 async function saveWhatsappMessage(m) {
   const pool2 = await getRawPool();
   if (!pool2) return null;
@@ -49048,7 +49087,7 @@ async function attributeSaleToConversation(companyId, phone, saleId) {
   if (!digits) return null;
   const r = await pool2.query(
     `UPDATE "whatsappConversations"
-       SET "status" = 'converted', "saleId" = $3, "updatedAt" = NOW()
+       SET "status" = 'converted', "stage" = 'converted', "saleId" = $3, "updatedAt" = NOW()
      WHERE "companyId" = $1
        AND regexp_replace("waId", '\\D', '', 'g') LIKE '%' || $2
      RETURNING "campaignName"`,
@@ -72961,6 +73000,17 @@ REGRAS: m\xE1ximo 4 itens por lista | cada item = 1 frase com o n\xFAmero real |
 }
 var aiAnalysisRouter = router({});
 
+// shared/whatsapp.ts
+var WHATSAPP_EDITABLE_STATUSES = ["open", "pending", "closed"];
+var WHATSAPP_CONVERSATION_STAGES = [
+  "lead",
+  "contacted",
+  "qualified",
+  "negotiation",
+  "lost"
+];
+var WHATSAPP_BOARD_STAGES = [...WHATSAPP_CONVERSATION_STAGES, "converted"];
+
 // server/whatsapp.router.ts
 var GRAPH = "https://graph.facebook.com/v21.0";
 async function exchangeEmbeddedSignupCode(code) {
@@ -73092,13 +73142,37 @@ var whatsappRouter = router({
     const company = await getCompanyById(input.companyId);
     if (!company || company.userId !== userId) throw new TRPCError({ code: "FORBIDDEN" });
     const rows = await listWhatsappConversations(input.companyId);
-    const total = rows.length;
-    const attributed = rows.filter((r) => r.campaignName).length;
-    const converted = rows.filter((r) => r.status === "converted").length;
     return {
       conversations: rows,
-      summary: { total, attributed, converted }
+      summary: await getWhatsappConversationSummary(input.companyId)
     };
+  }),
+  updateConversation: protectedProcedure.input(external_exports.object({
+    companyId: external_exports.number().int().positive(),
+    conversationId: external_exports.number().int().positive(),
+    status: external_exports.enum(WHATSAPP_EDITABLE_STATUSES).optional(),
+    stage: external_exports.enum(WHATSAPP_CONVERSATION_STAGES).optional()
+  }).refine((input) => input.status !== void 0 || input.stage !== void 0, {
+    message: "Informe o novo status ou etapa."
+  })).mutation(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado \xE0 empresa" });
+    }
+    const conversation = await updateWhatsappConversation(
+      input.companyId,
+      input.conversationId,
+      { status: input.status, stage: input.stage }
+    );
+    if (!conversation) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Conversa n\xE3o encontrada ou j\xE1 convertida por uma venda vinculada."
+      });
+    }
+    return { conversation };
   }),
   disconnect: protectedProcedure.input(external_exports.object({ companyId: external_exports.number().int().positive() })).mutation(async ({ input, ctx }) => {
     const userId = ctx.user?.id;

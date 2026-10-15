@@ -3,6 +3,7 @@ import { z } from "zod";
 import * as db from "./db";
 import { TRPCError } from "@trpc/server";
 import { ENV } from "./_core/env";
+import { WHATSAPP_CONVERSATION_STAGES, WHATSAPP_EDITABLE_STATUSES } from "../shared/whatsapp";
 
 const GRAPH = "https://graph.facebook.com/v21.0";
 
@@ -168,13 +169,41 @@ export const whatsappRouter = router({
       if (!company || company.userId !== userId) throw new TRPCError({ code: "FORBIDDEN" });
 
       const rows = await db.listWhatsappConversations(input.companyId);
-      const total = rows.length;
-      const attributed = rows.filter((r: any) => r.campaignName).length;
-      const converted = rows.filter((r: any) => r.status === "converted").length;
       return {
         conversations: rows,
-        summary: { total, attributed, converted },
+        summary: await db.getWhatsappConversationSummary(input.companyId),
       };
+    }),
+
+  updateConversation: protectedProcedure
+    .input(z.object({
+      companyId: z.number().int().positive(),
+      conversationId: z.number().int().positive(),
+      status: z.enum(WHATSAPP_EDITABLE_STATUSES).optional(),
+      stage: z.enum(WHATSAPP_CONVERSATION_STAGES).optional(),
+    }).refine((input) => input.status !== undefined || input.stage !== undefined, {
+      message: "Informe o novo status ou etapa.",
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.user?.id;
+      if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+      const company = await db.getCompanyById(input.companyId);
+      if (!company || company.userId !== userId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado à empresa" });
+      }
+
+      const conversation = await db.updateWhatsappConversation(
+        input.companyId,
+        input.conversationId,
+        { status: input.status, stage: input.stage },
+      );
+      if (!conversation) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Conversa não encontrada ou já convertida por uma venda vinculada.",
+        });
+      }
+      return { conversation };
     }),
 
   disconnect: protectedProcedure

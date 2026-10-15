@@ -241,11 +241,13 @@ async function ensureTables(pool: InstanceType<typeof Pool>) {
       "lastMessageText" text,
       "messageCount" integer DEFAULT 0 NOT NULL,
       "status" varchar(20) DEFAULT 'open',
+      "stage" varchar(40) DEFAULT 'lead' NOT NULL,
       "saleId" integer,
       "createdAt" timestamp DEFAULT now() NOT NULL,
       "updatedAt" timestamp DEFAULT now() NOT NULL,
       CONSTRAINT "whatsappConversations_company_wa_unique" UNIQUE("companyId", "waId")
     )`,
+    `ALTER TABLE "whatsappConversations" ADD COLUMN IF NOT EXISTS "stage" varchar(40) DEFAULT 'lead' NOT NULL`,
     `CREATE INDEX IF NOT EXISTS "idx_whatsappConversations_companyId" ON "whatsappConversations"("companyId")`,
     `CREATE INDEX IF NOT EXISTS "idx_whatsappConversations_waId" ON "whatsappConversations"("waId")`,
     `CREATE INDEX IF NOT EXISTS "idx_whatsappConfigs_companyId" ON "whatsappConfigs"("companyId")`,
@@ -991,6 +993,49 @@ export async function listWhatsappConversations(companyId: number, limit = 200) 
   return r.rows;
 }
 
+export async function getWhatsappConversationSummary(companyId: number) {
+  const pool = await getRawPool();
+  if (!pool) return { total: 0, attributed: 0, converted: 0, open: 0, pending: 0, closed: 0 };
+  const r = await pool.query(
+    `SELECT COUNT(*)::int AS total,
+            COUNT(*) FILTER (WHERE "campaignName" IS NOT NULL)::int AS attributed,
+            COUNT(*) FILTER (WHERE "status" = 'converted')::int AS converted,
+            COUNT(*) FILTER (WHERE COALESCE("status", 'open') = 'open')::int AS open,
+            COUNT(*) FILTER (WHERE "status" = 'pending')::int AS pending,
+            COUNT(*) FILTER (WHERE "status" = 'closed')::int AS closed
+     FROM "whatsappConversations" WHERE "companyId" = $1`,
+    [companyId],
+  );
+  const row = r.rows[0] ?? {};
+  return {
+    total: Number(row.total ?? 0),
+    attributed: Number(row.attributed ?? 0),
+    converted: Number(row.converted ?? 0),
+    open: Number(row.open ?? 0),
+    pending: Number(row.pending ?? 0),
+    closed: Number(row.closed ?? 0),
+  };
+}
+
+export async function updateWhatsappConversation(
+  companyId: number,
+  conversationId: number,
+  update: { status?: string; stage?: string },
+) {
+  const pool = await getRawPool();
+  if (!pool) return null;
+  const r = await pool.query(
+    `UPDATE "whatsappConversations"
+     SET "status" = COALESCE($3, "status"),
+         "stage" = COALESCE($4, "stage"),
+         "updatedAt" = NOW()
+     WHERE "companyId" = $1 AND "id" = $2 AND COALESCE("status", 'open') <> 'converted'
+     RETURNING *`,
+    [companyId, conversationId, update.status ?? null, update.stage ?? null],
+  );
+  return r.rows[0] ?? null;
+}
+
 /** Salva uma mensagem individual recebida via webhook */
 export async function saveWhatsappMessage(m: {
   conversationId?: number | null;
@@ -1208,7 +1253,7 @@ export async function attributeSaleToConversation(
   if (!digits) return null;
   const r = await pool.query(
     `UPDATE "whatsappConversations"
-       SET "status" = 'converted', "saleId" = $3, "updatedAt" = NOW()
+       SET "status" = 'converted', "stage" = 'converted', "saleId" = $3, "updatedAt" = NOW()
      WHERE "companyId" = $1
        AND regexp_replace("waId", '\\D', '', 'g') LIKE '%' || $2
      RETURNING "campaignName"`,

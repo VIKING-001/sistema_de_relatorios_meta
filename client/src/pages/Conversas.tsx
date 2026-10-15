@@ -1,16 +1,27 @@
 import { trpc } from "@/lib/trpc";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
   MessageCircle, Building2, Loader2, Settings2, Copy, Check,
-  Megaphone, CheckCircle2, Phone, Users, Tag, Zap, ArrowLeft, Clock, LogOut,
+  Megaphone, CheckCircle2, Phone, Users, Tag, Zap, ArrowLeft, Clock, LogOut, LayoutGrid, List,
 } from "lucide-react";
 import { launchWhatsappEmbeddedSignup, WHATSAPP_CONFIG_ID } from "@/lib/facebookSdk";
+import {
+  WHATSAPP_CONVERSATION_STAGES,
+  WHATSAPP_BOARD_STAGES,
+  WHATSAPP_EDITABLE_STATUSES,
+  WHATSAPP_STAGE_LABELS,
+  WHATSAPP_STATUS_LABELS,
+  filterWhatsappConversations,
+  getWhatsappBoardStage,
+  groupWhatsappConversationsByStage,
+} from "@shared/whatsapp";
 
 const WEBHOOK_URL = "https://sistemaderelatoriosmeta.vercel.app/webhook/whatsapp";
+const filterSelectClass = "min-w-0 w-full rounded-lg border border-white/10 bg-[#111820] px-3 py-2.5 text-sm text-white/85 focus:outline-none focus:ring-2 focus:ring-primary/40";
 
 function fmtDate(d: string) {
   return d ? new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—";
@@ -34,10 +45,16 @@ export default function Conversas() {
   const [companyId, setCompanyId] = useState<number | null>(null);
   const [showConfig, setShowConfig] = useState(false);
   const [selectedConv, setSelectedConv] = useState<any | null>(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
+  const [stageFilter, setStageFilter] = useState("all");
+  const [viewMode, setViewMode] = useState<"list" | "board">("list");
+  const utils = trpc.useUtils();
 
   const { data: convData, isLoading: loadingConvs } = trpc.whatsapp.listConversations.useQuery(
     { companyId: companyId ?? 0 },
-    { enabled: !!companyId }
+    { enabled: !!companyId, refetchInterval: 15_000 }
   );
   const { data: waConfig } = trpc.whatsapp.getConfig.useQuery(
     { companyId: companyId ?? 0 },
@@ -47,10 +64,30 @@ export default function Conversas() {
     { companyId: companyId ?? 0, waId: selectedConv?.waId ?? "" },
     { enabled: !!companyId && !!selectedConv, refetchInterval: 5000 }
   );
+  const updateConversation = trpc.whatsapp.updateConversation.useMutation({
+    onSuccess: ({ conversation }, variables) => {
+      setSelectedConv((current: any) => current?.id === conversation.id ? conversation : current);
+      void utils.whatsapp.listConversations.invalidate({ companyId: variables.companyId });
+      toast.success("Conversa atualizada.");
+    },
+    onError: (error) => toast.error(error.message || "Não foi possível atualizar a conversa."),
+  });
 
   const conversations = convData?.conversations ?? [];
-  const summary = convData?.summary ?? { total: 0, attributed: 0, converted: 0 };
+  const summary = convData?.summary ?? { total: 0, attributed: 0, converted: 0, open: 0, pending: 0, closed: 0 };
   const messages = msgData?.messages ?? [];
+  const filteredConversations = useMemo(() => {
+    return filterWhatsappConversations(conversations, {
+      search,
+      status: statusFilter,
+      source: sourceFilter,
+      stage: stageFilter,
+    });
+  }, [conversations, search, statusFilter, sourceFilter, stageFilter]);
+  const conversationsByStage = useMemo(
+    () => groupWhatsappConversationsByStage(filteredConversations),
+    [filteredConversations],
+  );
 
   // Agrupa mensagens por dia para separadores visuais
   const msgsByDay: { day: string; msgs: any[] }[] = [];
@@ -88,7 +125,7 @@ export default function Conversas() {
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             {selectedConv
               ? `${selectedConv.waId}${selectedConv.campaignName ? " · via " + selectedConv.campaignName : " · orgânica"}`
-              : "Conversas iniciadas pelos anúncios (Click-to-WhatsApp) com atribuição de campanha"}
+              : "Mensagens recebidas, origem de anúncio e etapa do atendimento"}
           </p>
         </div>
         {companyId && !selectedConv && (
@@ -141,6 +178,48 @@ export default function Conversas() {
                 : <span className="inline-flex items-center gap-1 text-[11px] text-white/30"><Tag className="h-3 w-3" />orgânica</span>}
               <p className="text-[10px] text-white/25 mt-0.5">{selectedConv.messageCount} msg(s)</p>
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 border-b border-white/8 bg-black/10 p-3 sm:grid-cols-2">
+            <label className="space-y-1.5 text-[11px] font-medium text-white/45">
+              Etapa comercial
+              <select
+                value={selectedConv.status === "converted" ? "converted" : (selectedConv.stage ?? "lead")}
+                disabled={selectedConv.status === "converted" || updateConversation.isPending}
+                onChange={(event) => updateConversation.mutate({
+                  companyId,
+                  conversationId: selectedConv.id,
+                  stage: event.target.value as (typeof WHATSAPP_CONVERSATION_STAGES)[number],
+                })}
+                className={filterSelectClass}
+              >
+                {selectedConv.status === "converted" && <option value="converted">Convertido por venda vinculada</option>}
+                {WHATSAPP_CONVERSATION_STAGES.map((stage) => (
+                  <option key={stage} value={stage}>{WHATSAPP_STAGE_LABELS[stage]}</option>
+                ))}
+              </select>
+            </label>
+            <label className="space-y-1.5 text-[11px] font-medium text-white/45">
+              Status do atendimento
+              {selectedConv.status === "converted" ? (
+                <div className={`${filterSelectClass} text-emerald-300`}>Convertida por venda registrada</div>
+              ) : (
+                <select
+                  value={selectedConv.status ?? "open"}
+                  disabled={updateConversation.isPending}
+                  onChange={(event) => updateConversation.mutate({
+                    companyId,
+                    conversationId: selectedConv.id,
+                    status: event.target.value as (typeof WHATSAPP_EDITABLE_STATUSES)[number],
+                  })}
+                  className={filterSelectClass}
+                >
+                  {WHATSAPP_EDITABLE_STATUSES.map((status) => (
+                    <option key={status} value={status}>{WHATSAPP_STATUS_LABELS[status]}</option>
+                  ))}
+                </select>
+              )}
+            </label>
           </div>
 
           {/* Mensagens */}
@@ -200,31 +279,87 @@ export default function Conversas() {
           {showConfig && <WhatsappConfig companyId={companyId} />}
 
           {/* Resumo */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {[
-              { label: "Conversas", value: String(summary.total), icon: Users, color: "text-white" },
+              { label: "Contatos", value: String(summary.total), icon: Users, color: "text-white" },
               { label: "Via anúncio", value: String(summary.attributed), icon: Megaphone, color: "text-cyan-400" },
-              { label: "Viraram venda", value: String(summary.converted), icon: CheckCircle2, color: "text-emerald-400" },
+              { label: "Pendentes", value: String(summary.pending), icon: Clock, color: "text-amber-300" },
+              { label: "Convertidas", value: String(summary.converted), icon: CheckCircle2, color: "text-emerald-400" },
             ].map((c, index) => (
-              <div key={c.label} className={`glass-card rounded-xl p-4 border border-white/10 ${index === 2 ? "col-span-2 sm:col-span-1" : ""}`}>
+              <div key={c.label} className="glass-card min-w-0 rounded-xl border border-white/10 p-3 sm:p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <c.icon className={`h-3.5 w-3.5 ${c.color}`} />
-                  <p className="text-[10px] text-white/30 uppercase tracking-wider font-medium">{c.label}</p>
+                  <c.icon className={`h-3.5 w-3.5 shrink-0 ${c.color}`} />
+                  <p className="truncate text-[10px] font-medium uppercase tracking-wider text-white/45">{c.label}</p>
                 </div>
                 <p className={`text-xl font-bold tabular-nums ${c.color}`}>{c.value}</p>
               </div>
             ))}
           </div>
+          <p className="-mt-3 text-[11px] text-white/35">
+            Totais do histórico completo. Lista e quadro mostram os 200 contatos mais recentes; os filtros atuam sobre eles.
+          </p>
 
           {/* Lista de conversas — clicável */}
           <div className="glass-card rounded-xl border border-white/10 overflow-hidden">
-            <div className="hidden sm:flex items-center gap-2 px-4 py-2.5 bg-black/30 border-b border-white/8 text-[10px] text-white/25 uppercase tracking-widest font-bold">
+            <div className="grid grid-cols-1 gap-2 border-b border-white/8 bg-black/20 p-3 sm:grid-cols-2 xl:grid-cols-4">
+              <Input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Buscar nome, telefone ou campanha"
+                aria-label="Buscar conversas"
+                className="h-10 min-w-0 border-white/10 bg-white/[0.04] text-sm"
+              />
+              <select aria-label="Filtrar por status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className={filterSelectClass}>
+                <option value="all">Todos os status</option>
+                <option value="open">Abertas</option>
+                <option value="pending">Pendentes</option>
+                <option value="closed">Fechadas</option>
+                <option value="converted">Convertidas</option>
+              </select>
+              <select aria-label="Filtrar por origem" value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value)} className={filterSelectClass}>
+                <option value="all">Todas as origens</option>
+                <option value="ads">Anúncios</option>
+                <option value="organic">Orgânicas</option>
+              </select>
+              <select aria-label="Filtrar por etapa comercial" value={stageFilter} onChange={(event) => setStageFilter(event.target.value)} className={filterSelectClass}>
+                <option value="all">Todas as etapas</option>
+                {WHATSAPP_CONVERSATION_STAGES.map((stage) => (
+                  <option key={stage} value={stage}>{WHATSAPP_STAGE_LABELS[stage]}</option>
+                ))}
+                <option value="converted">Convertido</option>
+              </select>
+              <div className="flex flex-col gap-2 sm:col-span-2 sm:flex-row sm:items-center sm:justify-between xl:col-span-4">
+                <p className="text-[11px] text-white/35" aria-live="polite">
+                  Exibindo {filteredConversations.length} dos {conversations.length} contatos carregados
+                </p>
+                <div className="flex items-center gap-1 self-start rounded-lg border border-white/10 bg-black/20 p-1 sm:self-auto" role="group" aria-label="Modo de visualização">
+                  <button
+                    type="button"
+                    aria-pressed={viewMode === "list"}
+                    onClick={() => setViewMode("list")}
+                    className={`inline-flex min-h-9 items-center gap-2 rounded-md px-3 text-xs font-medium transition-colors ${viewMode === "list" ? "bg-primary text-black" : "text-white/55 hover:bg-white/5 hover:text-white"}`}
+                  >
+                    <List className="h-4 w-4" /> Lista
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={viewMode === "board"}
+                    onClick={() => setViewMode("board")}
+                    className={`inline-flex min-h-9 items-center gap-2 rounded-md px-3 text-xs font-medium transition-colors ${viewMode === "board" ? "bg-primary text-black" : "text-white/55 hover:bg-white/5 hover:text-white"}`}
+                  >
+                    <LayoutGrid className="h-4 w-4" /> Quadro
+                  </button>
+                </div>
+              </div>
+            </div>
+            {viewMode === "list" && <div className="hidden xl:flex items-center gap-2 px-4 py-2.5 bg-black/30 border-b border-white/8 text-[10px] text-white/25 uppercase tracking-widest font-bold">
               <div className="flex-1">Cliente</div>
               <div className="w-[180px]">Campanha de origem</div>
               <div className="w-[90px] text-center">Msgs</div>
               <div className="w-[130px] text-right">Última msg</div>
+              <div className="hidden w-[120px] text-center xl:block">Etapa</div>
               <div className="w-[100px] text-center">Status</div>
-            </div>
+            </div>}
 
             {loadingConvs && (
               <div className="flex items-center gap-2 px-4 py-10 text-white/30 text-xs">
@@ -237,13 +372,16 @@ export default function Conversas() {
                 <p>Nenhuma conversa ainda. Configure a conexão e rode anúncios Click-to-WhatsApp.</p>
               </div>
             )}
-            {conversations.map((c: any) => (
+            {!loadingConvs && conversations.length > 0 && filteredConversations.length === 0 && (
+              <div className="px-4 py-10 text-center text-sm text-white/40">Nenhuma conversa corresponde aos filtros.</div>
+            )}
+            {viewMode === "list" && filteredConversations.map((c: any) => (
               <button
                 key={c.id}
                 onClick={() => setSelectedConv(c)}
-                className="flex w-full flex-col gap-3 border-b border-white/8 px-4 py-4 text-left transition-colors last:border-0 hover:bg-white/[0.06] active:bg-white/10 sm:flex-row sm:items-center sm:gap-2 sm:py-3"
+                className="flex w-full flex-col gap-3 border-b border-white/8 px-4 py-4 text-left transition-colors last:border-0 hover:bg-white/[0.06] active:bg-white/10 xl:flex-row xl:items-center xl:gap-2 xl:py-3"
               >
-                <div className="flex min-w-0 items-start justify-between gap-3 sm:flex-1">
+                <div className="flex min-w-0 items-start justify-between gap-3 xl:flex-1">
                   <div className="min-w-0">
                     <p className="flex items-center gap-1.5 truncate text-sm font-medium text-white/90">
                       <Phone className="h-3 w-3 shrink-0 text-white/30" />
@@ -254,35 +392,77 @@ export default function Conversas() {
                       <p className="mt-0.5 truncate pl-[18px] text-[11px] italic text-white/45">{c.lastMessageText}</p>
                     )}
                   </div>
-                  <span className="shrink-0 sm:hidden">
+                  <span className="shrink-0 xl:hidden">
                     {c.status === "converted"
                       ? <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2 py-1 text-[10px] font-semibold text-emerald-300"><CheckCircle2 className="h-2.5 w-2.5" /> Vendeu</span>
-                      : <span className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[10px] font-semibold text-white/50">Aberta</span>}
+                      : <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold ${c.status === "pending" ? "border-amber-400/25 bg-amber-400/10 text-amber-200" : c.status === "closed" ? "border-white/15 bg-white/5 text-white/50" : "border-cyan-400/25 bg-cyan-400/10 text-cyan-200"}`}>{WHATSAPP_STATUS_LABELS[c.status ?? "open"] ?? "Aberta"}</span>}
                   </span>
                 </div>
-                <div className="grid w-full grid-cols-2 gap-x-4 gap-y-2 sm:contents">
-                <div className="col-span-2 min-w-0 sm:col-span-1 sm:w-[180px]">
-                  <span className="mb-1 block text-[10px] text-white/40 sm:hidden">Origem</span>
+                <div className="grid w-full grid-cols-2 gap-x-4 gap-y-2 xl:contents">
+                <div className="col-span-2 min-w-0 xl:col-span-1 xl:w-[180px]">
+                  <span className="mb-1 block text-[10px] text-white/40 xl:hidden">Origem</span>
                   {c.campaignName
                     ? <span className="inline-flex max-w-full min-w-0 items-center gap-1 truncate text-[11px] text-cyan-300/90"><Megaphone className="h-3 w-3 shrink-0" />{c.campaignName}</span>
                     : <span className="inline-flex items-center gap-1 text-[11px] text-white/25"><Tag className="h-3 w-3 shrink-0" />orgânica</span>}
                 </div>
-                <div className="text-left text-[11px] text-white/50 tabular-nums sm:w-[90px] sm:text-center">
-                  <span className="mb-1 block text-[10px] text-white/40 sm:hidden">Mensagens</span>
+                <div className="text-left text-[11px] text-white/50 tabular-nums xl:w-[90px] xl:text-center">
+                  <span className="mb-1 block text-[10px] text-white/40 xl:hidden">Mensagens</span>
                   {c.messageCount}
                 </div>
-                <div className="text-left text-[11px] text-white/50 tabular-nums sm:w-[130px] sm:text-right">
-                  <span className="mb-1 block text-[10px] text-white/40 sm:hidden">Última mensagem</span>
+                <div className="text-left text-[11px] text-white/50 tabular-nums xl:w-[130px] xl:text-right">
+                  <span className="mb-1 block text-[10px] text-white/40 xl:hidden">Última mensagem</span>
                   {fmtDate(c.lastMessageAt)}
                 </div>
-                <div className="hidden sm:flex sm:w-[100px] sm:justify-center">
+                <div className="min-w-0 text-left text-[11px] text-white/50 xl:hidden">
+                  <span className="mb-1 block text-[10px] text-white/40">Etapa</span>
+                  <span className="block truncate">{WHATSAPP_STAGE_LABELS[getWhatsappBoardStage(c)]}</span>
+                </div>
+                <div className="hidden min-w-0 text-left text-[11px] text-white/50 xl:block xl:w-[120px] xl:text-center">
+                  {WHATSAPP_STAGE_LABELS[getWhatsappBoardStage(c)]}
+                </div>
+                <div className="hidden xl:flex xl:w-[100px] xl:justify-center">
                   {c.status === "converted"
                     ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border text-emerald-300 bg-emerald-400/10 border-emerald-400/25"><CheckCircle2 className="h-2.5 w-2.5" /> Vendeu</span>
-                    : <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border text-white/50 bg-white/5 border-white/15">Aberta</span>}
+                    : <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${c.status === "pending" ? "border-amber-400/25 bg-amber-400/10 text-amber-200" : c.status === "closed" ? "border-white/15 bg-white/5 text-white/50" : "border-cyan-400/25 bg-cyan-400/10 text-cyan-200"}`}>{WHATSAPP_STATUS_LABELS[c.status ?? "open"] ?? "Aberta"}</span>}
                 </div>
                 </div>
               </button>
             ))}
+            {viewMode === "board" && !loadingConvs && filteredConversations.length > 0 && (
+              <div className="grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 2xl:grid-cols-3">
+                {WHATSAPP_BOARD_STAGES.map((stage) => (
+                  <section key={stage} aria-labelledby={`stage-${stage}`} className="min-w-0 rounded-lg border border-white/10 bg-black/15">
+                    <header className="flex items-center justify-between gap-2 border-b border-white/8 px-3 py-3">
+                      <h2 id={`stage-${stage}`} className="truncate text-xs font-semibold text-white/80">{WHATSAPP_STAGE_LABELS[stage]}</h2>
+                      <span className="shrink-0 rounded-full bg-white/8 px-2 py-0.5 text-[10px] tabular-nums text-white/55">
+                        {conversationsByStage[stage].length}
+                      </span>
+                    </header>
+                    <div className="space-y-2 p-2">
+                      {conversationsByStage[stage].length === 0 ? (
+                        <p className="px-2 py-5 text-center text-[11px] text-white/30">Nenhum contato nesta etapa.</p>
+                      ) : conversationsByStage[stage].map((c: any) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => setSelectedConv(c)}
+                          className="block w-full min-w-0 rounded-lg border border-white/8 bg-[#111820] p-3 text-left transition-colors hover:border-primary/30 hover:bg-white/[0.06]"
+                        >
+                          <span className="block truncate text-sm font-medium text-white/85">{c.customerName || c.waId}</span>
+                          <span className="mt-1 block truncate text-[11px] text-white/40">
+                            {c.campaignName ? `Anúncio · ${c.campaignName}` : "Origem orgânica"}
+                          </span>
+                          <span className="mt-2 flex items-center justify-between gap-2 text-[10px] text-white/35">
+                            <span>{c.messageCount} mensagem(ns)</span>
+                            <span>{fmtDate(c.lastMessageAt)}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            )}
           </div>
         </>
       )}
