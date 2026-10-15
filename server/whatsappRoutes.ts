@@ -1,5 +1,11 @@
 import { Router, Request, Response } from "express";
 import * as db from "./db";
+import {
+  verifyMetaWebhookSignature,
+  whatsappEchoRecipient,
+  whatsappMessageText,
+  whatsappMessageTimestamp,
+} from "./whatsappWebhookUtils";
 
 const router = Router();
 
@@ -26,6 +32,18 @@ router.get("/webhook/whatsapp", async (req: Request, res: Response) => {
 // ── Recebimento de mensagens (POST) ──────────────────────────────────────────
 router.post("/webhook/whatsapp", async (req: Request, res: Response) => {
   try {
+    const appSecret = process.env.META_APP_SECRET?.trim();
+    if (!appSecret) {
+      console.error("[WhatsApp] META_APP_SECRET não configurado; webhook recusado.");
+      return res.sendStatus(503);
+    }
+    const rawBody = (req as Request & { rawBody?: string }).rawBody;
+    const signature = req.get("x-hub-signature-256");
+    if (!verifyMetaWebhookSignature(rawBody, signature, appSecret)) {
+      console.warn("[WhatsApp] Webhook recusado: assinatura Meta inválida ou ausente.");
+      return res.sendStatus(401);
+    }
+
     const body = req.body;
     if (body?.object !== "whatsapp_business_account") return res.sendStatus(200);
 
@@ -33,8 +51,9 @@ router.post("/webhook/whatsapp", async (req: Request, res: Response) => {
       for (const change of entry.changes ?? []) {
         const value = change.value ?? {};
         const phoneNumberId: string | undefined = value?.metadata?.phone_number_id;
-        const messages = value.messages ?? [];
-        if (!phoneNumberId || messages.length === 0) continue;
+        const messages = Array.isArray(value.messages) ? value.messages : [];
+        const echoes = Array.isArray(value.message_echoes) ? value.message_echoes : [];
+        if (!phoneNumberId || (messages.length === 0 && echoes.length === 0)) continue;
 
         const cfg = await db.getWhatsappConfigByPhoneNumberId(phoneNumberId);
         if (!cfg) {
@@ -54,16 +73,14 @@ router.post("/webhook/whatsapp", async (req: Request, res: Response) => {
             console.warn("[WhatsApp] Mensagem ignorada: remetente ou ID ausente.");
             continue;
           }
-          const ts = msg.timestamp ? new Date(Number(msg.timestamp) * 1000) : new Date();
-          if (Number.isNaN(ts.getTime())) {
+          const ts = msg.timestamp == null || msg.timestamp === ""
+            ? new Date()
+            : whatsappMessageTimestamp(msg.timestamp);
+          if (!ts) {
             console.warn("[WhatsApp] Mensagem ignorada: timestamp inválido.");
             continue;
           }
-          const text =
-            msg.text?.body ??
-            msg.button?.text ??
-            msg.interactive?.button_reply?.title ??
-            `[${msg.type}]`;
+          const text = whatsappMessageText(msg);
 
           const ref = msg.referral;
           const campaignName =
@@ -100,6 +117,40 @@ router.post("/webhook/whatsapp", async (req: Request, res: Response) => {
             });
           } catch (error: any) {
             console.error("[WhatsApp] Falha ao registrar mensagem/atendimento:", error?.message || error);
+            throw error;
+          }
+        }
+
+        for (const msg of echoes) {
+          const waId = whatsappEchoRecipient(msg);
+          const wamid = String(msg.id ?? "");
+          const ts = whatsappMessageTimestamp(msg.timestamp);
+          if (!waId || !wamid || !ts) {
+            console.warn("[WhatsApp] Echo ignorado: destinatário, ID ou timestamp ausente/inválido.");
+            continue;
+          }
+          const text = whatsappMessageText(msg);
+          try {
+            const saved = await db.recordWhatsappOutboundMessage({
+              companyId: cfg.companyId,
+              waId,
+              wamid,
+              type: msg.type ?? "text",
+              text,
+              timestamp: ts,
+            });
+            if (saved.duplicate) continue;
+
+            await db.logWebhookEvent({
+              companyId: cfg.companyId,
+              platform: "whatsapp",
+              success: true,
+              trackingFound: !!saved.conversation?.campaignName,
+              message: "Resposta enviada pela equipe registrada",
+              payloadSummary: text.slice(0, 200),
+            });
+          } catch (error: any) {
+            console.error("[WhatsApp] Falha ao registrar resposta enviada:", error?.message || error);
             throw error;
           }
         }

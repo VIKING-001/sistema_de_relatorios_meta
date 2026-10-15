@@ -53,9 +53,9 @@ Objetivo: registrar padroes funcionais que podem inspirar o Sistema de Relatorio
 | Venda manual e separacao de canal site/WhatsApp | Existe | Preservar; canal da venda nao substitui origem da campanha |
 | WhatsApp: receber e ler mensagens, atribuicao CTWA e vinculo de venda | Existe parcialmente; mensagens recebidas ficam no historico por telefone | Nao afirmar que envia/responde mensagens pelo painel |
 | Etapa/status, etiquetas e quadro por contato | Implementados; etiquetas podem ser usadas para filtrar contatos e atendimentos | Dados antigos recebem etapa padrao `Lead`; conversoes por venda vinculada ficam bloqueadas como estado derivado |
-| Historico por sessao, nao apenas por telefone | Implementado para novas mensagens: atendimento novo apos 24h sem mensagem recebida; mensagens antigas continuam no historico do contato e nao sao reclassificadas | A janela e uma regra de agrupamento operacional, nao uma afirmacao sobre cobranca Meta; etapas/status continuam no nivel do contato |
-| Tempos de primeira resposta/tempo entre mensagens | Nao confiaveis: o fluxo atual nao garante registro completo das mensagens do atendente | So implementar apos capturar eventos inbound e outbound com timestamps |
-| Funil e segmentacao temporal de conversas | Parcial: ha dados de mensagem/CTWA, mas faltam sessao e eventos completos de etapa | Fase futura, apos modelo de sessoes |
+| Historico por sessao, nao apenas por telefone | Implementado para novas mensagens: atendimento novo apos 24h sem atividade; mensagens antigas continuam no historico do contato e nao sao reclassificadas | A janela e uma regra de agrupamento operacional, nao uma afirmacao sobre cobranca Meta; etapas/status continuam no nivel do contato |
+| Tempos de primeira resposta/tempo entre mensagens | Implementado para novas mensagens quando a Meta entrega `smb_message_echoes` (Coexistence); a tela informa que dados historicos nao sao reconstruidos | Confirmar assinatura do campo no webhook e validar com um numero real elegivel para Coexistence |
+| Funil e segmentacao temporal de conversas | Parcial: sessoes podem ser consultadas, mas ainda nao ha historico de transicoes de etapa nem funil temporal real | Modelar eventos de etapa antes de apresentar taxas de conversao por etapa |
 | CAPI Meta / conversoes offline Google | Nao identificado no fluxo atual do nosso app | Integracao futura; depende de requisitos e permissao do usuario |
 | Formularios web associados a WhatsApp | Nao identificado no fluxo atual | Integracao futura, com consentimento e normalizacao de telefone |
 | Webhooks de saida para automacoes | Nao identificado como produto de webhook generico de eventos | Fase futura; assinar eventos com segredo, retries e historico de entrega |
@@ -75,12 +75,14 @@ Objetivo: registrar padroes funcionais que podem inspirar o Sistema de Relatorio
 - Novas mensagens recebidas sao deduplicadas por `wamid` e gravadas com sessao e contato na mesma transacao; retentativas nao incrementam contagens novamente.
 - O webhook confirma sucesso somente apos persistir; falhas retornam erro para permitir retry sem duplicar o processamento.
 - Visao separada de atendimentos com filtros no servidor e paginas de 50; o historico antigo continua acessivel na visao de contatos.
-- A janela de 24h agrupa mensagens recebidas para separar atendimentos; mensagens enviadas pela equipe ainda nao sao capturadas de forma confiavel e nao alimentam metricas de resposta.
+- A janela de 24h agrupa mensagens recebidas e ecos outbound capturados para separar atendimentos; dados historicos anteriores ao evento de eco nao sao reclassificados.
+- Respostas enviadas pelo WhatsApp Business podem ser gravadas por `smb_message_echoes`; eventos sao deduplicados por `wamid`, vinculados ao contato/atendimento e entram no calculo da primeira resposta.
+- O webhook WhatsApp valida `X-Hub-Signature-256` com `META_APP_SECRET`; sem assinatura valida, o evento nao e processado.
 - Testes unitarios para filtro, agrupamento e precedencia de conversao.
 
 ## Proximas fases recomendadas
 
-1. Capturar eventos outbound (API de envio ou callbacks de status que tragam evidencia suficiente), com correlacao por `wamid`; so entao calcular resposta inicial, ritmo e SLA.
+1. Validar em producao `smb_message_echoes` com um numero real em Coexistence; somente depois avaliar metricas adicionais de ritmo e SLA.
 2. (Concluido) Adicionar etiquetas e paginacao/filtragem no servidor para contatos e atendimentos.
 3. Criar webhooks de saida com assinatura, retentativas, idempotencia e tela de entregas.
 4. Avaliar CAPI/Google offline e captura de formularios como integracoes independentes, com consentimento, configuracao e diagnostico.

@@ -32,6 +32,18 @@ function fmtTime(d: string) {
   return d ? new Date(d).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
 }
 
+function fmtDuration(seconds: number | null | undefined) {
+  if (seconds == null || !Number.isFinite(seconds)) return "Sem dados";
+  const safeSeconds = Math.max(0, Math.round(seconds));
+  if (safeSeconds < 60) return `${safeSeconds}s`;
+  const minutes = Math.floor(safeSeconds / 60);
+  const remainingSeconds = safeSeconds % 60;
+  if (minutes < 60) return remainingSeconds ? `${minutes}min ${remainingSeconds}s` : `${minutes}min`;
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return remainingMinutes ? `${hours}h ${remainingMinutes}min` : `${hours}h`;
+}
+
 function fmtDay(d: string) {
   if (!d) return "";
   const dt = new Date(d);
@@ -112,7 +124,9 @@ export default function Conversas() {
   const summary = convData?.summary ?? { total: 0, attributed: 0, converted: 0, open: 0, pending: 0, closed: 0 };
   const messages = msgData?.messages ?? [];
   const sessions = sessionData?.sessions ?? [];
-  const sessionSummary = sessionData?.summary ?? { total: 0, attributed: 0, organic: 0 };
+  const sessionSummary = sessionData?.summary ?? {
+    total: 0, attributed: 0, organic: 0, answered: 0, withInbound: 0, avgFirstResponseSeconds: null,
+  };
   const filteredConversations = useMemo(() => {
     return filterWhatsappConversations(conversations, {
       search,
@@ -394,11 +408,13 @@ export default function Conversas() {
           {showConfig && <WhatsappConfig companyId={companyId} />}
 
           {/* Resumo */}
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div className={`grid grid-cols-2 gap-3 ${recordMode === "sessions" ? "md:grid-cols-3 xl:grid-cols-6" : "md:grid-cols-4"}`}>
             {(recordMode === "sessions" ? [
               { label: "Atendimentos", value: String(sessionSummary.total), icon: MessageCircle, color: "text-white" },
               { label: "Via anúncio", value: String(sessionSummary.attributed), icon: Megaphone, color: "text-cyan-400" },
               { label: "Orgânicos", value: String(sessionSummary.organic), icon: Tag, color: "text-emerald-400" },
+              { label: "Com resposta", value: String(sessionSummary.answered), icon: CheckCircle2, color: "text-emerald-300" },
+              { label: "1ª resposta média", value: fmtDuration(sessionSummary.avgFirstResponseSeconds), icon: Clock, color: "text-amber-300" },
               { label: "Nesta página", value: String(sessions.length), icon: List, color: "text-amber-300" },
             ] : [
               { label: "Contatos", value: String(summary.total), icon: Users, color: "text-white" },
@@ -417,7 +433,7 @@ export default function Conversas() {
           </div>
           <p className="-mt-3 text-[11px] text-white/35">
             {recordMode === "sessions"
-              ? `Atendimentos agrupados até ${WHATSAPP_SESSION_IDLE_HOURS}h sem nova mensagem. ${sessionData?.summary.total ?? 0} no histórico completo.`
+              ? `Atendimentos agrupados até ${WHATSAPP_SESSION_IDLE_HOURS}h sem nova mensagem. A média considera somente atendimentos com mensagem do cliente e resposta capturada; o histórico anterior não é reconstruído.`
               : `Totais do histórico completo. Contatos carregados em páginas de 50; ${convData?.total ?? 0} correspondem aos filtros.`}
           </p>
 
@@ -503,6 +519,7 @@ export default function Conversas() {
               <div className="flex-1">Cliente</div>
               <div className="w-[180px]">Campanha de origem</div>
               <div className="w-[90px] text-center">Msgs</div>
+              {recordMode === "sessions" && <div className="w-[120px] text-center">1ª resposta</div>}
               <div className="w-[130px] text-right">Última msg</div>
               <div className="hidden w-[120px] text-center xl:block">Etapa</div>
               <div className="w-[100px] text-center">Status</div>
@@ -565,6 +582,14 @@ export default function Conversas() {
                   <span className="mb-1 block text-[10px] text-white/40 xl:hidden">Mensagens</span>
                   {c.messageCount}
                 </div>
+                {recordMode === "sessions" && (
+                  <div className="min-w-0 text-left text-[11px] text-white/55 tabular-nums xl:w-[120px] xl:text-center">
+                    <span className="mb-1 block text-[10px] text-white/40 xl:hidden">1ª resposta</span>
+                    {c.firstInboundAt
+                      ? c.firstResponseAt ? fmtDuration(c.firstResponseSeconds) : "Sem resposta capturada"
+                      : "Sem mensagem do cliente"}
+                  </div>
+                )}
                 <div className="text-left text-[11px] text-white/50 tabular-nums xl:w-[130px] xl:text-right">
                   <span className="mb-1 block text-[10px] text-white/40 xl:hidden">Última mensagem</span>
                   {fmtDate(c.lastMessageAt)}
@@ -756,6 +781,10 @@ function WhatsappConfig({ companyId }: { companyId: number }) {
         )}
       </div>
 
+      <div className="rounded-lg border border-amber-400/15 bg-amber-400/[0.05] px-3 py-2.5 text-[11px] leading-relaxed text-white/55">
+        Para registrar as respostas enviadas pela equipe e calcular o tempo da primeira resposta, assine também o campo <b className="text-amber-200">smb_message_echoes</b> no webhook da Meta. Esse evento depende de um número elegível para coexistência e não recupera mensagens antigas.
+      </div>
+
       {WHATSAPP_CONFIG_ID ? (
         <div className="rounded-lg bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 border border-emerald-500/20 p-4 space-y-3">
           <div className="flex items-start gap-2">
@@ -784,7 +813,8 @@ function WhatsappConfig({ companyId }: { companyId: number }) {
       <>
       <div className="rounded-lg bg-black/20 border border-white/8 p-3 text-[11px] text-white/50 space-y-1.5">
         <p className="text-white/70 font-semibold">No painel da Meta (developers.facebook.com → seu app → WhatsApp → Configuration):</p>
-        <p>1. Em <b>Callback URL</b>, cole a URL abaixo. 2. Em <b>Verify token</b>, use o mesmo que você criar aqui. 3. Assine o campo <b>messages</b>.</p>
+        <p>1. Em <b>Callback URL</b>, cole a URL abaixo. 2. Em <b>Verify token</b>, use o mesmo que você criar aqui. 3. Assine <b>messages</b> para mensagens recebidas e <b>smb_message_echoes</b> para respostas enviadas pelo WhatsApp Business em números com coexistência.</p>
+        <p className="text-amber-200/70">As respostas só começam a ser registradas depois que esse evento for assinado; mensagens antigas não são recuperadas.</p>
         <div className="flex items-center gap-2 mt-2">
           <code className="flex-1 truncate bg-black/40 rounded px-2 py-1 text-cyan-300/90">{WEBHOOK_URL}</code>
           <button onClick={() => copy(WEBHOOK_URL, "url")} className="text-white/50 hover:text-white shrink-0">
