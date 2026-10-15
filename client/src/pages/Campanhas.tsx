@@ -96,10 +96,32 @@ function MetricsGroup({ spend, revenue, roi, cpa, tracked }: { spend: number; re
   );
 }
 
+function MobileMetricsGrid({ spend, revenue, roi, cpa, tracked }: { spend: number; revenue: number; roi: number; cpa: number; tracked?: boolean }) {
+  const hasSpend = spend > 0;
+  const items = [
+    { label: "Gasto", value: hasSpend ? fmtBRL(spend) : "—", color: hasSpend ? "text-white" : "text-white/30" },
+    { label: tracked ? "Receita rastreada" : "Receita", value: revenue > 0 ? fmtBRL(revenue) : "—", color: revenue > 0 ? (tracked ? "text-cyan-300" : "text-emerald-400") : "text-white/30" },
+    { label: tracked ? "ROAS" : "ROI", value: hasSpend && (tracked ? revenue > 0 : true) ? (tracked ? `${(revenue / spend).toFixed(2)}x` : fmtPct(roi)) : "—", color: hasSpend ? (roi >= 0 ? "text-emerald-400" : "text-red-400") : "text-white/30" },
+    { label: "CPA", value: cpa > 0 ? fmtBRL(cpa) : "—", color: cpa > 0 ? "text-primary" : "text-white/30" },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-white/8 pt-3">
+      {items.map(item => (
+        <div key={item.label} className="min-w-0">
+          <p className="text-[10px] text-white/45">{item.label}</p>
+          <p className={`mt-0.5 whitespace-nowrap text-sm font-semibold tabular-nums ${item.color}`}>{item.value}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Ad Row ───────────────────────────────────────────────────────────────────
 function AdRow({ ad }: { ad: any }) {
   return (
-    <div className="flex items-center gap-2 px-4 py-2 border-b border-white/5 bg-black/20 last:border-0">
+    <>
+    <div className="hidden lg:flex items-center gap-2 px-4 py-2 border-b border-white/5 bg-black/20 last:border-0">
       <div className="w-5 shrink-0" /><div className="w-5 shrink-0" />
       <div className="w-1.5 h-1.5 rounded-full bg-white/20 shrink-0 ml-2" />
       <div className="flex-1 min-w-0 ml-2">
@@ -108,6 +130,14 @@ function AdRow({ ad }: { ad: any }) {
       <StatusBadge status={ad.status || ""} />
       <MetricsGroup spend={ad.spend ?? 0} revenue={ad.revenue ?? 0} roi={ad.roi ?? 0} cpa={ad.cpa ?? 0} />
     </div>
+    <div className="lg:hidden space-y-3 border-b border-white/8 bg-black/20 px-4 py-3">
+      <div className="flex items-start justify-between gap-3">
+        <p className="min-w-0 break-words text-sm leading-5 text-white/80">{ad.name || "Anúncio sem nome"}</p>
+        <StatusBadge status={ad.status || ""} />
+      </div>
+      <MobileMetricsGrid spend={ad.spend ?? 0} revenue={ad.revenue ?? 0} roi={ad.roi ?? 0} cpa={ad.cpa ?? 0} />
+    </div>
+    </>
   );
 }
 
@@ -127,7 +157,7 @@ function AdsetRow({
   return (
     <>
       <div
-        className="flex items-center gap-2 px-4 py-2.5 border-b border-white/5 bg-white/[0.02] hover:bg-white/[0.04] cursor-pointer transition-colors"
+        className="hidden lg:flex items-center gap-2 px-4 py-2.5 border-b border-white/5 bg-white/[0.02] hover:bg-white/[0.04] cursor-pointer transition-colors"
         onClick={() => setExpanded(v => !v)}
       >
         <div className="w-5 shrink-0" />
@@ -144,15 +174,36 @@ function AdsetRow({
         <StatusBadge status={adset.status || ""} />
         <MetricsGroup spend={adset.spend ?? 0} revenue={adset.revenue ?? 0} roi={adset.roi ?? 0} cpa={adset.cpa ?? 0} />
       </div>
+      <div className="lg:hidden border-b border-white/8 bg-white/[0.02] px-4 py-3 space-y-3">
+        <button
+          type="button"
+          className="flex min-h-11 w-full items-start gap-3 text-left"
+          aria-expanded={expanded}
+          onClick={() => setExpanded(v => !v)}
+        >
+          <Layers className="mt-0.5 h-4 w-4 shrink-0 text-primary/60" />
+          <span className="min-w-0 flex-1">
+            <span className="block break-words text-sm font-medium leading-5 text-white/85">{adset.name || "Conjunto sem nome"}</span>
+            <span className="mt-1 block text-xs text-white/45">
+              {isLoading ? "Carregando anúncios…" : `${ads.length} anúncio${ads.length !== 1 ? "s" : ""}`}
+            </span>
+          </span>
+          <span className="flex shrink-0 items-center gap-2">
+            <StatusBadge status={adset.status || ""} />
+            {expanded ? <ChevronDown className="h-4 w-4 text-primary" /> : <ChevronRight className="h-4 w-4 text-white/40" />}
+          </span>
+        </button>
+        <MobileMetricsGrid spend={adset.spend ?? 0} revenue={adset.revenue ?? 0} roi={adset.roi ?? 0} cpa={adset.cpa ?? 0} />
+      </div>
       {expanded && (
         <>
           {isLoading && (
-            <div className="flex items-center gap-2 px-14 py-2.5 text-xs text-white/30 bg-black/20 border-b border-white/5">
+            <div className="flex items-center gap-2 px-4 lg:px-14 py-2.5 text-xs text-white/50 bg-black/20 border-b border-white/5">
               <Loader2 className="h-3 w-3 animate-spin text-primary" /> Buscando anúncios no Meta...
             </div>
           )}
           {!isLoading && ads.length === 0 && (
-            <div className="px-14 py-2.5 text-xs text-white/20 bg-black/20 border-b border-white/5">
+            <div className="px-4 lg:px-14 py-2.5 text-xs text-white/45 bg-black/20 border-b border-white/5">
               Sem anúncios com dados no período.
             </div>
           )}
@@ -191,7 +242,7 @@ function CampaignRow({
   return (
     <>
       <div
-        className="flex items-center gap-2 px-4 py-3 border-b border-white/8 bg-white/[0.03] hover:bg-white/[0.06] cursor-pointer transition-all duration-200"
+        className="hidden lg:flex items-center gap-2 px-4 py-3 border-b border-white/8 bg-white/[0.03] hover:bg-white/[0.06] cursor-pointer transition-all duration-200"
         onClick={() => setExpanded(v => !v)}
       >
         <div className="w-5 h-5 flex items-center justify-center shrink-0">
@@ -234,6 +285,7 @@ function CampaignRow({
           <a
             href={`https://business.facebook.com/adsmanager/manage/campaigns?act=${metaAccountId?.replace("act_", "")}&selected_campaign_ids=${campaign.id}`}
             target="_blank" rel="noopener noreferrer"
+            aria-label={`Abrir ${campaign.name} no Gerenciador de Anúncios`}
             className="p-1.5 rounded-lg border border-white/10 bg-white/5 text-white/40 hover:text-primary hover:border-primary/30 transition-all"
           >
             <ExternalLink className="h-3 w-3" />
@@ -248,15 +300,72 @@ function CampaignRow({
         />
       </div>
 
+      <div className="lg:hidden space-y-3 border-b border-white/10 bg-white/[0.03] px-4 py-4">
+        <button
+          type="button"
+          className="flex min-h-11 w-full items-start gap-3 text-left"
+          aria-expanded={expanded}
+          onClick={() => setExpanded(v => !v)}
+        >
+          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+            <Megaphone className="h-4 w-4 text-primary" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block break-words text-[15px] font-semibold leading-5 text-white">{campaign.name || "Campanha sem nome"}</span>
+            <span className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs text-white/45">
+              {campaign.objective && <span>{campaign.objective.replace(/_/g, " ")}</span>}
+              {campaign.daily_budget && <span>{fmtBRLcents(parseInt(campaign.daily_budget))}/dia</span>}
+            </span>
+          </span>
+          {expanded ? <ChevronDown className="mt-1 h-4 w-4 shrink-0 text-primary" /> : <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-white/40" />}
+        </button>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusBadge status={campaign.effective_status || campaign.status || ""} />
+          {hasTracking && (
+            <span
+              className="inline-flex min-h-7 items-center gap-1 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-2 text-[10px] font-semibold text-cyan-300"
+              title={`${tracked.linkCount ?? 0} link(s) · ${tracked.clicks ?? 0} clique(s) · ${tracked.salesCount ?? 0} venda(s) rastreada(s)`}
+            >
+              <Link2 className="h-3 w-3" /> Rastreada
+            </span>
+          )}
+          <span className="flex-1" />
+          <button
+            type="button"
+            aria-label={`${openUtm === campaign.id ? "Fechar" : "Criar"} UTM para ${campaign.name}`}
+            aria-pressed={openUtm === campaign.id}
+            className={`inline-flex min-h-11 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors ${
+              openUtm === campaign.id
+                ? "border-primary/40 bg-primary/10 text-primary"
+                : "border-white/15 bg-white/5 text-white/75 active:bg-white/10"
+            }`}
+            onClick={() => setOpenUtm(openUtm === campaign.id ? null : campaign.id)}
+          >
+            <Link2 className="h-4 w-4" /> UTM
+          </button>
+          <a
+            href={`https://business.facebook.com/adsmanager/manage/campaigns?act=${metaAccountId?.replace("act_", "")}&selected_campaign_ids=${campaign.id}`}
+            target="_blank" rel="noopener noreferrer"
+            aria-label={`Abrir ${campaign.name} no Gerenciador de Anúncios`}
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-white/75 active:bg-white/10"
+          >
+            <ExternalLink className="h-4 w-4" />
+          </a>
+        </div>
+
+        <MobileMetricsGrid spend={spend} revenue={rowRevenue} roi={rowRoi} cpa={rowCpa} tracked={useTracked} />
+      </div>
+
       {expanded && (
         <>
           {loadingAdsets && (
-            <div className="flex items-center gap-2 px-12 py-3 text-xs text-white/30 bg-white/[0.02] border-b border-white/5">
+            <div className="flex items-center gap-2 px-4 lg:px-12 py-3 text-xs text-white/50 bg-white/[0.02] border-b border-white/5">
               <Loader2 className="h-3 w-3 animate-spin text-primary" /> Buscando conjuntos no Meta...
             </div>
           )}
           {!loadingAdsets && adsets.length === 0 && (
-            <div className="px-12 py-3 text-xs text-white/20 bg-white/[0.02] border-b border-white/5">
+            <div className="px-4 lg:px-12 py-3 text-xs text-white/45 bg-white/[0.02] border-b border-white/5">
               Nenhum conjunto encontrado para este período.
             </div>
           )}
@@ -586,7 +695,7 @@ function CompanyDetailView({ company, onBack }: { company: any; onBack: () => vo
       {/* Table */}
       <div className="glass-card rounded-xl border border-white/10 overflow-hidden">
         {campaigns.length > 0 && (
-          <div className="flex items-center gap-2 px-4 py-2.5 bg-black/30 border-b border-white/8 text-[10px] text-white/25 uppercase tracking-widest font-bold">
+        <div className="hidden lg:flex items-center gap-2 px-4 py-2.5 bg-black/30 border-b border-white/8 text-[10px] text-white/45 uppercase tracking-widest font-bold">
             <div className="w-5 shrink-0" />
             <div className="flex-1">Campanha / Conjunto / Anúncio</div>
             <div className="flex items-center gap-3 shrink-0 ml-3">
