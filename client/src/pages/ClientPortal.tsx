@@ -163,27 +163,27 @@ function MetricCard({
 }: MetricCardProps) {
   return (
     <article
-      className={`min-w-0 rounded-xl border border-white/8 bg-[#111820] ${compact ? "p-3" : "p-4 sm:p-5"}`}
+      className={`min-w-0 rounded-xl border border-white/8 bg-[#111820] ${compact ? "p-2.5 sm:p-3" : "p-4 sm:p-5"}`}
     >
-      <div className="flex items-start gap-3">
-        <span
-          className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg ${toneStyles[tone]}`}
-        >
-          <Icon aria-hidden="true" className="h-[18px] w-[18px]" />
-        </span>
-        <div className="min-w-0 flex-1">
+      <div className="flex min-w-0 flex-col">
+        <div className="flex min-h-8 items-start justify-between gap-2">
           <p className="text-xs font-medium leading-5 text-[#a4afbb]">
             {label}
           </p>
-          <p
-            className={`mt-1 break-words font-semibold tabular-nums text-white ${compact ? "text-lg" : "text-xl sm:text-2xl"}`}
+          <span
+            className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${toneStyles[tone]}`}
           >
-            {value}
-          </p>
-          {detail && (
-            <p className="mt-1 text-xs leading-5 text-[#a4afbb]">{detail}</p>
-          )}
+            <Icon aria-hidden="true" className="h-4 w-4" />
+          </span>
         </div>
+        <p
+          className={`mt-2 whitespace-nowrap font-semibold tabular-nums text-white ${compact ? "text-base sm:text-lg" : "text-xl sm:text-2xl"}`}
+        >
+          {value}
+        </p>
+        {detail && (
+          <p className="mt-1 text-xs leading-5 text-[#a4afbb]">{detail}</p>
+        )}
       </div>
     </article>
   );
@@ -413,7 +413,7 @@ function PeriodPerformance({
               />
               <MetricCard
                 icon={ShoppingBag}
-                label="Compras registradas"
+                label="Compras"
                 value={formatNumber(values.purchases)}
                 detail={
                   hasSales ? "Compras no período" : "Nenhuma compra registrada"
@@ -435,7 +435,7 @@ function PeriodPerformance({
               />
               <MetricCard
                 icon={Gauge}
-                label="Retorno sobre anúncios"
+                label="ROAS"
                 value={
                   values.roas > 0
                     ? `${values.roas.toFixed(2)}x`
