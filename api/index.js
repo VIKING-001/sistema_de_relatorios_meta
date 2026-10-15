@@ -49274,9 +49274,12 @@ async function listWhatsappMessages(companyId, waId, limit2 = 100) {
   const pool2 = await getRawPool();
   if (!pool2) return [];
   const r = await pool2.query(
-    `SELECT * FROM "whatsappMessages"
-     WHERE "companyId" = $1 AND "waId" = $2
-     ORDER BY "timestamp" ASC LIMIT $3`,
+    `SELECT * FROM (
+       SELECT * FROM "whatsappMessages"
+       WHERE "companyId" = $1 AND "waId" = $2
+       ORDER BY "timestamp" DESC, "id" DESC LIMIT $3
+     ) recent
+     ORDER BY "timestamp" ASC, "id" ASC`,
     [companyId, waId, limit2]
   );
   return r.rows;
@@ -49285,12 +49288,38 @@ async function listWhatsappSessionMessages(companyId, waId, sessionId, limit2 = 
   const pool2 = await getRawPool();
   if (!pool2) return [];
   const r = await pool2.query(
-    `SELECT * FROM "whatsappMessages"
-     WHERE "companyId" = $1 AND "waId" = $2 AND "sessionId" = $3
-     ORDER BY "timestamp" ASC, "id" ASC LIMIT $4`,
+    `SELECT * FROM (
+       SELECT * FROM "whatsappMessages"
+       WHERE "companyId" = $1 AND "waId" = $2 AND "sessionId" = $3
+       ORDER BY "timestamp" DESC, "id" DESC LIMIT $4
+     ) recent
+     ORDER BY "timestamp" ASC, "id" ASC`,
     [companyId, waId, sessionId, limit2]
   );
   return r.rows;
+}
+async function getWhatsappReplyContext(companyId, waId) {
+  const pool2 = await getRawPool();
+  if (!pool2) return null;
+  const r = await pool2.query(
+    `SELECT c."id" AS "conversationId",
+            inbound."timestamp" AS "lastInboundAt",
+            inbound."sessionId" AS "lastInboundSessionId"
+     FROM "whatsappConversations" c
+     LEFT JOIN LATERAL (
+       SELECT m."timestamp", m."sessionId"
+       FROM "whatsappMessages" m
+       WHERE m."companyId" = c."companyId"
+         AND m."waId" = c."waId"
+         AND m."direction" = 'inbound'
+       ORDER BY m."timestamp" DESC, m."id" DESC
+       LIMIT 1
+     ) inbound ON TRUE
+     WHERE c."companyId" = $1 AND c."waId" = $2
+     LIMIT 1`,
+    [companyId, waId]
+  );
+  return r.rows[0] ?? null;
 }
 async function listWhatsappSessions(input) {
   const pool2 = await getRawPool();
@@ -73630,8 +73659,116 @@ var whatsappRouter = router({
     if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
     const company = await getCompanyById(input.companyId);
     if (!company || company.userId !== userId) throw new TRPCError({ code: "FORBIDDEN" });
-    const messages = input.sessionId ? await listWhatsappSessionMessages(input.companyId, input.waId, input.sessionId) : await listWhatsappMessages(input.companyId, input.waId);
-    return { messages };
+    const [messages, replyContext] = await Promise.all([
+      input.sessionId ? listWhatsappSessionMessages(input.companyId, input.waId, input.sessionId) : listWhatsappMessages(input.companyId, input.waId),
+      getWhatsappReplyContext(input.companyId, input.waId)
+    ]);
+    return {
+      messages,
+      lastInboundAt: replyContext?.lastInboundAt ?? null,
+      lastInboundSessionId: replyContext?.lastInboundSessionId ?? null
+    };
+  }),
+  sendMessage: protectedProcedure.input(external_exports.object({
+    companyId: external_exports.number().int().positive(),
+    waId: external_exports.string().trim().regex(/^\d{8,15}$/, "N\xFAmero de WhatsApp inv\xE1lido."),
+    sessionId: external_exports.number().int().positive().optional(),
+    text: external_exports.string().trim().min(1, "Digite uma mensagem.").max(4096, "A mensagem deve ter at\xE9 4.096 caracteres.")
+  })).mutation(async ({ input, ctx }) => {
+    const userId = ctx.user?.id;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const company = await getCompanyById(input.companyId);
+    if (!company || company.userId !== userId) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado \xE0 empresa." });
+    }
+    const config2 = await getWhatsappConfigByCompany(input.companyId);
+    if (!config2 || config2.status !== "active") {
+      throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Conecte um n\xFAmero ativo do WhatsApp Cloud API antes de responder." });
+    }
+    if (!config2.accessToken) {
+      throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Esta conex\xE3o n\xE3o tem credencial de envio. Reconecte o WhatsApp pela Meta ou atualize o token de acesso." });
+    }
+    const replyContext = await getWhatsappReplyContext(input.companyId, input.waId);
+    if (!replyContext) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Este contato n\xE3o est\xE1 registrado nesta empresa." });
+    }
+    if (!replyContext.lastInboundAt) {
+      throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Ainda n\xE3o h\xE1 mensagem recebida deste contato para liberar uma resposta." });
+    }
+    const now = /* @__PURE__ */ new Date();
+    const lastInboundAt = new Date(replyContext.lastInboundAt).getTime();
+    if (!Number.isFinite(lastInboundAt) || lastInboundAt > now.getTime() + 5 * 60 * 1e3) {
+      throw new TRPCError({ code: "PRECONDITION_FAILED", message: "N\xE3o foi poss\xEDvel validar o hor\xE1rio da \xFAltima mensagem recebida. Atualize a conversa e tente novamente." });
+    }
+    if (now.getTime() - lastInboundAt >= 24 * 60 * 60 * 1e3) {
+      throw new TRPCError({ code: "PRECONDITION_FAILED", message: "A janela de atendimento de 24 horas encerrou. Fora dela, a Meta exige um modelo de mensagem aprovado." });
+    }
+    if (input.sessionId && Number(replyContext.lastInboundSessionId) !== input.sessionId) {
+      throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Este atendimento n\xE3o \xE9 o mais recente. Abra o atendimento mais novo para responder." });
+    }
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15e3);
+    let response;
+    let payload;
+    try {
+      response = await fetch(`${GRAPH}/${config2.phoneNumberId}/messages`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${config2.accessToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          recipient_type: "individual",
+          to: input.waId,
+          type: "text",
+          text: { preview_url: false, body: input.text }
+        }),
+        signal: controller.signal
+      });
+      payload = await response.json().catch(() => ({}));
+    } catch (error46) {
+      const message2 = error46?.name === "AbortError" ? "A Meta demorou para responder. Confira a conversa antes de tentar novamente para evitar duplicar a mensagem." : "N\xE3o foi poss\xEDvel conectar \xE0 API do WhatsApp. Confira a conex\xE3o e tente novamente.";
+      throw new TRPCError({ code: error46?.name === "AbortError" ? "TIMEOUT" : "BAD_GATEWAY", message: message2 });
+    } finally {
+      clearTimeout(timeout);
+    }
+    if (!response.ok || payload?.error) {
+      const metaMessage = typeof payload?.error?.message === "string" ? payload.error.message.slice(0, 240) : "";
+      const message2 = response.status === 401 || response.status === 403 ? "A Meta recusou o token ou a permiss\xE3o de envio. Reconecte o n\xFAmero e confirme a permiss\xE3o whatsapp_business_messaging." : `A Meta n\xE3o aceitou a mensagem${metaMessage ? `: ${metaMessage}` : ". Confira o n\xFAmero e a configura\xE7\xE3o do WhatsApp."}`;
+      throw new TRPCError({ code: "BAD_GATEWAY", message: message2 });
+    }
+    const wamid = payload?.messages?.[0]?.id;
+    if (typeof wamid !== "string" || !wamid) {
+      console.error("[WhatsApp] Meta aceitou resposta sem retornar wamid; envio n\xE3o pode ser confirmado no hist\xF3rico.");
+      return { success: true, persisted: false };
+    }
+    let persisted = false;
+    try {
+      const saved = await recordWhatsappOutboundMessage({
+        companyId: input.companyId,
+        waId: input.waId,
+        wamid,
+        type: "text",
+        text: input.text,
+        timestamp: now
+      });
+      persisted = !!saved?.message || !!saved?.duplicate;
+    } catch (error46) {
+      console.error("[WhatsApp] Mensagem aceita pela Meta, mas falhou a grava\xE7\xE3o local:", error46?.message || error46);
+    }
+    if (persisted) {
+      await logWebhookEvent({
+        companyId: input.companyId,
+        platform: "whatsapp",
+        success: true,
+        message: "Resposta enviada pelo painel",
+        payloadSummary: "Mensagem de texto enviada pela equipe"
+      }).catch((error46) => {
+        console.error("[WhatsApp] N\xE3o foi poss\xEDvel registrar o evento de envio:", error46?.message || error46);
+      });
+    }
+    return { success: true, persisted };
   })
 });
 

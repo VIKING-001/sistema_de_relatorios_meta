@@ -51,7 +51,7 @@ Objetivo: registrar padroes funcionais que podem inspirar o Sistema de Relatorio
 | Links UTM, redirecionamento curto e sessoes de clique | Existe; venda atribuida quando checkout/webhook/manual envia identificador | Manter e testar ponta a ponta por plataforma |
 | Webhooks de compra | Shopify, WooCommerce, API custom, Zapier e FacilZap possuem adaptadores/validacoes implementados | Nao confundir estes endpoints de entrada com webhooks de saida do CQC |
 | Venda manual e separacao de canal site/WhatsApp | Existe | Preservar; canal da venda nao substitui origem da campanha |
-| WhatsApp: receber e ler mensagens, atribuicao CTWA e vinculo de venda | Existe parcialmente; mensagens recebidas ficam no historico por telefone | Nao afirmar que envia/responde mensagens pelo painel |
+| WhatsApp: receber e ler mensagens, atribuicao CTWA e vinculo de venda | Existe; mensagens recebidas ficam no historico por telefone e atendimento | Preservar o historico e validar atribuicao com conversas reais |
 | Etapa/status, etiquetas e quadro por contato | Implementados; etiquetas podem ser usadas para filtrar contatos e atendimentos | Dados antigos recebem etapa padrao `Lead`; conversoes por venda vinculada ficam bloqueadas como estado derivado |
 | Historico por sessao, nao apenas por telefone | Implementado para novas mensagens: atendimento novo apos 24h sem atividade; mensagens antigas continuam no historico do contato e nao sao reclassificadas | A janela e uma regra de agrupamento operacional, nao uma afirmacao sobre cobranca Meta; etapas/status continuam no nivel do contato |
 | Tempos de primeira resposta/tempo entre mensagens | Implementado para novas mensagens quando a Meta entrega `smb_message_echoes` (Coexistence); a tela informa que dados historicos nao sao reconstruidos | Confirmar assinatura do campo no webhook e validar com um numero real elegivel para Coexistence |
@@ -77,6 +77,8 @@ Objetivo: registrar padroes funcionais que podem inspirar o Sistema de Relatorio
 - Visao separada de atendimentos com filtros no servidor e paginas de 50; o historico antigo continua acessivel na visao de contatos.
 - A janela de 24h agrupa mensagens recebidas e ecos outbound capturados para separar atendimentos; dados historicos anteriores ao evento de eco nao sao reclassificados.
 - Respostas enviadas pelo WhatsApp Business podem ser gravadas por `smb_message_echoes`; eventos sao deduplicados por `wamid`, vinculados ao contato/atendimento e entram no calculo da primeira resposta.
+- Envio de texto pelo painel usa WhatsApp Cloud API, valida a empresa e o contato, exige token ativo e bloqueia quando a janela de atendimento de 24h terminou; modelos aprovados fora da janela ainda nao sao enviados pelo sistema.
+- Respostas enviadas pelo painel sao gravadas usando o `wamid` retornado pela Meta; o eco do webhook e deduplicado pelo mesmo identificador.
 - O webhook WhatsApp valida `X-Hub-Signature-256` com `META_APP_SECRET`; sem assinatura valida, o evento nao e processado.
 - Testes unitarios para filtro, agrupamento e precedencia de conversao.
 

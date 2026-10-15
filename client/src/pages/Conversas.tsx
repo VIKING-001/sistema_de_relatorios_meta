@@ -3,10 +3,11 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   MessageCircle, Building2, Loader2, Settings2, Copy, Check,
-  Megaphone, CheckCircle2, Phone, Users, Tag, Zap, ArrowLeft, Clock, LogOut, LayoutGrid, List, X,
+  Megaphone, CheckCircle2, Phone, Users, Tag, Zap, ArrowLeft, Clock, LogOut, LayoutGrid, List, X, Send,
 } from "lucide-react";
 import { launchWhatsappEmbeddedSignup, WHATSAPP_CONFIG_ID } from "@/lib/facebookSdk";
 import {
@@ -59,6 +60,7 @@ export default function Conversas() {
   const [showConfig, setShowConfig] = useState(false);
   const [selectedConv, setSelectedConv] = useState<any | null>(null);
   const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
+  const [messageDraft, setMessageDraft] = useState("");
   const [recordMode, setRecordMode] = useState<"contacts" | "sessions">("contacts");
   const [contactOffset, setContactOffset] = useState(0);
   const [sessionOffset, setSessionOffset] = useState(0);
@@ -89,11 +91,11 @@ export default function Conversas() {
     },
     { enabled: !!companyId, refetchInterval: 15_000 }
   );
-  const { data: waConfig } = trpc.whatsapp.getConfig.useQuery(
+  const { data: waConfig, isLoading: loadingWaConfig } = trpc.whatsapp.getConfig.useQuery(
     { companyId: companyId ?? 0 },
     { enabled: !!companyId }
   );
-  const { data: msgData, isLoading: loadingMsgs } = trpc.whatsapp.listMessages.useQuery(
+  const { data: msgData, isLoading: loadingMsgs, error: msgError } = trpc.whatsapp.listMessages.useQuery(
     { companyId: companyId ?? 0, waId: selectedConv?.waId ?? "", sessionId: selectedSessionId ?? undefined },
     { enabled: !!companyId && !!selectedConv, refetchInterval: 5000 }
   );
@@ -119,10 +121,37 @@ export default function Conversas() {
     },
     onError: (error) => toast.error(error.message || "Não foi possível atualizar a conversa."),
   });
+  const sendWhatsappMessage = trpc.whatsapp.sendMessage.useMutation({
+    onSuccess: async (result, variables) => {
+      setMessageDraft("");
+      await Promise.all([
+        utils.whatsapp.listMessages.invalidate({
+          companyId: variables.companyId,
+          waId: variables.waId,
+          sessionId: variables.sessionId,
+        }),
+        utils.whatsapp.listConversations.invalidate({ companyId: variables.companyId }),
+        utils.whatsapp.listSessions.invalidate(),
+      ]);
+      if (result.persisted) {
+        toast.success("Mensagem enviada pelo WhatsApp.");
+      } else {
+        toast.warning("A Meta aceitou a mensagem, mas o histórico não confirmou a gravação. Atualize a conversa antes de tentar enviar de novo.", { duration: 9000 });
+      }
+    },
+    onError: (error) => toast.error(error.message || "Não foi possível enviar a mensagem."),
+  });
 
   const conversations = convData?.conversations ?? [];
   const summary = convData?.summary ?? { total: 0, attributed: 0, converted: 0, open: 0, pending: 0, closed: 0 };
   const messages = msgData?.messages ?? [];
+  const lastInboundAt = msgData?.lastInboundAt ? new Date(msgData.lastInboundAt) : null;
+  const replyWindowOpen = !!lastInboundAt
+    && Number.isFinite(lastInboundAt.getTime())
+    && Date.now() - lastInboundAt.getTime() >= -5 * 60 * 1000
+    && Date.now() - lastInboundAt.getTime() < 24 * 60 * 60 * 1000;
+  const latestSessionSelected = !selectedSessionId
+    || Number(msgData?.lastInboundSessionId) === selectedSessionId;
   const sessions = sessionData?.sessions ?? [];
   const sessionSummary = sessionData?.summary ?? {
     total: 0, attributed: 0, organic: 0, answered: 0, withInbound: 0, avgFirstResponseSeconds: null,
@@ -146,14 +175,17 @@ export default function Conversas() {
   );
 
   const openContact = (contact: any) => {
+    setMessageDraft("");
     setSelectedSessionId(null);
     setSelectedConv(contact);
   };
   const openSession = (session: any) => {
+    setMessageDraft("");
     setSelectedSessionId(session.id);
     setSelectedConv({ ...session, id: session.conversationId, sessionMessageCount: session.messageCount });
   };
   const closeMessages = () => {
+    setMessageDraft("");
     setSelectedConv(null);
     setSelectedSessionId(null);
   };
@@ -174,6 +206,16 @@ export default function Conversas() {
       return;
     }
     saveTags([...selectedTags, tag]);
+  };
+  const submitReply = () => {
+    const text = messageDraft.trim();
+    if (!companyId || !selectedConv || !text || sendWhatsappMessage.isPending) return;
+    sendWhatsappMessage.mutate({
+      companyId,
+      waId: selectedConv.waId,
+      sessionId: selectedSessionId ?? undefined,
+      text,
+    });
   };
 
   // Agrupa mensagens por dia para separadores visuais
@@ -394,13 +436,51 @@ export default function Conversas() {
             ))}
           </div>
 
-          {/* Rodapé */}
-          <div className="px-4 py-2.5 border-t border-white/8 bg-black/20">
-            <p className="text-[11px] text-white/25 text-center">
-              {selectedSessionId
-                ? `Atendimento agrupado até ${WHATSAPP_SESSION_IDLE_HOURS}h sem nova mensagem · Visualização somente leitura`
-                : "Histórico do contato · Visualização somente leitura · Responda pelo WhatsApp Business"}
+          {/* Resposta pelo Cloud API */}
+          <div className="space-y-2 border-t border-white/8 bg-black/20 p-3 sm:p-4">
+            <p className={`text-[11px] ${!waConfig?.hasToken && !loadingWaConfig ? "text-amber-300/80" : "text-white/35"}`}>
+              {loadingWaConfig || loadingMsgs
+                ? "Verificando conexão e janela de atendimento…"
+                : !msgData
+                  ? `Não foi possível validar esta conversa${msgError?.message ? `: ${msgError.message}` : ". Atualize o painel."}`
+                  : !waConfig?.hasToken
+                    ? "Esta conexão não tem token de envio. Reconecte o WhatsApp pela Meta para responder por aqui."
+                    : !lastInboundAt
+                      ? "Aguarde uma mensagem recebida deste contato para iniciar a resposta."
+                      : !replyWindowOpen
+                        ? "Janela de atendimento encerrada. Fora das 24 horas, a Meta exige um modelo aprovado; o envio de modelos ainda não está disponível."
+                        : !latestSessionSelected
+                          ? "Este atendimento é antigo. Abra o atendimento mais recente para responder dentro da janela atual."
+                          : `Janela de atendimento aberta até ${new Date(lastInboundAt.getTime() + 24 * 60 * 60 * 1000).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}.`}
             </p>
+            <div className="flex items-end gap-2">
+              <Textarea
+                value={messageDraft}
+                onChange={(event) => setMessageDraft(event.target.value.slice(0, 4096))}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    submitReply();
+                  }
+                }}
+                placeholder="Escreva sua resposta…"
+                aria-label="Mensagem de resposta"
+                maxLength={4096}
+                disabled={loadingWaConfig || loadingMsgs || !msgData || !waConfig?.hasToken || !replyWindowOpen || !latestSessionSelected || sendWhatsappMessage.isPending}
+                className="min-h-11 max-h-32 min-w-0 resize-y border-white/10 bg-white/[0.04] py-2.5 text-sm text-white"
+              />
+              <Button
+                type="button"
+                aria-label="Enviar mensagem"
+                title="Enviar mensagem"
+                onClick={submitReply}
+                disabled={!messageDraft.trim() || loadingWaConfig || loadingMsgs || !msgData || !waConfig?.hasToken || !replyWindowOpen || !latestSessionSelected || sendWhatsappMessage.isPending}
+                className="h-11 w-11 shrink-0 px-0"
+              >
+                {sendWhatsappMessage.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              </Button>
+            </div>
+            <p className="text-right text-[10px] text-white/25">{messageDraft.length}/4096 · Enter envia · Shift+Enter quebra linha</p>
           </div>
         </div>
       ) : (

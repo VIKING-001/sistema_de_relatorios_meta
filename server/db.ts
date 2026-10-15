@@ -1390,9 +1390,12 @@ export async function listWhatsappMessages(companyId: number, waId: string, limi
   const pool = await getRawPool();
   if (!pool) return [];
   const r = await pool.query(
-    `SELECT * FROM "whatsappMessages"
-     WHERE "companyId" = $1 AND "waId" = $2
-     ORDER BY "timestamp" ASC LIMIT $3`,
+    `SELECT * FROM (
+       SELECT * FROM "whatsappMessages"
+       WHERE "companyId" = $1 AND "waId" = $2
+       ORDER BY "timestamp" DESC, "id" DESC LIMIT $3
+     ) recent
+     ORDER BY "timestamp" ASC, "id" ASC`,
     [companyId, waId, limit]
   );
   return r.rows;
@@ -1407,12 +1410,40 @@ export async function listWhatsappSessionMessages(
   const pool = await getRawPool();
   if (!pool) return [];
   const r = await pool.query(
-    `SELECT * FROM "whatsappMessages"
-     WHERE "companyId" = $1 AND "waId" = $2 AND "sessionId" = $3
-     ORDER BY "timestamp" ASC, "id" ASC LIMIT $4`,
+    `SELECT * FROM (
+       SELECT * FROM "whatsappMessages"
+       WHERE "companyId" = $1 AND "waId" = $2 AND "sessionId" = $3
+       ORDER BY "timestamp" DESC, "id" DESC LIMIT $4
+     ) recent
+     ORDER BY "timestamp" ASC, "id" ASC`,
     [companyId, waId, sessionId, limit],
   );
   return r.rows;
+}
+
+/** Contexto mínimo para responder com segurança a um contato existente. */
+export async function getWhatsappReplyContext(companyId: number, waId: string) {
+  const pool = await getRawPool();
+  if (!pool) return null;
+  const r = await pool.query(
+    `SELECT c."id" AS "conversationId",
+            inbound."timestamp" AS "lastInboundAt",
+            inbound."sessionId" AS "lastInboundSessionId"
+     FROM "whatsappConversations" c
+     LEFT JOIN LATERAL (
+       SELECT m."timestamp", m."sessionId"
+       FROM "whatsappMessages" m
+       WHERE m."companyId" = c."companyId"
+         AND m."waId" = c."waId"
+         AND m."direction" = 'inbound'
+       ORDER BY m."timestamp" DESC, m."id" DESC
+       LIMIT 1
+     ) inbound ON TRUE
+     WHERE c."companyId" = $1 AND c."waId" = $2
+     LIMIT 1`,
+    [companyId, waId],
+  );
+  return r.rows[0] ?? null;
 }
 
 export async function listWhatsappSessions(input: {
