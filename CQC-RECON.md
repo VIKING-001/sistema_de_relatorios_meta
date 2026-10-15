@@ -84,8 +84,18 @@ Objetivo: registrar padroes funcionais que podem inspirar o Sistema de Relatorio
 
 ## Proximas fases recomendadas
 
-1. Validar em producao `smb_message_echoes` com um numero real em Coexistence; somente depois avaliar metricas adicionais de ritmo e SLA.
-2. (Concluido) Adicionar etiquetas e paginacao/filtragem no servidor para contatos e atendimentos.
-3. Criar webhooks de saida com assinatura, retentativas, idempotencia e tela de entregas.
-4. Avaliar CAPI/Google offline e captura de formularios como integracoes independentes, com consentimento, configuracao e diagnostico.
-5. Avaliar IA de qualificacao/transcricao separada da analise de relatorios, com controle de consentimento e custo.
+1. **Validacao de producao do WhatsApp:** testar recebimento, leitura, resposta pelo painel e `smb_message_echoes` com numero real elegivel para Coexistence; confirmar assinatura do campo no webhook. Nao reconstruir metricas historicas que nao foram capturadas.
+2. **Modelos aprovados do WhatsApp:** listar/sincronizar modelos aprovados pela Meta, preencher variaveis e permitir envio fora da janela de 24 horas, respeitando categoria, idioma, status e regras da Meta. Hoje o painel envia texto somente dentro da janela.
+3. **Historico de etapas do funil:** gravar cada transicao de etapa/status com data e autor. Usar esses eventos para taxas de conversao por periodo; nao inferir transicoes antigas que nunca foram registradas.
+4. **Webhooks de saida:** emitir eventos para CRM, planilhas, Zapier, Make e n8n, com assinatura, retentativas, idempotencia e tela de entregas. Esta capacidade e diferente dos webhooks de compra recebidos que ja existem.
+5. **Conversoes para plataformas de anuncios:** avaliar Meta CAPI e importacao de conversoes offline do Google Ads como integracoes separadas, com consentimento, deduplicacao, configuracao e diagnostico.
+6. **Formularios web associados a conversas:** capturar origem/UTM e associar o lead a um contato por telefone normalizado, com consentimento e tratamento de duplicidade.
+7. **IA para conversas:** avaliar transcricao e qualificacao separadamente da IA de analise dos relatorios; definir consentimento, retencao e limites de custo antes de processar audios ou mensagens.
+8. **Auditoria das analises CQC:** comparar os recursos de periodo, canal, numero, UTM, serie diaria e mapa de calor com as telas atuais e implementar somente lacunas confirmadas.
+
+### Escopo ja concluido
+
+- Etiquetas e paginacao/filtragem no servidor para contatos e atendimentos.
+- Envio de texto pelo painel dentro da janela de 24 horas, com registro e deduplicacao pelo identificador da Meta.
+
+Este backlog e um registro de planejamento. As proximas funcionalidades so devem ser implementadas depois de validar a etapa de producao e preservar os relatorios, links publicos e dados existentes.
