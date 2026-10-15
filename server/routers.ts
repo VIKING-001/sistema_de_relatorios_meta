@@ -68,6 +68,31 @@ const metricsSchema = z.object({
   costPerMessage: data.costPerMessage.toString(),
 }));
 
+const reportEditDraftSchema = z.object({
+  title: z.string().max(255),
+  description: z.string().max(10000),
+  startDate: z.string().max(20),
+  endDate: z.string().max(20),
+  instagramReach: z.string().max(32),
+  totalReach: z.string().max(32),
+  totalImpressions: z.string().max(32),
+  instagramProfileVisits: z.string().max(32),
+  newInstagramFollowers: z.string().max(32),
+  profileVisitsThroughCamp: z.string().max(32),
+  totalSpent: z.string().max(32),
+  totalClicks: z.string().max(32),
+  costPerClick: z.string().max(32),
+  videoRetentionRate: z.string().max(32),
+  costPerProfileVisit: z.string().max(32),
+  messagesInitiated: z.string().max(32),
+  costPerMessage: z.string().max(32),
+  purchases: z.string().max(32),
+  sitePurchases: z.string().max(32),
+  whatsappPurchases: z.string().max(32),
+  purchaseValue: z.string().max(32),
+  costPerPurchase: z.string().max(32),
+});
+
 // ─── Meta Marketing API helpers ───────────────────────────────────────────────
 
 async function fetchMetaInsights(
@@ -533,6 +558,28 @@ export const appRouter = router({
         return { report, metrics };
       }),
 
+    getEditDraft: protectedProcedure
+      .input(z.object({ id: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        const report = await db.getReportById(input.id);
+        if (!report || report.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+        }
+        const draft = await db.getReportEditDraft(input.id, ctx.user.id);
+        return { draft };
+      }),
+
+    saveEditDraft: protectedProcedure
+      .input(z.object({ id: z.number().int().positive(), draft: reportEditDraftSchema }))
+      .mutation(async ({ ctx, input }) => {
+        const report = await db.getReportById(input.id);
+        if (!report || report.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+        }
+        const draft = await db.saveReportEditDraft(input.id, ctx.user.id, input.draft);
+        return { draft };
+      }),
+
     update: protectedProcedure
       .input(z.object({
         id: z.number().int().positive(),
@@ -592,6 +639,8 @@ export const appRouter = router({
           // na próxima abertura do relatório com os dados novos.
           await db.updateReportAiAnalysis(input.id, null as any);
         }
+
+        await db.deleteReportEditDraft(input.id, ctx.user.id);
 
         return updated;
       }),

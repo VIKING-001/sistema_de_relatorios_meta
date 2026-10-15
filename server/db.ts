@@ -85,6 +85,13 @@ async function ensureTables(pool: InstanceType<typeof Pool>) {
       "createdAt" timestamp DEFAULT now() NOT NULL,
       "updatedAt" timestamp DEFAULT now() NOT NULL
     )`,
+    `CREATE TABLE IF NOT EXISTS "reportEditDrafts" (
+      "reportId" integer PRIMARY KEY REFERENCES "reports"("id") ON DELETE CASCADE,
+      "userId" integer NOT NULL,
+      "payload" jsonb NOT NULL,
+      "updatedAt" timestamptz NOT NULL DEFAULT NOW()
+    )`,
+    `ALTER TABLE "reportEditDrafts" ENABLE ROW LEVEL SECURITY`,
     // Adiciona novas colunas de conversão em tabelas já existentes (idempotente)
     `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "purchases" integer DEFAULT 0 NOT NULL`,
     `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "sitePurchases" integer`,
@@ -734,6 +741,41 @@ export async function deleteReport(id: number) {
 export async function updateReportAiAnalysis(id: number, aiAnalysis: string | null) {
   const db = await getDb();
   await db.update(reports).set({ aiAnalysis: aiAnalysis as any }).where(eq(reports.id, id));
+}
+
+export async function getReportEditDraft(reportId: number, userId: number) {
+  const pool = await getRawPool();
+  if (!pool) throw new Error("Banco de dados indisponível");
+  const result = await pool.query(
+    `SELECT "payload" FROM "reportEditDrafts" WHERE "reportId" = $1 AND "userId" = $2 LIMIT 1`,
+    [reportId, userId]
+  );
+  return result.rows[0]?.payload ?? null;
+}
+
+export async function saveReportEditDraft(reportId: number, userId: number, payload: Record<string, string>) {
+  const pool = await getRawPool();
+  if (!pool) throw new Error("Banco de dados indisponível");
+  const result = await pool.query(
+    `INSERT INTO "reportEditDrafts" ("reportId", "userId", "payload", "updatedAt")
+     VALUES ($1, $2, $3::jsonb, NOW())
+     ON CONFLICT ("reportId") DO UPDATE
+       SET "payload" = EXCLUDED."payload", "updatedAt" = NOW()
+       WHERE "reportEditDrafts"."userId" = EXCLUDED."userId"
+     RETURNING "payload"`,
+    [reportId, userId, JSON.stringify(payload)]
+  );
+  if (!result.rows[0]) throw new Error("Não foi possível salvar o rascunho do relatório");
+  return result.rows[0].payload;
+}
+
+export async function deleteReportEditDraft(reportId: number, userId: number) {
+  const pool = await getRawPool();
+  if (!pool) throw new Error("Banco de dados indisponível");
+  await pool.query(
+    `DELETE FROM "reportEditDrafts" WHERE "reportId" = $1 AND "userId" = $2`,
+    [reportId, userId]
+  );
 }
 
 /**

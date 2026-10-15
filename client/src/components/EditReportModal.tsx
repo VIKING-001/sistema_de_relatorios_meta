@@ -1,4 +1,4 @@
-import { useState, useEffect, memo } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import { Report } from "@shared/types";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,31 @@ import { toast } from "sonner";
 import { Loader2, X, Target, DollarSign, MessageCircle, ShoppingBag } from "lucide-react";
 import { parseBrazilianNumber } from "@shared/numberParser";
 import { formatLocalDate, parseLocalDate } from "@shared/dateParser";
+
+interface ReportEditDraft {
+  title: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  instagramReach: string;
+  totalReach: string;
+  totalImpressions: string;
+  instagramProfileVisits: string;
+  newInstagramFollowers: string;
+  profileVisitsThroughCamp: string;
+  totalSpent: string;
+  totalClicks: string;
+  costPerClick: string;
+  videoRetentionRate: string;
+  costPerProfileVisit: string;
+  messagesInitiated: string;
+  costPerMessage: string;
+  purchases: string;
+  sitePurchases: string;
+  whatsappPurchases: string;
+  purchaseValue: string;
+  costPerPurchase: string;
+}
 
 // ─── Subcomponentes FORA do componente principal ───────────────────────────────
 // IMPORTANTE: definir dentro do componente pai causa re-mount a cada render,
@@ -74,6 +99,10 @@ export default function EditReportModal({ report, onClose, onSuccess }: EditRepo
     { id: report?.id ?? 0 },
     { enabled: !!report?.id }
   );
+  const editDraftQuery = trpc.report.getEditDraft.useQuery(
+    { id: report?.id ?? 0 },
+    { enabled: !!report?.id }
+  );
 
   const fullReport = fullData?.report;
   const metrics   = fullData?.metrics;
@@ -110,38 +139,151 @@ export default function EditReportModal({ report, onClose, onSuccess }: EditRepo
   const [costPerPurchase, setCostPerPurchase] = useState("0");
 
   const [isLoading, setIsLoading] = useState(false);
+  const [draftReadyForId, setDraftReadyForId] = useState<number | null>(null);
+  const [draftStatus, setDraftStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const draftQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const lastSavedDraftRef = useRef("");
+
+  const draftMutation = trpc.report.saveEditDraft.useMutation();
+  const trpcUtils = trpc.useUtils();
+
+  const draftSnapshot: ReportEditDraft = {
+    title, description, startDate, endDate,
+    instagramReach, totalReach, totalImpressions, instagramProfileVisits,
+    newInstagramFollowers, profileVisitsThroughCamp,
+    totalSpent, totalClicks, costPerClick, videoRetentionRate, costPerProfileVisit,
+    messagesInitiated, costPerMessage, purchases, sitePurchases, whatsappPurchases,
+    purchaseValue, costPerPurchase,
+  };
+  const draftSnapshotJson = JSON.stringify(draftSnapshot);
 
   useEffect(() => {
-    if (!fullReport) return;
-    setTitle(fullReport.title || "");
-    setDescription(fullReport.description || "");
-    setStartDate(formatLocalDate(parseLocalDate(String(fullReport.startDate).split("T")[0])));
-    setEndDate(formatLocalDate(parseLocalDate(String(fullReport.endDate).split("T")[0])));
-  }, [fullReport]);
+    const reportId = report?.id;
+    if (!reportId || !fullReport || fullReport.id !== reportId || loadingReport || !editDraftQuery.isFetched || editDraftQuery.isError) return;
+    if (draftReadyForId === reportId) return;
 
-  useEffect(() => {
-    if (!metrics) return;
-    setInstagramReach(metrics.instagramReach?.toString() ?? "0");
-    setTotalReach(metrics.totalReach?.toString() ?? "0");
-    setTotalImpressions(metrics.totalImpressions?.toString() ?? "0");
-    setInstagramProfileVisits(metrics.instagramProfileVisits?.toString() ?? "0");
-    setNewInstagramFollowers(metrics.newInstagramFollowers?.toString() ?? "0");
-    setProfileVisitsThroughCamp(metrics.profileVisitsThroughCampaigns?.toString() ?? "0");
-    setTotalSpent(metrics.totalSpent?.toString() ?? "0");
-    setTotalClicks(metrics.totalClicks?.toString() ?? "0");
-    setCostPerClick(metrics.costPerClick?.toString() ?? "0");
-    setVideoRetentionRate(metrics.videoRetentionRate?.toString() ?? "0");
-    setCostPerProfileVisit(metrics.costPerProfileVisit?.toString() ?? "0");
-    setMessagesInitiated(metrics.messagesInitiated?.toString() ?? "0");
-    setCostPerMessage((metrics as any).costPerMessage?.toString() ?? "0");
-    setPurchases((metrics as any).purchases?.toString() ?? "0");
-    setSitePurchases((metrics as any).sitePurchases?.toString() ?? "");
-    setWhatsappPurchases((metrics as any).whatsappPurchases?.toString() ?? "");
-    setPurchaseValue((metrics as any).purchaseValue?.toString() ?? "0");
-    setCostPerPurchase((metrics as any).costPerPurchase?.toString() ?? "0");
-  }, [metrics]);
+    const savedDraft = editDraftQuery.data?.draft as ReportEditDraft | null | undefined;
+    const initialDraft: ReportEditDraft = savedDraft ?? {
+      title: fullReport.title || "",
+      description: fullReport.description || "",
+      startDate: formatLocalDate(parseLocalDate(String(fullReport.startDate).split("T")[0])),
+      endDate: formatLocalDate(parseLocalDate(String(fullReport.endDate).split("T")[0])),
+      instagramReach: metrics?.instagramReach?.toString() ?? "0",
+      totalReach: metrics?.totalReach?.toString() ?? "0",
+      totalImpressions: metrics?.totalImpressions?.toString() ?? "0",
+      instagramProfileVisits: metrics?.instagramProfileVisits?.toString() ?? "0",
+      newInstagramFollowers: metrics?.newInstagramFollowers?.toString() ?? "0",
+      profileVisitsThroughCamp: metrics?.profileVisitsThroughCampaigns?.toString() ?? "0",
+      totalSpent: metrics?.totalSpent?.toString() ?? "0",
+      totalClicks: metrics?.totalClicks?.toString() ?? "0",
+      costPerClick: metrics?.costPerClick?.toString() ?? "0",
+      videoRetentionRate: metrics?.videoRetentionRate?.toString() ?? "0",
+      costPerProfileVisit: metrics?.costPerProfileVisit?.toString() ?? "0",
+      messagesInitiated: metrics?.messagesInitiated?.toString() ?? "0",
+      costPerMessage: (metrics as any)?.costPerMessage?.toString() ?? "0",
+      purchases: (metrics as any)?.purchases?.toString() ?? "0",
+      sitePurchases: (metrics as any)?.sitePurchases?.toString() ?? "",
+      whatsappPurchases: (metrics as any)?.whatsappPurchases?.toString() ?? "",
+      purchaseValue: (metrics as any)?.purchaseValue?.toString() ?? "0",
+      costPerPurchase: (metrics as any)?.costPerPurchase?.toString() ?? "0",
+    };
+
+    setTitle(initialDraft.title);
+    setDescription(initialDraft.description);
+    setStartDate(initialDraft.startDate);
+    setEndDate(initialDraft.endDate);
+    setInstagramReach(initialDraft.instagramReach);
+    setTotalReach(initialDraft.totalReach);
+    setTotalImpressions(initialDraft.totalImpressions);
+    setInstagramProfileVisits(initialDraft.instagramProfileVisits);
+    setNewInstagramFollowers(initialDraft.newInstagramFollowers);
+    setProfileVisitsThroughCamp(initialDraft.profileVisitsThroughCamp);
+    setTotalSpent(initialDraft.totalSpent);
+    setTotalClicks(initialDraft.totalClicks);
+    setCostPerClick(initialDraft.costPerClick);
+    setVideoRetentionRate(initialDraft.videoRetentionRate);
+    setCostPerProfileVisit(initialDraft.costPerProfileVisit);
+    setMessagesInitiated(initialDraft.messagesInitiated);
+    setCostPerMessage(initialDraft.costPerMessage);
+    setPurchases(initialDraft.purchases);
+    setSitePurchases(initialDraft.sitePurchases);
+    setWhatsappPurchases(initialDraft.whatsappPurchases);
+    setPurchaseValue(initialDraft.purchaseValue);
+    setCostPerPurchase(initialDraft.costPerPurchase);
+    lastSavedDraftRef.current = JSON.stringify(initialDraft);
+    setDraftStatus(savedDraft ? "saved" : "idle");
+    setDraftReadyForId(reportId);
+  }, [report?.id, fullReport, metrics, loadingReport, editDraftQuery.isFetched, editDraftQuery.isError, editDraftQuery.data, draftReadyForId]);
 
   const updateMutation = trpc.report.update.useMutation();
+
+  const queueDraftSave = (reportId: number, snapshot: ReportEditDraft) => {
+    const serialized = JSON.stringify(snapshot);
+    const queuedSave = draftQueueRef.current.catch(() => undefined).then(async () => {
+      if (serialized === lastSavedDraftRef.current) return;
+      await draftMutation.mutateAsync({ id: reportId, draft: snapshot });
+      lastSavedDraftRef.current = serialized;
+      trpcUtils.report.getEditDraft.setData({ id: reportId }, { draft: snapshot });
+      setDraftStatus("saved");
+    });
+    draftQueueRef.current = queuedSave;
+    return queuedSave;
+  };
+
+  useEffect(() => {
+    const reportId = report?.id;
+    if (!reportId || draftReadyForId !== reportId || loadingReport || draftSnapshotJson === lastSavedDraftRef.current) return;
+
+    if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+    setDraftStatus("saving");
+    draftTimerRef.current = setTimeout(() => {
+      draftTimerRef.current = null;
+      const snapshot = JSON.parse(draftSnapshotJson) as ReportEditDraft;
+      void queueDraftSave(reportId, snapshot).catch((error) => {
+        console.error("Erro ao salvar rascunho do relatório:", error);
+        setDraftStatus("error");
+      });
+    }, 700);
+
+    return () => {
+      if (draftTimerRef.current) {
+        clearTimeout(draftTimerRef.current);
+        draftTimerRef.current = null;
+      }
+    };
+  }, [report?.id, draftReadyForId, loadingReport, draftSnapshotJson]);
+
+  const flushDraft = async (reportId: number, snapshot: ReportEditDraft) => {
+    if (draftTimerRef.current) {
+      clearTimeout(draftTimerRef.current);
+      draftTimerRef.current = null;
+    }
+    try {
+      await draftQueueRef.current;
+      if (JSON.stringify(snapshot) !== lastSavedDraftRef.current) {
+        setDraftStatus("saving");
+        await queueDraftSave(reportId, snapshot);
+      }
+      await draftQueueRef.current;
+      return true;
+    } catch (error) {
+      console.error("Erro ao salvar rascunho do relatório:", error);
+      setDraftStatus("error");
+      return false;
+    }
+  };
+
+  const handleClose = async () => {
+    if (report && draftReadyForId === report.id) {
+      const saved = await flushDraft(report.id, draftSnapshot);
+      if (!saved) {
+        toast.error("Não foi possível salvar o rascunho. Tente novamente antes de fechar.");
+        return;
+      }
+    }
+    onClose();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,6 +304,7 @@ export default function EditReportModal({ report, onClose, onSuccess }: EditRepo
 
     setIsLoading(true);
     try {
+      await flushDraft(report.id, draftSnapshot);
       await updateMutation.mutateAsync({
         id: report.id,
         title: title.trim(),
@@ -191,6 +334,9 @@ export default function EditReportModal({ report, onClose, onSuccess }: EditRepo
           costPerMessage:              parseBrazilianNumber(costPerMessage)                       || 0,
         },
       });
+      lastSavedDraftRef.current = draftSnapshotJson;
+      trpcUtils.report.getEditDraft.setData({ id: report.id }, { draft: null });
+      setDraftStatus("idle");
       toast.success("Relatório atualizado com sucesso!");
       onSuccess();
       onClose();
@@ -212,17 +358,26 @@ export default function EditReportModal({ report, onClose, onSuccess }: EditRepo
         <div className="sticky top-0 flex items-center justify-between px-4 sm:px-5 py-4 border-b border-white/10 bg-[#0d1422]/95 backdrop-blur rounded-t-2xl z-10">
           <h2 className="text-base font-bold text-white">Editar Relatório</h2>
           <button
-            onClick={onClose}
+            type="button"
+            onClick={() => void handleClose()}
+            disabled={isLoading}
             className="text-gray-400 hover:text-white transition-colors p-2 rounded-xl hover:bg-white/10"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {loadingReport ? (
+        {loadingReport || (!!report?.id && editDraftQuery.isLoading) ? (
           <div className="flex items-center justify-center py-20 gap-3 text-muted-foreground">
             <Loader2 className="h-6 w-6 animate-spin" />
             <span className="text-sm">Carregando dados...</span>
+          </div>
+        ) : editDraftQuery.isError ? (
+          <div className="p-6 text-center space-y-3">
+            <p className="text-sm text-red-300">Não foi possível carregar o rascunho salvo. Tente novamente para evitar substituir dados pendentes.</p>
+            <Button type="button" variant="outline" onClick={() => void editDraftQuery.refetch()}>
+              Tentar novamente
+            </Button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-1">
@@ -324,25 +479,33 @@ export default function EditReportModal({ report, onClose, onSuccess }: EditRepo
               <Field label="Custo por Compra (R$)"  val={costPerPurchase} set={setCostPerPurchase} money disabled={isLoading} />
             </div>
 
-            {/* Botões */}
-            <div className="flex gap-3 justify-end pt-5 mt-4 border-t border-white/10">
-              <Button
-                type="button"
-                onClick={onClose}
-                variant="outline"
-                disabled={isLoading}
-                className="border-white/20 text-white hover:bg-white/10 rounded-xl"
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="rounded-xl bg-primary hover:bg-primary/90 text-white font-bold px-6"
-              >
-                {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Salvar Alterações
-              </Button>
+            {/* Rascunho automático e gravação final */}
+            <div className="flex flex-col gap-3 pt-5 mt-4 border-t border-white/10 sm:flex-row sm:items-center sm:justify-between">
+              <p aria-live="polite" className={`text-xs ${draftStatus === "error" ? "text-red-300" : "text-muted-foreground"}`}>
+                {draftStatus === "saving" && "Salvando rascunho..."}
+                {draftStatus === "saved" && "Rascunho salvo automaticamente. Clique em Salvar Alterações para aplicar ao relatório."}
+                {draftStatus === "error" && "Falha ao salvar o rascunho"}
+                {draftStatus === "idle" && "O rascunho é salvo automaticamente; use Salvar Alterações para aplicar tudo."}
+              </p>
+              <div className="flex gap-3 justify-end">
+                <Button
+                  type="button"
+                  onClick={() => void handleClose()}
+                  variant="outline"
+                  disabled={isLoading}
+                  className="border-white/20 text-white hover:bg-white/10 rounded-xl"
+                >
+                  Fechar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="rounded-xl bg-primary hover:bg-primary/90 text-white font-bold px-6"
+                >
+                  {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Salvar Alterações
+                </Button>
+              </div>
             </div>
           </form>
         )}

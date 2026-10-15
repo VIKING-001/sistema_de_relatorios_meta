@@ -48173,6 +48173,13 @@ async function ensureTables(pool2) {
       "createdAt" timestamp DEFAULT now() NOT NULL,
       "updatedAt" timestamp DEFAULT now() NOT NULL
     )`,
+    `CREATE TABLE IF NOT EXISTS "reportEditDrafts" (
+      "reportId" integer PRIMARY KEY REFERENCES "reports"("id") ON DELETE CASCADE,
+      "userId" integer NOT NULL,
+      "payload" jsonb NOT NULL,
+      "updatedAt" timestamptz NOT NULL DEFAULT NOW()
+    )`,
+    `ALTER TABLE "reportEditDrafts" ENABLE ROW LEVEL SECURITY`,
     // Adiciona novas colunas de conversão em tabelas já existentes (idempotente)
     `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "purchases" integer DEFAULT 0 NOT NULL`,
     `ALTER TABLE "reportMetrics" ADD COLUMN IF NOT EXISTS "sitePurchases" integer`,
@@ -48706,6 +48713,38 @@ async function deleteReport(id) {
 async function updateReportAiAnalysis(id, aiAnalysis) {
   const db = await getDb();
   await db.update(reports).set({ aiAnalysis }).where(eq(reports.id, id));
+}
+async function getReportEditDraft(reportId, userId) {
+  const pool2 = await getRawPool();
+  if (!pool2) throw new Error("Banco de dados indispon\xEDvel");
+  const result = await pool2.query(
+    `SELECT "payload" FROM "reportEditDrafts" WHERE "reportId" = $1 AND "userId" = $2 LIMIT 1`,
+    [reportId, userId]
+  );
+  return result.rows[0]?.payload ?? null;
+}
+async function saveReportEditDraft(reportId, userId, payload) {
+  const pool2 = await getRawPool();
+  if (!pool2) throw new Error("Banco de dados indispon\xEDvel");
+  const result = await pool2.query(
+    `INSERT INTO "reportEditDrafts" ("reportId", "userId", "payload", "updatedAt")
+     VALUES ($1, $2, $3::jsonb, NOW())
+     ON CONFLICT ("reportId") DO UPDATE
+       SET "payload" = EXCLUDED."payload", "updatedAt" = NOW()
+       WHERE "reportEditDrafts"."userId" = EXCLUDED."userId"
+     RETURNING "payload"`,
+    [reportId, userId, JSON.stringify(payload)]
+  );
+  if (!result.rows[0]) throw new Error("N\xE3o foi poss\xEDvel salvar o rascunho do relat\xF3rio");
+  return result.rows[0].payload;
+}
+async function deleteReportEditDraft(reportId, userId) {
+  const pool2 = await getRawPool();
+  if (!pool2) throw new Error("Banco de dados indispon\xEDvel");
+  await pool2.query(
+    `DELETE FROM "reportEditDrafts" WHERE "reportId" = $1 AND "userId" = $2`,
+    [reportId, userId]
+  );
 }
 async function getTrackedSalesSummary(companyId, startDate, endDate) {
   const pool2 = await getRawPool();
@@ -73174,6 +73213,30 @@ var metricsSchema = external_exports.object({
   costPerPurchase: data.costPerPurchase.toString(),
   costPerMessage: data.costPerMessage.toString()
 }));
+var reportEditDraftSchema = external_exports.object({
+  title: external_exports.string().max(255),
+  description: external_exports.string().max(1e4),
+  startDate: external_exports.string().max(20),
+  endDate: external_exports.string().max(20),
+  instagramReach: external_exports.string().max(32),
+  totalReach: external_exports.string().max(32),
+  totalImpressions: external_exports.string().max(32),
+  instagramProfileVisits: external_exports.string().max(32),
+  newInstagramFollowers: external_exports.string().max(32),
+  profileVisitsThroughCamp: external_exports.string().max(32),
+  totalSpent: external_exports.string().max(32),
+  totalClicks: external_exports.string().max(32),
+  costPerClick: external_exports.string().max(32),
+  videoRetentionRate: external_exports.string().max(32),
+  costPerProfileVisit: external_exports.string().max(32),
+  messagesInitiated: external_exports.string().max(32),
+  costPerMessage: external_exports.string().max(32),
+  purchases: external_exports.string().max(32),
+  sitePurchases: external_exports.string().max(32),
+  whatsappPurchases: external_exports.string().max(32),
+  purchaseValue: external_exports.string().max(32),
+  costPerPurchase: external_exports.string().max(32)
+});
 async function fetchMetaInsights(adAccountId, accessToken, startDate, endDate) {
   const accountId = adAccountId.startsWith("act_") ? adAccountId : `act_${adAccountId}`;
   const timeRange = JSON.stringify({ since: startDate, until: endDate });
@@ -73513,6 +73576,22 @@ var appRouter = router({
       const metrics = await getMetricsByReportId(report.id);
       return { report, metrics };
     }),
+    getEditDraft: protectedProcedure.input(external_exports.object({ id: external_exports.number().int().positive() })).query(async ({ ctx, input }) => {
+      const report = await getReportById(input.id);
+      if (!report || report.userId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+      }
+      const draft = await getReportEditDraft(input.id, ctx.user.id);
+      return { draft };
+    }),
+    saveEditDraft: protectedProcedure.input(external_exports.object({ id: external_exports.number().int().positive(), draft: reportEditDraftSchema })).mutation(async ({ ctx, input }) => {
+      const report = await getReportById(input.id);
+      if (!report || report.userId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Acesso negado" });
+      }
+      const draft = await saveReportEditDraft(input.id, ctx.user.id, input.draft);
+      return { draft };
+    }),
     update: protectedProcedure.input(external_exports.object({
       id: external_exports.number().int().positive(),
       title: external_exports.string().min(1).optional(),
@@ -73562,6 +73641,7 @@ var appRouter = router({
         }
         await updateReportAiAnalysis(input.id, null);
       }
+      await deleteReportEditDraft(input.id, ctx.user.id);
       return updated;
     }),
     delete: protectedProcedure.input(external_exports.object({ id: external_exports.number().int().positive() })).mutation(async ({ ctx, input }) => {
