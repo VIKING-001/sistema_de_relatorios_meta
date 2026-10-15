@@ -30,7 +30,7 @@ function BalanceAlertsSection() {
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-xs text-muted-foreground">
-          Contas Meta conectadas entram automaticamente no monitoramento com limite de R$ 100. A checagem automática é diária; use “Verificar agora” para consultar imediatamente. Funciona para saldo pré-pago em reais (boleto/Pix).
+          Contas ainda não classificadas são verificadas uma vez. Depois, a checagem diária consulta apenas contas com saldo pré-pago em reais (boleto/Pix), no limite configurado. Use “Verificar agora” para consultar ou reclassificar uma conta.
         </p>
         {companies.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhuma conta cadastrada.</p>
@@ -195,6 +195,14 @@ function BalanceAlertRow({ company }: { company: any }) {
           <p>Primeira verificação automática ocorrerá no próximo ciclo diário.</p>
         )}
         {alert?.lastCheckMessage && <p className="mt-1">{alert.lastCheckMessage}</p>}
+        {alert?.prepaidEligible === false && (
+          <p className="mt-1 text-amber-300">
+            Fora do monitoramento automático. Se a forma de pagamento mudou, use “Verificar agora” para reclassificar.
+          </p>
+        )}
+        {alert?.prepaidEligible === true && (
+          <p className="mt-1 text-emerald-300">Incluída no monitoramento diário de saldo pré-pago.</p>
+        )}
       </div>
     </div>
   );

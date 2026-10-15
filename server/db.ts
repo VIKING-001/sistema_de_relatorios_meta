@@ -288,6 +288,7 @@ async function ensureTables(pool: InstanceType<typeof Pool>) {
       "lastBalanceCents" integer,
       "lastCheckStatus" varchar(40),
       "lastCheckMessage" text,
+      "prepaidEligible" boolean,
       "createdAt" timestamptz DEFAULT NOW(),
       "updatedAt" timestamptz DEFAULT NOW(),
       CONSTRAINT "balanceAlerts_companyId_unique" UNIQUE("companyId")
@@ -296,6 +297,7 @@ async function ensureTables(pool: InstanceType<typeof Pool>) {
     `ALTER TABLE "balanceAlerts" ADD COLUMN IF NOT EXISTS "lastBalanceCents" integer`,
     `ALTER TABLE "balanceAlerts" ADD COLUMN IF NOT EXISTS "lastCheckStatus" varchar(40)`,
     `ALTER TABLE "balanceAlerts" ADD COLUMN IF NOT EXISTS "lastCheckMessage" text`,
+    `ALTER TABLE "balanceAlerts" ADD COLUMN IF NOT EXISTS "prepaidEligible" boolean`,
     `CREATE TABLE IF NOT EXISTS "clientPortalLinks" (
       "id" serial PRIMARY KEY NOT NULL,
       "companyId" integer NOT NULL UNIQUE,
@@ -1134,6 +1136,7 @@ export async function getAllEnabledBalanceAlerts() {
      FROM "companies" c
      LEFT JOIN "balanceAlerts" ba ON ba."companyId" = c."id"
      WHERE COALESCE(ba."enabled", TRUE) = TRUE
+       AND COALESCE(ba."prepaidEligible", TRUE) = TRUE
        AND c."metaAdAccountId" IS NOT NULL
        AND c."metaAccessToken" IS NOT NULL
        AND c."metaAccessToken" <> ''`
@@ -1157,22 +1160,24 @@ export async function recordBalanceAlertCheck(input: {
   message: string;
   balanceCents: number | null;
   notified: boolean;
+  prepaidEligible: boolean | null;
 }) {
   const pool = await getRawPool();
   if (!pool) throw new Error("Banco de dados indisponível");
   await pool.query(
     `INSERT INTO "balanceAlerts" (
        "companyId", "thresholdCents", "enabled", "lastCheckedAt",
-       "lastBalanceCents", "lastCheckStatus", "lastCheckMessage", "lastNotifiedAt"
-     ) VALUES ($1, $2, TRUE, NOW(), $3, $4, $5, CASE WHEN $6 THEN NOW() ELSE NULL END)
+       "lastBalanceCents", "lastCheckStatus", "lastCheckMessage", "lastNotifiedAt", "prepaidEligible"
+     ) VALUES ($1, $2, TRUE, NOW(), $3, $4, $5, CASE WHEN $6 THEN NOW() ELSE NULL END, $7)
      ON CONFLICT ("companyId") DO UPDATE SET
        "lastCheckedAt" = NOW(),
        "lastBalanceCents" = EXCLUDED."lastBalanceCents",
        "lastCheckStatus" = EXCLUDED."lastCheckStatus",
        "lastCheckMessage" = EXCLUDED."lastCheckMessage",
+       "prepaidEligible" = COALESCE(EXCLUDED."prepaidEligible", "balanceAlerts"."prepaidEligible"),
        "lastNotifiedAt" = CASE WHEN $6 THEN NOW() ELSE "balanceAlerts"."lastNotifiedAt" END,
        "updatedAt" = NOW()`,
-    [input.companyId, input.thresholdCents, input.balanceCents, input.status, input.message, input.notified]
+    [input.companyId, input.thresholdCents, input.balanceCents, input.status, input.message, input.notified, input.prepaidEligible]
   );
 }
 

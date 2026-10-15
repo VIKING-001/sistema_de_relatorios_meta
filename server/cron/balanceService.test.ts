@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { isAtOrBelowThreshold, parsePrepayAccountBalance } from "./balanceService";
+import {
+  isAtOrBelowThreshold,
+  parsePrepayAccountBalance,
+  prepaidEligibilityFromStatus,
+} from "./balanceService";
 
 describe("Meta prepaid balance alerts", () => {
   it("uses Meta's hundredths value as cents without multiplying twice", () => {
@@ -46,5 +50,12 @@ describe("Meta prepaid balance alerts", () => {
   it("alerts at exactly the configured threshold", () => {
     expect(isAtOrBelowThreshold(10000, 10000)).toBe(true);
     expect(isAtOrBelowThreshold(10001, 10000)).toBe(false);
+  });
+
+  it("only keeps prepaid BRL accounts in the automatic monitoring set", () => {
+    expect(prepaidEligibilityFromStatus("healthy")).toBe(true);
+    expect(prepaidEligibilityFromStatus("not_prepaid")).toBe(false);
+    expect(prepaidEligibilityFromStatus("currency_mismatch")).toBe(false);
+    expect(prepaidEligibilityFromStatus("error")).toBeNull();
   });
 });

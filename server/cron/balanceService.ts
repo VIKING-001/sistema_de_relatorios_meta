@@ -21,6 +21,12 @@ export type BalanceCheckStatus =
   | "currency_mismatch"
   | "error";
 
+export function prepaidEligibilityFromStatus(status: BalanceCheckStatus): boolean | null {
+  if (status === "not_prepaid" || status === "currency_mismatch") return false;
+  if (status === "error") return null;
+  return true;
+}
+
 export interface BalanceAlertCandidate {
   companyId: number;
   thresholdCents: number;
@@ -145,6 +151,7 @@ async function saveResult(
     message: result.message,
     balanceCents: result.balanceCents,
     notified: result.notified,
+    prepaidEligible: prepaidEligibilityFromStatus(result.status),
   });
   return result;
 }

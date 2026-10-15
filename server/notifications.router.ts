@@ -114,6 +114,7 @@ export const notificationsRouter = router({
         lastBalanceReais: alert?.lastBalanceCents == null ? null : alert.lastBalanceCents / 100,
         lastCheckStatus: alert?.lastCheckStatus ?? null,
         lastCheckMessage: alert?.lastCheckMessage ?? null,
+        prepaidEligible: alert?.prepaidEligible ?? null,
       };
     }),
 });

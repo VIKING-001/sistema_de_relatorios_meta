@@ -27,6 +27,7 @@ router.get("/api/cron/check-balances", async (req, res) => {
           balanceCents: null,
           message: "Falha interna ao consultar ou salvar o resultado.",
           notified: false,
+          prepaidEligible: null,
         };
       }
     }));
