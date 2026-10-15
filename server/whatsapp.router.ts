@@ -161,17 +161,31 @@ export const whatsappRouter = router({
     }),
 
   listConversations: protectedProcedure
-    .input(z.object({ companyId: z.number().int().positive() }))
+    .input(z.object({
+      companyId: z.number().int().positive(),
+      limit: z.number().int().min(1).max(100).default(50),
+      offset: z.number().int().min(0).max(100000).default(0),
+      search: z.string().trim().max(120).optional(),
+      status: z.enum(["open", "pending", "closed", "converted"]).optional(),
+      source: z.enum(["ads", "organic"]).optional(),
+      stage: z.enum([...WHATSAPP_CONVERSATION_STAGES, "converted"]).optional(),
+      tag: z.string().trim().min(1).max(30).optional(),
+    }))
     .query(async ({ input, ctx }) => {
       const userId = ctx.user?.id;
       if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
       const company = await db.getCompanyById(input.companyId);
       if (!company || company.userId !== userId) throw new TRPCError({ code: "FORBIDDEN" });
 
-      const rows = await db.listWhatsappConversations(input.companyId);
+      const [result, summary] = await Promise.all([
+        db.listWhatsappConversations(input),
+        db.getWhatsappConversationSummary(input.companyId),
+      ]);
       return {
-        conversations: rows,
-        summary: await db.getWhatsappConversationSummary(input.companyId),
+        ...result,
+        summary,
+        limit: input.limit,
+        offset: input.offset,
       };
     }),
 
@@ -184,6 +198,7 @@ export const whatsappRouter = router({
       status: z.enum(["open", "pending", "closed", "converted"]).optional(),
       source: z.enum(["ads", "organic"]).optional(),
       stage: z.enum([...WHATSAPP_CONVERSATION_STAGES, "converted"]).optional(),
+      tag: z.string().trim().min(1).max(30).optional(),
     }))
     .query(async ({ input, ctx }) => {
       const userId = ctx.user?.id;
@@ -209,8 +224,9 @@ export const whatsappRouter = router({
       conversationId: z.number().int().positive(),
       status: z.enum(WHATSAPP_EDITABLE_STATUSES).optional(),
       stage: z.enum(WHATSAPP_CONVERSATION_STAGES).optional(),
-    }).refine((input) => input.status !== undefined || input.stage !== undefined, {
-      message: "Informe o novo status ou etapa.",
+      tags: z.array(z.string().trim().min(1).max(30)).max(10).optional(),
+    }).refine((input) => input.status !== undefined || input.stage !== undefined || input.tags !== undefined, {
+      message: "Informe o novo status, etapa ou etiquetas.",
     }))
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.user?.id;
@@ -223,7 +239,13 @@ export const whatsappRouter = router({
       const conversation = await db.updateWhatsappConversation(
         input.companyId,
         input.conversationId,
-        { status: input.status, stage: input.stage },
+        {
+          status: input.status,
+          stage: input.stage,
+          tags: input.tags?.filter((tag, index, values) =>
+            values.findIndex((value) => value.toLocaleLowerCase("pt-BR") === tag.toLocaleLowerCase("pt-BR")) === index,
+          ),
+        },
       );
       if (!conversation) {
         throw new TRPCError({

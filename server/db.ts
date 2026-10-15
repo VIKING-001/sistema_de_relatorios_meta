@@ -243,14 +243,17 @@ async function ensureTables(pool: InstanceType<typeof Pool>) {
       "messageCount" integer DEFAULT 0 NOT NULL,
       "status" varchar(20) DEFAULT 'open',
       "stage" varchar(40) DEFAULT 'lead' NOT NULL,
+      "tags" jsonb DEFAULT '[]'::jsonb NOT NULL,
       "saleId" integer,
       "createdAt" timestamp DEFAULT now() NOT NULL,
       "updatedAt" timestamp DEFAULT now() NOT NULL,
       CONSTRAINT "whatsappConversations_company_wa_unique" UNIQUE("companyId", "waId")
     )`,
     `ALTER TABLE "whatsappConversations" ADD COLUMN IF NOT EXISTS "stage" varchar(40) DEFAULT 'lead' NOT NULL`,
+    `ALTER TABLE "whatsappConversations" ADD COLUMN IF NOT EXISTS "tags" jsonb DEFAULT '[]'::jsonb NOT NULL`,
     `CREATE INDEX IF NOT EXISTS "idx_whatsappConversations_companyId" ON "whatsappConversations"("companyId")`,
     `CREATE INDEX IF NOT EXISTS "idx_whatsappConversations_waId" ON "whatsappConversations"("waId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_whatsappConversations_tags" ON "whatsappConversations" USING GIN ("tags")`,
     `CREATE INDEX IF NOT EXISTS "idx_whatsappConfigs_companyId" ON "whatsappConfigs"("companyId")`,
     // Atendimentos separados por janelas de inatividade, sem substituir o contato consolidado.
     `CREATE TABLE IF NOT EXISTS "whatsappSessions" (
@@ -1150,14 +1153,40 @@ export async function recordWhatsappInboundMessage(m: {
 }
 
 /** Lista as conversas de WhatsApp de uma empresa (mais recentes primeiro) */
-export async function listWhatsappConversations(companyId: number, limit = 200) {
+export async function listWhatsappConversations(input: {
+  companyId: number;
+  limit: number;
+  offset: number;
+  search?: string;
+  status?: string;
+  source?: string;
+  stage?: string;
+  tag?: string;
+}) {
   const pool = await getRawPool();
-  if (!pool) return [];
+  if (!pool) return { conversations: [], total: 0 };
   const r = await pool.query(
-    `SELECT * FROM "whatsappConversations" WHERE "companyId" = $1 ORDER BY "lastMessageAt" DESC LIMIT $2`,
-    [companyId, limit]
+    `SELECT c.*, COUNT(*) OVER()::int AS "totalCount"
+     FROM "whatsappConversations" c
+     WHERE c."companyId" = $1
+       AND ($4::text IS NULL OR CONCAT_WS(' ', c."customerName", c."waId", c."campaignName", c."adHeadline") ILIKE '%' || $4 || '%')
+       AND ($5::text IS NULL OR COALESCE(c."status", 'open') = $5)
+       AND ($6::text IS NULL OR ($6 = 'ads' AND c."campaignName" IS NOT NULL) OR ($6 = 'organic' AND c."campaignName" IS NULL))
+       AND ($7::text IS NULL OR (CASE WHEN c."status" = 'converted' THEN 'converted' ELSE COALESCE(c."stage", 'lead') END) = $7)
+       AND ($8::text IS NULL OR c."tags" ? $8 OR EXISTS (
+         SELECT 1
+         FROM jsonb_array_elements_text(COALESCE(c."tags", '[]'::jsonb)) AS contact_tag(value)
+         WHERE LOWER(contact_tag.value) = LOWER($8)
+       ))
+     ORDER BY c."lastMessageAt" DESC, c."id" DESC
+     LIMIT $2 OFFSET $3`,
+    [input.companyId, input.limit, input.offset, input.search || null, input.status || null,
+      input.source || null, input.stage || null, input.tag || null]
   );
-  return r.rows;
+  return {
+    conversations: r.rows,
+    total: Number(r.rows[0]?.totalCount ?? 0),
+  };
 }
 
 export async function getWhatsappConversationSummary(companyId: number) {
@@ -1187,7 +1216,7 @@ export async function getWhatsappConversationSummary(companyId: number) {
 export async function updateWhatsappConversation(
   companyId: number,
   conversationId: number,
-  update: { status?: string; stage?: string },
+  update: { status?: string; stage?: string; tags?: string[] },
 ) {
   const pool = await getRawPool();
   if (!pool) return null;
@@ -1195,10 +1224,13 @@ export async function updateWhatsappConversation(
     `UPDATE "whatsappConversations"
      SET "status" = COALESCE($3, "status"),
          "stage" = COALESCE($4, "stage"),
+         "tags" = COALESCE($5::jsonb, "tags"),
          "updatedAt" = NOW()
-     WHERE "companyId" = $1 AND "id" = $2 AND COALESCE("status", 'open') <> 'converted'
+     WHERE "companyId" = $1 AND "id" = $2
+       AND (COALESCE("status", 'open') <> 'converted' OR ($3 IS NULL AND $4 IS NULL AND $5 IS NOT NULL))
      RETURNING *`,
-    [companyId, conversationId, update.status ?? null, update.stage ?? null],
+    [companyId, conversationId, update.status ?? null, update.stage ?? null,
+      update.tags === undefined ? null : JSON.stringify(update.tags)],
   );
   return r.rows[0] ?? null;
 }
@@ -1274,11 +1306,12 @@ export async function listWhatsappSessions(input: {
   status?: string;
   source?: string;
   stage?: string;
+  tag?: string;
 }) {
   const pool = await getRawPool();
   if (!pool) return { sessions: [], total: 0 };
   const r = await pool.query(
-    `SELECT s.*, c."status", c."stage", c."saleId",
+    `SELECT s.*, c."status", c."stage", c."saleId", c."tags",
             COUNT(*) OVER()::int AS "totalCount"
      FROM "whatsappSessions" s
      LEFT JOIN "whatsappConversations" c
@@ -1288,10 +1321,15 @@ export async function listWhatsappSessions(input: {
        AND ($5::text IS NULL OR COALESCE(c."status", 'open') = $5)
        AND ($6::text IS NULL OR ($6 = 'ads' AND s."campaignName" IS NOT NULL) OR ($6 = 'organic' AND s."campaignName" IS NULL))
        AND ($7::text IS NULL OR (CASE WHEN c."status" = 'converted' THEN 'converted' ELSE COALESCE(c."stage", 'lead') END) = $7)
+       AND ($8::text IS NULL OR c."tags" ? $8 OR EXISTS (
+         SELECT 1
+         FROM jsonb_array_elements_text(COALESCE(c."tags", '[]'::jsonb)) AS contact_tag(value)
+         WHERE LOWER(contact_tag.value) = LOWER($8)
+       ))
      ORDER BY s."lastMessageAt" DESC, s."id" DESC
      LIMIT $2 OFFSET $3`,
     [input.companyId, input.limit, input.offset, input.search || null, input.status || null,
-      input.source || null, input.stage || null],
+      input.source || null, input.stage || null, input.tag || null],
   );
   return {
     sessions: r.rows,

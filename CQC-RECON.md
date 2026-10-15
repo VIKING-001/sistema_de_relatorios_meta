@@ -52,7 +52,7 @@ Objetivo: registrar padroes funcionais que podem inspirar o Sistema de Relatorio
 | Webhooks de compra | Shopify, WooCommerce, API custom, Zapier e FacilZap possuem adaptadores/validacoes implementados | Nao confundir estes endpoints de entrada com webhooks de saida do CQC |
 | Venda manual e separacao de canal site/WhatsApp | Existe | Preservar; canal da venda nao substitui origem da campanha |
 | WhatsApp: receber e ler mensagens, atribuicao CTWA e vinculo de venda | Existe parcialmente; mensagens recebidas ficam no historico por telefone | Nao afirmar que envia/responde mensagens pelo painel |
-| Etapa/status por contato e quadro | Implementados nesta entrega como primeira versao local | Dados antigos recebem etapa padrao `Lead`; conversoes por venda vinculada ficam bloqueadas como estado derivado |
+| Etapa/status, etiquetas e quadro por contato | Implementados; etiquetas podem ser usadas para filtrar contatos e atendimentos | Dados antigos recebem etapa padrao `Lead`; conversoes por venda vinculada ficam bloqueadas como estado derivado |
 | Historico por sessao, nao apenas por telefone | Implementado para novas mensagens: atendimento novo apos 24h sem mensagem recebida; mensagens antigas continuam no historico do contato e nao sao reclassificadas | A janela e uma regra de agrupamento operacional, nao uma afirmacao sobre cobranca Meta; etapas/status continuam no nivel do contato |
 | Tempos de primeira resposta/tempo entre mensagens | Nao confiaveis: o fluxo atual nao garante registro completo das mensagens do atendente | So implementar apos capturar eventos inbound e outbound com timestamps |
 | Funil e segmentacao temporal de conversas | Parcial: ha dados de mensagem/CTWA, mas faltam sessao e eventos completos de etapa | Fase futura, apos modelo de sessoes |
@@ -64,13 +64,14 @@ Objetivo: registrar padroes funcionais que podem inspirar o Sistema de Relatorio
 ## Implementado nesta entrega
 
 - Etapas comerciais e status independentes para contatos do WhatsApp.
-- Filtros por texto, origem, status e etapa.
+- Filtros por texto, origem, status, etapa e etiqueta; etiquetas nao diferenciam maiusculas/minusculas.
 - Alternancia de visualizacao entre lista responsiva e quadro por etapa.
 - Atualizacao automatica da lista a cada 15 segundos enquanto a tela esta aberta.
 - Mudancas de status/etapa autorizadas por empresa e validadas no servidor.
 - Conversao por venda vinculada e estado derivado, sem permitir que a interface sobrescreva essa conversao.
-- Resumo calculado em SQL sobre o historico inteiro, nao somente sobre os 200 contatos carregados na lista.
-- A interface informa que a lista/quadro de contatos mostram somente os 200 mais recentes; atendimentos novos tem paginacao de 50 por pagina.
+- Resumo calculado em SQL sobre o historico inteiro, nao somente sobre a pagina carregada.
+- Contatos e atendimentos sao filtrados no servidor e paginados em lotes de 50; lista e quadro refletem filtros e a pagina atual.
+- Etiquetas por contato, com limite de 10, visiveis na lista/quadro e editaveis no detalhe.
 - Novas mensagens recebidas sao deduplicadas por `wamid` e gravadas com sessao e contato na mesma transacao; retentativas nao incrementam contagens novamente.
 - O webhook confirma sucesso somente apos persistir; falhas retornam erro para permitir retry sem duplicar o processamento.
 - Visao separada de atendimentos com filtros no servidor e paginas de 50; o historico antigo continua acessivel na visao de contatos.
@@ -80,7 +81,7 @@ Objetivo: registrar padroes funcionais que podem inspirar o Sistema de Relatorio
 ## Proximas fases recomendadas
 
 1. Capturar eventos outbound (API de envio ou callbacks de status que tragam evidencia suficiente), com correlacao por `wamid`; so entao calcular resposta inicial, ritmo e SLA.
-2. Adicionar tags por empresa e paginacao/filtragem no servidor tambem para a lista de contatos.
+2. (Concluido) Adicionar etiquetas e paginacao/filtragem no servidor para contatos e atendimentos.
 3. Criar webhooks de saida com assinatura, retentativas, idempotencia e tela de entregas.
 4. Avaliar CAPI/Google offline e captura de formularios como integracoes independentes, com consentimento, configuracao e diagnostico.
 5. Avaliar IA de qualificacao/transcricao separada da analise de relatorios, com controle de consentimento e custo.

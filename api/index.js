@@ -48343,14 +48343,17 @@ async function ensureTables(pool2) {
       "messageCount" integer DEFAULT 0 NOT NULL,
       "status" varchar(20) DEFAULT 'open',
       "stage" varchar(40) DEFAULT 'lead' NOT NULL,
+      "tags" jsonb DEFAULT '[]'::jsonb NOT NULL,
       "saleId" integer,
       "createdAt" timestamp DEFAULT now() NOT NULL,
       "updatedAt" timestamp DEFAULT now() NOT NULL,
       CONSTRAINT "whatsappConversations_company_wa_unique" UNIQUE("companyId", "waId")
     )`,
     `ALTER TABLE "whatsappConversations" ADD COLUMN IF NOT EXISTS "stage" varchar(40) DEFAULT 'lead' NOT NULL`,
+    `ALTER TABLE "whatsappConversations" ADD COLUMN IF NOT EXISTS "tags" jsonb DEFAULT '[]'::jsonb NOT NULL`,
     `CREATE INDEX IF NOT EXISTS "idx_whatsappConversations_companyId" ON "whatsappConversations"("companyId")`,
     `CREATE INDEX IF NOT EXISTS "idx_whatsappConversations_waId" ON "whatsappConversations"("waId")`,
+    `CREATE INDEX IF NOT EXISTS "idx_whatsappConversations_tags" ON "whatsappConversations" USING GIN ("tags")`,
     `CREATE INDEX IF NOT EXISTS "idx_whatsappConfigs_companyId" ON "whatsappConfigs"("companyId")`,
     // Atendimentos separados por janelas de inatividade, sem substituir o contato consolidado.
     `CREATE TABLE IF NOT EXISTS "whatsappSessions" (
@@ -49066,14 +49069,39 @@ async function recordWhatsappInboundMessage(m) {
     client.release();
   }
 }
-async function listWhatsappConversations(companyId, limit2 = 200) {
+async function listWhatsappConversations(input) {
   const pool2 = await getRawPool();
-  if (!pool2) return [];
+  if (!pool2) return { conversations: [], total: 0 };
   const r = await pool2.query(
-    `SELECT * FROM "whatsappConversations" WHERE "companyId" = $1 ORDER BY "lastMessageAt" DESC LIMIT $2`,
-    [companyId, limit2]
+    `SELECT c.*, COUNT(*) OVER()::int AS "totalCount"
+     FROM "whatsappConversations" c
+     WHERE c."companyId" = $1
+       AND ($4::text IS NULL OR CONCAT_WS(' ', c."customerName", c."waId", c."campaignName", c."adHeadline") ILIKE '%' || $4 || '%')
+       AND ($5::text IS NULL OR COALESCE(c."status", 'open') = $5)
+       AND ($6::text IS NULL OR ($6 = 'ads' AND c."campaignName" IS NOT NULL) OR ($6 = 'organic' AND c."campaignName" IS NULL))
+       AND ($7::text IS NULL OR (CASE WHEN c."status" = 'converted' THEN 'converted' ELSE COALESCE(c."stage", 'lead') END) = $7)
+       AND ($8::text IS NULL OR c."tags" ? $8 OR EXISTS (
+         SELECT 1
+         FROM jsonb_array_elements_text(COALESCE(c."tags", '[]'::jsonb)) AS contact_tag(value)
+         WHERE LOWER(contact_tag.value) = LOWER($8)
+       ))
+     ORDER BY c."lastMessageAt" DESC, c."id" DESC
+     LIMIT $2 OFFSET $3`,
+    [
+      input.companyId,
+      input.limit,
+      input.offset,
+      input.search || null,
+      input.status || null,
+      input.source || null,
+      input.stage || null,
+      input.tag || null
+    ]
   );
-  return r.rows;
+  return {
+    conversations: r.rows,
+    total: Number(r.rows[0]?.totalCount ?? 0)
+  };
 }
 async function getWhatsappConversationSummary(companyId) {
   const pool2 = await getRawPool();
@@ -49105,10 +49133,18 @@ async function updateWhatsappConversation(companyId, conversationId, update) {
     `UPDATE "whatsappConversations"
      SET "status" = COALESCE($3, "status"),
          "stage" = COALESCE($4, "stage"),
+         "tags" = COALESCE($5::jsonb, "tags"),
          "updatedAt" = NOW()
-     WHERE "companyId" = $1 AND "id" = $2 AND COALESCE("status", 'open') <> 'converted'
+     WHERE "companyId" = $1 AND "id" = $2
+       AND (COALESCE("status", 'open') <> 'converted' OR ($3 IS NULL AND $4 IS NULL AND $5 IS NOT NULL))
      RETURNING *`,
-    [companyId, conversationId, update.status ?? null, update.stage ?? null]
+    [
+      companyId,
+      conversationId,
+      update.status ?? null,
+      update.stage ?? null,
+      update.tags === void 0 ? null : JSON.stringify(update.tags)
+    ]
   );
   return r.rows[0] ?? null;
 }
@@ -49138,7 +49174,7 @@ async function listWhatsappSessions(input) {
   const pool2 = await getRawPool();
   if (!pool2) return { sessions: [], total: 0 };
   const r = await pool2.query(
-    `SELECT s.*, c."status", c."stage", c."saleId",
+    `SELECT s.*, c."status", c."stage", c."saleId", c."tags",
             COUNT(*) OVER()::int AS "totalCount"
      FROM "whatsappSessions" s
      LEFT JOIN "whatsappConversations" c
@@ -49148,6 +49184,11 @@ async function listWhatsappSessions(input) {
        AND ($5::text IS NULL OR COALESCE(c."status", 'open') = $5)
        AND ($6::text IS NULL OR ($6 = 'ads' AND s."campaignName" IS NOT NULL) OR ($6 = 'organic' AND s."campaignName" IS NULL))
        AND ($7::text IS NULL OR (CASE WHEN c."status" = 'converted' THEN 'converted' ELSE COALESCE(c."stage", 'lead') END) = $7)
+       AND ($8::text IS NULL OR c."tags" ? $8 OR EXISTS (
+         SELECT 1
+         FROM jsonb_array_elements_text(COALESCE(c."tags", '[]'::jsonb)) AS contact_tag(value)
+         WHERE LOWER(contact_tag.value) = LOWER($8)
+       ))
      ORDER BY s."lastMessageAt" DESC, s."id" DESC
      LIMIT $2 OFFSET $3`,
     [
@@ -49157,7 +49198,8 @@ async function listWhatsappSessions(input) {
       input.search || null,
       input.status || null,
       input.source || null,
-      input.stage || null
+      input.stage || null,
+      input.tag || null
     ]
   );
   return {
@@ -73324,15 +73366,29 @@ var whatsappRouter = router({
       status: cfg.status
     };
   }),
-  listConversations: protectedProcedure.input(external_exports.object({ companyId: external_exports.number().int().positive() })).query(async ({ input, ctx }) => {
+  listConversations: protectedProcedure.input(external_exports.object({
+    companyId: external_exports.number().int().positive(),
+    limit: external_exports.number().int().min(1).max(100).default(50),
+    offset: external_exports.number().int().min(0).max(1e5).default(0),
+    search: external_exports.string().trim().max(120).optional(),
+    status: external_exports.enum(["open", "pending", "closed", "converted"]).optional(),
+    source: external_exports.enum(["ads", "organic"]).optional(),
+    stage: external_exports.enum([...WHATSAPP_CONVERSATION_STAGES, "converted"]).optional(),
+    tag: external_exports.string().trim().min(1).max(30).optional()
+  })).query(async ({ input, ctx }) => {
     const userId = ctx.user?.id;
     if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
     const company = await getCompanyById(input.companyId);
     if (!company || company.userId !== userId) throw new TRPCError({ code: "FORBIDDEN" });
-    const rows = await listWhatsappConversations(input.companyId);
+    const [result, summary] = await Promise.all([
+      listWhatsappConversations(input),
+      getWhatsappConversationSummary(input.companyId)
+    ]);
     return {
-      conversations: rows,
-      summary: await getWhatsappConversationSummary(input.companyId)
+      ...result,
+      summary,
+      limit: input.limit,
+      offset: input.offset
     };
   }),
   listSessions: protectedProcedure.input(external_exports.object({
@@ -73342,7 +73398,8 @@ var whatsappRouter = router({
     search: external_exports.string().trim().max(120).optional(),
     status: external_exports.enum(["open", "pending", "closed", "converted"]).optional(),
     source: external_exports.enum(["ads", "organic"]).optional(),
-    stage: external_exports.enum([...WHATSAPP_CONVERSATION_STAGES, "converted"]).optional()
+    stage: external_exports.enum([...WHATSAPP_CONVERSATION_STAGES, "converted"]).optional(),
+    tag: external_exports.string().trim().min(1).max(30).optional()
   })).query(async ({ input, ctx }) => {
     const userId = ctx.user?.id;
     if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
@@ -73363,9 +73420,10 @@ var whatsappRouter = router({
     companyId: external_exports.number().int().positive(),
     conversationId: external_exports.number().int().positive(),
     status: external_exports.enum(WHATSAPP_EDITABLE_STATUSES).optional(),
-    stage: external_exports.enum(WHATSAPP_CONVERSATION_STAGES).optional()
-  }).refine((input) => input.status !== void 0 || input.stage !== void 0, {
-    message: "Informe o novo status ou etapa."
+    stage: external_exports.enum(WHATSAPP_CONVERSATION_STAGES).optional(),
+    tags: external_exports.array(external_exports.string().trim().min(1).max(30)).max(10).optional()
+  }).refine((input) => input.status !== void 0 || input.stage !== void 0 || input.tags !== void 0, {
+    message: "Informe o novo status, etapa ou etiquetas."
   })).mutation(async ({ input, ctx }) => {
     const userId = ctx.user?.id;
     if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
@@ -73376,7 +73434,13 @@ var whatsappRouter = router({
     const conversation = await updateWhatsappConversation(
       input.companyId,
       input.conversationId,
-      { status: input.status, stage: input.stage }
+      {
+        status: input.status,
+        stage: input.stage,
+        tags: input.tags?.filter(
+          (tag2, index, values) => values.findIndex((value) => value.toLocaleLowerCase("pt-BR") === tag2.toLocaleLowerCase("pt-BR")) === index
+        )
+      }
     );
     if (!conversation) {
       throw new TRPCError({

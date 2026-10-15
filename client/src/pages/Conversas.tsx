@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
   MessageCircle, Building2, Loader2, Settings2, Copy, Check,
-  Megaphone, CheckCircle2, Phone, Users, Tag, Zap, ArrowLeft, Clock, LogOut, LayoutGrid, List,
+  Megaphone, CheckCircle2, Phone, Users, Tag, Zap, ArrowLeft, Clock, LogOut, LayoutGrid, List, X,
 } from "lucide-react";
 import { launchWhatsappEmbeddedSignup, WHATSAPP_CONFIG_ID } from "@/lib/facebookSdk";
 import {
@@ -48,16 +48,33 @@ export default function Conversas() {
   const [selectedConv, setSelectedConv] = useState<any | null>(null);
   const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
   const [recordMode, setRecordMode] = useState<"contacts" | "sessions">("contacts");
+  const [contactOffset, setContactOffset] = useState(0);
   const [sessionOffset, setSessionOffset] = useState(0);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [stageFilter, setStageFilter] = useState("all");
+  const [tagFilter, setTagFilter] = useState("");
+  const [tagDraft, setTagDraft] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "board">("list");
   const utils = trpc.useUtils();
 
+  const resetPages = () => {
+    setContactOffset(0);
+    setSessionOffset(0);
+  };
+
   const { data: convData, isLoading: loadingConvs } = trpc.whatsapp.listConversations.useQuery(
-    { companyId: companyId ?? 0 },
+    {
+      companyId: companyId ?? 0,
+      limit: 50,
+      offset: contactOffset,
+      search: search.trim() || undefined,
+      status: statusFilter === "all" ? undefined : statusFilter as "open" | "pending" | "closed" | "converted",
+      source: sourceFilter === "all" ? undefined : sourceFilter as "ads" | "organic",
+      stage: stageFilter === "all" ? undefined : stageFilter as (typeof WHATSAPP_CONVERSATION_STAGES)[number] | "converted",
+      tag: tagFilter.trim() || undefined,
+    },
     { enabled: !!companyId, refetchInterval: 15_000 }
   );
   const { data: waConfig } = trpc.whatsapp.getConfig.useQuery(
@@ -77,6 +94,7 @@ export default function Conversas() {
       status: statusFilter === "all" ? undefined : statusFilter as "open" | "pending" | "closed" | "converted",
       source: sourceFilter === "all" ? undefined : sourceFilter as "ads" | "organic",
       stage: stageFilter === "all" ? undefined : stageFilter as (typeof WHATSAPP_CONVERSATION_STAGES)[number] | "converted",
+      tag: tagFilter.trim() || undefined,
     },
     { enabled: !!companyId && recordMode === "sessions", refetchInterval: 15_000 },
   );
@@ -101,10 +119,13 @@ export default function Conversas() {
       status: statusFilter,
       source: sourceFilter,
       stage: stageFilter,
+      tag: tagFilter,
     });
-  }, [conversations, search, statusFilter, sourceFilter, stageFilter]);
+  }, [conversations, search, statusFilter, sourceFilter, stageFilter, tagFilter]);
   const visibleRecords = recordMode === "sessions" ? sessions : filteredConversations;
   const isLoadingRecords = recordMode === "sessions" ? loadingSessions : loadingConvs;
+  const currentOffset = recordMode === "sessions" ? sessionOffset : contactOffset;
+  const currentTotal = recordMode === "sessions" ? (sessionData?.total ?? 0) : (convData?.total ?? 0);
   const conversationsByStage = useMemo(
     () => groupWhatsappConversationsByStage(recordMode === "sessions" ? sessions : filteredConversations),
     [recordMode, sessions, filteredConversations],
@@ -121,6 +142,24 @@ export default function Conversas() {
   const closeMessages = () => {
     setSelectedConv(null);
     setSelectedSessionId(null);
+  };
+  const selectedTags: string[] = Array.isArray(selectedConv?.tags) ? selectedConv.tags : [];
+  const saveTags = (tags: string[]) => {
+    if (!companyId || !selectedConv) return;
+    updateConversation.mutate({ companyId, conversationId: selectedConv.id, tags });
+    setTagDraft("");
+  };
+  const addTag = () => {
+    const tag = tagDraft.trim();
+    if (!tag || selectedTags.some((existing) => existing.toLocaleLowerCase("pt-BR") === tag.toLocaleLowerCase("pt-BR"))) {
+      setTagDraft("");
+      return;
+    }
+    if (selectedTags.length >= 10) {
+      toast.error("Cada contato pode ter até 10 etiquetas.");
+      return;
+    }
+    saveTags([...selectedTags, tag]);
   };
 
   // Agrupa mensagens por dia para separadores visuais
@@ -177,7 +216,7 @@ export default function Conversas() {
           </Label>
           <select
             value={companyId ?? ""}
-            onChange={(e) => { setCompanyId(e.target.value ? Number(e.target.value) : null); closeMessages(); setSessionOffset(0); }}
+            onChange={(e) => { setCompanyId(e.target.value ? Number(e.target.value) : null); closeMessages(); resetPages(); }}
             disabled={loadingCompanies}
             className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white/90 focus:outline-none focus:border-primary/50"
           >
@@ -259,6 +298,41 @@ export default function Conversas() {
                 </select>
               )}
             </label>
+          </div>
+
+          <div className="space-y-2 border-b border-white/8 px-3 py-3">
+            <p className="text-[11px] font-medium text-white/45">Etiquetas do contato</p>
+            <div className="flex flex-wrap gap-2">
+              {selectedTags.map((tag) => (
+                <span key={tag} className="inline-flex max-w-full items-center gap-1 rounded-md border border-primary/20 bg-primary/10 px-2 py-1 text-xs text-primary">
+                  <span className="max-w-40 truncate">{tag}</span>
+                  <button
+                    type="button"
+                    aria-label={`Remover etiqueta ${tag}`}
+                    disabled={updateConversation.isPending}
+                    onClick={() => saveTags(selectedTags.filter((item) => item !== tag))}
+                    className="rounded p-0.5 hover:bg-white/10 disabled:opacity-40"
+                  ><X className="h-3 w-3" /></button>
+                </span>
+              ))}
+              {selectedTags.length === 0 && <span className="text-[11px] text-white/30">Nenhuma etiqueta adicionada.</span>}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                value={tagDraft}
+                onChange={(event) => setTagDraft(event.target.value)}
+                onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addTag(); } }}
+                placeholder="Ex.: VIP, retorno, orçamento"
+                aria-label="Nova etiqueta"
+                maxLength={30}
+                disabled={updateConversation.isPending || selectedTags.length >= 10}
+                className="h-10 min-w-0 border-white/10 bg-white/[0.04] text-sm"
+              />
+              <Button type="button" variant="outline" onClick={addTag} disabled={updateConversation.isPending || !tagDraft.trim() || selectedTags.length >= 10}>
+                Adicionar
+              </Button>
+            </div>
+            <p className="text-[10px] text-white/30">Até 10 etiquetas por contato; também servem para filtrar contatos e atendimentos.</p>
           </div>
 
           {/* Mensagens */}
@@ -344,14 +418,14 @@ export default function Conversas() {
           <p className="-mt-3 text-[11px] text-white/35">
             {recordMode === "sessions"
               ? `Atendimentos agrupados até ${WHATSAPP_SESSION_IDLE_HOURS}h sem nova mensagem. ${sessionData?.summary.total ?? 0} no histórico completo.`
-              : "Totais do histórico completo. Lista e quadro mostram os 200 contatos mais recentes; os filtros atuam sobre eles."}
+              : `Totais do histórico completo. Contatos carregados em páginas de 50; ${convData?.total ?? 0} correspondem aos filtros.`}
           </p>
 
           <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Tipo de registro">
             <button
               type="button"
               aria-pressed={recordMode === "contacts"}
-              onClick={() => setRecordMode("contacts")}
+              onClick={() => { setRecordMode("contacts"); setContactOffset(0); }}
               className={`min-h-10 rounded-lg border px-4 text-sm font-medium transition-colors ${recordMode === "contacts" ? "border-primary/40 bg-primary/10 text-primary" : "border-white/10 text-white/55 hover:bg-white/5"}`}
             >Contatos</button>
             <button
@@ -367,24 +441,32 @@ export default function Conversas() {
             <div className="grid grid-cols-1 gap-2 border-b border-white/8 bg-black/20 p-3 sm:grid-cols-2 xl:grid-cols-4">
               <Input
                 value={search}
-                onChange={(event) => { setSearch(event.target.value); setSessionOffset(0); }}
+                onChange={(event) => { setSearch(event.target.value); resetPages(); }}
                 placeholder="Buscar nome, telefone ou campanha"
                 aria-label="Buscar conversas"
                 className="h-10 min-w-0 border-white/10 bg-white/[0.04] text-sm"
               />
-              <select aria-label="Filtrar por status" value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); setSessionOffset(0); }} className={filterSelectClass}>
+              <Input
+                value={tagFilter}
+                onChange={(event) => { setTagFilter(event.target.value); resetPages(); }}
+                placeholder="Filtrar por etiqueta"
+                aria-label="Filtrar por etiqueta"
+                maxLength={30}
+                className="h-10 min-w-0 border-white/10 bg-white/[0.04] text-sm"
+              />
+              <select aria-label="Filtrar por status" value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); resetPages(); }} className={filterSelectClass}>
                 <option value="all">Todos os status</option>
                 <option value="open">Abertas</option>
                 <option value="pending">Pendentes</option>
                 <option value="closed">Fechadas</option>
                 <option value="converted">Convertidas</option>
               </select>
-              <select aria-label="Filtrar por origem" value={sourceFilter} onChange={(event) => { setSourceFilter(event.target.value); setSessionOffset(0); }} className={filterSelectClass}>
+              <select aria-label="Filtrar por origem" value={sourceFilter} onChange={(event) => { setSourceFilter(event.target.value); resetPages(); }} className={filterSelectClass}>
                 <option value="all">Todas as origens</option>
                 <option value="ads">Anúncios</option>
                 <option value="organic">Orgânicas</option>
               </select>
-              <select aria-label="Filtrar por etapa comercial" value={stageFilter} onChange={(event) => { setStageFilter(event.target.value); setSessionOffset(0); }} className={filterSelectClass}>
+              <select aria-label="Filtrar por etapa comercial" value={stageFilter} onChange={(event) => { setStageFilter(event.target.value); resetPages(); }} className={filterSelectClass}>
                 <option value="all">Todas as etapas</option>
                 {WHATSAPP_CONVERSATION_STAGES.map((stage) => (
                   <option key={stage} value={stage}>{WHATSAPP_STAGE_LABELS[stage]}</option>
@@ -394,8 +476,8 @@ export default function Conversas() {
               <div className="flex flex-col gap-2 sm:col-span-2 sm:flex-row sm:items-center sm:justify-between xl:col-span-4">
                 <p className="text-[11px] text-white/35" aria-live="polite">
                   {recordMode === "sessions"
-                    ? `Exibindo ${sessions.length} dos ${sessionData?.total ?? 0} atendimentos filtrados`
-                    : `Exibindo ${filteredConversations.length} dos ${conversations.length} contatos carregados`}
+                    ? `Exibindo ${sessionOffset + (sessions.length ? 1 : 0)}–${sessionOffset + sessions.length} de ${sessionData?.total ?? 0} atendimentos`
+                    : `Exibindo ${contactOffset + (filteredConversations.length ? 1 : 0)}–${contactOffset + filteredConversations.length} de ${convData?.total ?? 0} contatos`}
                 </p>
                 <div className="flex items-center gap-1 self-start rounded-lg border border-white/10 bg-black/20 p-1 sm:self-auto" role="group" aria-label="Modo de visualização">
                   <button
@@ -454,6 +536,13 @@ export default function Conversas() {
                     {c.customerName && <p className="truncate pl-[18px] text-[11px] text-white/35">{c.waId}</p>}
                     {c.lastMessageText && (
                       <p className="mt-0.5 truncate pl-[18px] text-[11px] italic text-white/45">{c.lastMessageText}</p>
+                    )}
+                    {Array.isArray(c.tags) && c.tags.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1 pl-[18px]">
+                        {c.tags.map((tag: string) => (
+                          <span key={tag} className="max-w-32 truncate rounded border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary" title={tag}>{tag}</span>
+                        ))}
+                      </div>
                     )}
                     {recordMode === "sessions" && (
                       <p className="mt-0.5 pl-[18px] text-[10px] text-white/30">Atendimento #{c.id}</p>
@@ -519,6 +608,13 @@ export default function Conversas() {
                           <span className="mt-1 block truncate text-[11px] text-white/40">
                             {c.campaignName ? `Anúncio · ${c.campaignName}` : "Origem orgânica"}
                           </span>
+                          {Array.isArray(c.tags) && c.tags.length > 0 && (
+                            <span className="mt-2 flex flex-wrap gap-1">
+                              {c.tags.map((tag: string) => (
+                                <span key={tag} className="max-w-28 truncate rounded border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary" title={tag}>{tag}</span>
+                              ))}
+                            </span>
+                          )}
                           <span className="mt-2 flex items-center justify-between gap-2 text-[10px] text-white/35">
                             <span>{c.messageCount} mensagem(ns){recordMode === "sessions" ? ` · #${c.id}` : ""}</span>
                             <span>{fmtDate(c.lastMessageAt)}</span>
@@ -530,16 +626,16 @@ export default function Conversas() {
                 ))}
               </div>
             )}
-            {recordMode === "sessions" && (sessionData?.total ?? 0) > 50 && (
+            {currentTotal > 50 && (
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/8 px-4 py-3">
                 <p className="text-xs text-white/40">
-                  {sessionOffset + 1}–{Math.min(sessionOffset + sessions.length, sessionData?.total ?? 0)} de {sessionData?.total} atendimentos
+                  {currentOffset + (visibleRecords.length ? 1 : 0)}–{Math.min(currentOffset + visibleRecords.length, currentTotal)} de {currentTotal} {recordMode === "sessions" ? "atendimentos" : "contatos"}
                 </p>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" disabled={sessionOffset === 0 || loadingSessions} onClick={() => setSessionOffset(Math.max(0, sessionOffset - 50))}>
+                  <Button variant="outline" size="sm" disabled={currentOffset === 0 || isLoadingRecords} onClick={() => recordMode === "sessions" ? setSessionOffset(Math.max(0, sessionOffset - 50)) : setContactOffset(Math.max(0, contactOffset - 50))}>
                     Anteriores
                   </Button>
-                  <Button variant="outline" size="sm" disabled={sessionOffset + 50 >= (sessionData?.total ?? 0) || loadingSessions} onClick={() => setSessionOffset(sessionOffset + 50)}>
+                  <Button variant="outline" size="sm" disabled={currentOffset + 50 >= currentTotal || isLoadingRecords} onClick={() => recordMode === "sessions" ? setSessionOffset(sessionOffset + 50) : setContactOffset(contactOffset + 50)}>
                     Próximos
                   </Button>
                 </div>

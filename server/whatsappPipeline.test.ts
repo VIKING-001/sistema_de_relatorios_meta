@@ -8,7 +8,7 @@ import {
 } from "../shared/whatsapp";
 
 const conversations = [
-  { id: 1, customerName: "Ana", waId: "5511001", campaignName: "Outubro", sourceType: "ctwa", status: "open", stage: "lead" },
+  { id: 1, customerName: "Ana", waId: "5511001", campaignName: "Outubro", sourceType: "ctwa", status: "open", stage: "lead", tags: ["VIP", "Retornar"] },
   { id: 2, customerName: "Bia", waId: "5511002", campaignName: null, sourceType: "organic", status: "pending", stage: "qualified" },
   { id: 3, customerName: "Caio", waId: "5511003", campaignName: null, sourceType: "organic", status: "converted", stage: "negotiation" },
 ];
@@ -24,6 +24,16 @@ describe("WhatsApp conversation pipeline helpers", () => {
       status: "open",
       source: "ads",
       stage: "lead",
+    }).map((row) => row.id)).toEqual([1]);
+  });
+
+  it("matches tags without depending on letter case", () => {
+    expect(filterWhatsappConversations(conversations, {
+      search: "",
+      status: "all",
+      source: "all",
+      stage: "all",
+      tag: "vip",
     }).map((row) => row.id)).toEqual([1]);
   });
 
