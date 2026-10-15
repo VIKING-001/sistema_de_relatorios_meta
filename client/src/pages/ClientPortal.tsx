@@ -4,7 +4,6 @@ import {
   BarChart3,
   CalendarDays,
   CheckCircle2,
-  ChevronDown,
   Eye,
   Gauge,
   MessageCircle,
@@ -810,8 +809,8 @@ function CompareSummary({
           Resumo da comparação
         </h3>
         <p className="mt-1 text-sm text-[#a4afbb]">
-          Compare investimento, compras, faturamento e retorno. Os demais
-          indicadores continuam disponíveis abaixo.
+          Compare os resultados dos dois períodos, incluindo valores e variação
+          dos indicadores.
         </p>
         <div className="mt-4 hidden grid-cols-[minmax(0,1fr)_minmax(110px,auto)_minmax(110px,auto)_minmax(130px,auto)] gap-3 text-[11px] font-medium uppercase tracking-wide text-[#a4afbb] sm:grid">
           <span>Indicador</span>
@@ -821,20 +820,8 @@ function CompareSummary({
         </div>
       </div>
       <div className="divide-y divide-white/8">
-        {renderRows(comparisonRows.slice(0, 6))}
+        {renderRows(comparisonRows)}
       </div>
-      <details className="group border-t border-white/8">
-        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 text-sm font-medium text-[#c4cbd2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#ffb81a] sm:px-5">
-          Ver outras métricas da comparação
-          <ChevronDown
-            className="h-4 w-4 shrink-0 text-[#ffcf62] transition-transform group-open:rotate-180"
-            aria-hidden="true"
-          />
-        </summary>
-        <div className="divide-y divide-white/8 border-t border-white/8">
-          {renderRows(comparisonRows.slice(6))}
-        </div>
-      </details>
     </section>
   );
 }
