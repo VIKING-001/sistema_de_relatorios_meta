@@ -361,6 +361,7 @@ export default function EditReportModal({ report, onClose, onSuccess }: EditRepo
             type="button"
             onClick={() => void handleClose()}
             disabled={isLoading}
+            aria-label="Fechar edição de relatório"
             className="text-gray-400 hover:text-white transition-colors p-2 rounded-xl hover:bg-white/10"
           >
             <X className="h-5 w-5" />

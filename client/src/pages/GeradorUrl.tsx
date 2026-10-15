@@ -15,7 +15,7 @@ const PLATFORMS = [
     tags: ["{{campaign.name}}", "{{campaign.id}}", "{{adset.name}}", "{{adset.id}}", "{{ad.name}}", "{{ad.id}}", "{{placement}}"],
   },
   {
-    id: "instagram", label: "Instagram Ads", color: "bg-gradient-to-br from-purple-600 to-pink-500", emoji: "ig",
+    id: "instagram", label: "Instagram Ads", color: "bg-[#c13584]", emoji: "ig",
     defaults: { utm_source: "instagram", utm_medium: "cpc", utm_campaign: "{{campaign.name}}", utm_content: "{{ad.name}}", utm_term: "{{adset.name}}" },
     tags: ["{{campaign.name}}", "{{campaign.id}}", "{{adset.name}}", "{{ad.name}}", "{{placement}}"],
   },
@@ -145,7 +145,7 @@ export default function GeradorUrl() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6 p-4 sm:p-6">
       <div>
         <h1 className="text-2xl font-bold">Gerador de URL</h1>
         <p className="text-sm text-muted-foreground mt-1">Crie parâmetros UTM para rastrear suas campanhas</p>
@@ -171,10 +171,10 @@ export default function GeradorUrl() {
       </Card>
 
       {/* Mode toggle */}
-      <div className="flex gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
         <button
           onClick={() => setMode("url")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
+          className={`flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition-all sm:w-auto ${
             mode === "url"
               ? "border-primary/50 bg-primary/10 text-primary"
               : "border-white/10 bg-white/5 text-muted-foreground hover:bg-white/10"
@@ -184,7 +184,7 @@ export default function GeradorUrl() {
         </button>
         <button
           onClick={() => setMode("params")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
+          className={`flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition-all sm:w-auto ${
             mode === "params"
               ? "border-primary/50 bg-primary/10 text-primary"
               : "border-white/10 bg-white/5 text-muted-foreground hover:bg-white/10"
@@ -200,7 +200,7 @@ export default function GeradorUrl() {
           <button
             key={p.id}
             onClick={() => selectPlatform(p.id)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border transition-all ${
+            className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-all ${
               selectedPlatform === p.id
                 ? "border-primary/50 bg-primary/10 text-primary"
                 : "border-white/10 bg-white/5 text-muted-foreground hover:bg-white/10"

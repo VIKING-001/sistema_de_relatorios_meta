@@ -175,14 +175,16 @@ export default function ReportList({ reports, companyId, onUpdate, onEditReport 
                   <div className="flex items-center gap-0.5 pl-2 border-l border-white/5">
                     <button
                       onClick={() => onEditReport?.(report)}
-                      className="p-1.5 rounded-lg hover:bg-blue-500/10 text-muted-foreground hover:text-blue-400 transition-all"
+                      aria-label={`Editar relatório ${report.title}`}
+                      className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition-all hover:bg-blue-500/10 hover:text-blue-400 sm:h-8 sm:w-8"
                       title="Editar"
                     >
                       <Edit2 className="h-3.5 w-3.5" />
                     </button>
                     <button
                       onClick={() => handleDelete(report.id)}
-                      className="p-1.5 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition-all"
+                      aria-label={`Excluir relatório ${report.title}`}
+                      className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition-all hover:bg-red-500/10 hover:text-red-400 sm:h-8 sm:w-8"
                       title="Excluir"
                     >
                       <Trash2 className="h-3.5 w-3.5" />

@@ -24,12 +24,12 @@ const ACCENTS: Record<Accent, {
   text: string; bg: string; border: string;
   sectionBg: string; sectionBorder: string; iconBg: string; bar: string;
 }> = {
-  blue:    { text: "text-blue-300",    bg: "bg-blue-500/10",    border: "border-blue-500/25",    sectionBg: "from-blue-900/40 to-blue-950/20",    sectionBorder: "border-blue-500/15",    iconBg: "bg-blue-500/20",    bar: "bg-blue-400" },
-  violet:  { text: "text-violet-300",  bg: "bg-violet-500/10",  border: "border-violet-500/25",  sectionBg: "from-violet-900/40 to-violet-950/20",  sectionBorder: "border-violet-500/15",  iconBg: "bg-violet-500/20",  bar: "bg-violet-400" },
-  amber:   { text: "text-amber-300",   bg: "bg-amber-500/10",   border: "border-amber-500/25",   sectionBg: "from-amber-900/30 to-amber-950/20",   sectionBorder: "border-amber-500/15",   iconBg: "bg-amber-500/20",   bar: "bg-amber-400" },
-  pink:    { text: "text-pink-300",    bg: "bg-pink-500/10",    border: "border-pink-500/25",    sectionBg: "from-pink-900/30 to-pink-950/20",    sectionBorder: "border-pink-500/15",    iconBg: "bg-pink-500/20",    bar: "bg-pink-400" },
-  emerald: { text: "text-emerald-300", bg: "bg-emerald-500/10", border: "border-emerald-500/25", sectionBg: "from-emerald-900/30 to-emerald-950/20", sectionBorder: "border-emerald-500/15", iconBg: "bg-emerald-500/20", bar: "bg-emerald-400" },
-  cyan:    { text: "text-cyan-300",    bg: "bg-cyan-500/10",    border: "border-cyan-500/25",    sectionBg: "from-cyan-900/30 to-cyan-950/20",    sectionBorder: "border-cyan-500/15",    iconBg: "bg-cyan-500/20",    bar: "bg-cyan-400" },
+  blue:    { text: "text-blue-300",    bg: "bg-blue-500/10",    border: "border-blue-500/25",    sectionBg: "bg-blue-950/35",    sectionBorder: "border-blue-500/15",    iconBg: "bg-blue-500/20",    bar: "bg-blue-400" },
+  violet:  { text: "text-violet-300",  bg: "bg-violet-500/10",  border: "border-violet-500/25",  sectionBg: "bg-slate-800/60",  sectionBorder: "border-violet-500/15",  iconBg: "bg-violet-500/20",  bar: "bg-violet-400" },
+  amber:   { text: "text-amber-300",   bg: "bg-amber-500/10",   border: "border-amber-500/25",   sectionBg: "bg-amber-950/30",   sectionBorder: "border-amber-500/15",   iconBg: "bg-amber-500/20",   bar: "bg-amber-400" },
+  pink:    { text: "text-pink-300",    bg: "bg-pink-500/10",    border: "border-pink-500/25",    sectionBg: "bg-rose-950/25",    sectionBorder: "border-pink-500/15",    iconBg: "bg-pink-500/20",    bar: "bg-pink-400" },
+  emerald: { text: "text-emerald-300", bg: "bg-emerald-500/10", border: "border-emerald-500/25", sectionBg: "bg-emerald-950/25", sectionBorder: "border-emerald-500/15", iconBg: "bg-emerald-500/20", bar: "bg-emerald-400" },
+  cyan:    { text: "text-cyan-300",    bg: "bg-cyan-500/10",    border: "border-cyan-500/25",    sectionBg: "bg-cyan-950/25",    sectionBorder: "border-cyan-500/15",    iconBg: "bg-cyan-500/20",    bar: "bg-cyan-400" },
 };
 
 // ══════════════════════════════════════════════════════════════════
@@ -43,7 +43,7 @@ function HeroKPI({ label, value, sub, accent, icon: Icon }: {
 }) {
   const a = ACCENTS[accent];
   return (
-    <div className={`relative rounded-2xl p-5 sm:p-6 border ${a.border} ${a.bg} backdrop-blur-sm overflow-hidden`}>
+    <div className={`relative min-w-0 overflow-hidden rounded-xl border p-4 sm:p-6 ${a.border} ${a.bg}`}>
       {/* Barra de acento superior */}
       <div className={`absolute top-0 left-0 right-0 h-[2px] ${a.bar} opacity-60`} />
       {/* Ícone */}
@@ -51,7 +51,7 @@ function HeroKPI({ label, value, sub, accent, icon: Icon }: {
         <Icon className={`h-4.5 w-4.5 ${a.text}`} style={{ width: 18, height: 18 }} />
       </div>
       <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/40 mb-1">{label}</p>
-      <p className="text-2xl sm:text-3xl font-black text-white leading-none tracking-tight">{value}</p>
+      <p className="whitespace-nowrap text-base font-black leading-none tabular-nums text-white sm:text-3xl">{value}</p>
       {sub && <p className="text-xs text-white/30 mt-1.5">{sub}</p>}
     </div>
   );
@@ -64,13 +64,12 @@ function MetricCard({ label, value, sub, accent, large }: {
 }) {
   const a = ACCENTS[accent];
   return (
-    <div className={`relative rounded-2xl p-4 sm:p-5 border border-white/8 bg-white/[0.04] backdrop-blur-sm overflow-hidden group hover:border-white/15 transition-colors`}>
-      <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${a.bar} opacity-50 group-hover:opacity-80 transition-opacity rounded-l-2xl`} />
-      <p className="text-[10px] font-medium uppercase tracking-widest text-white/35 mb-2 pl-1">{label}</p>
-      <p className={`font-black text-white leading-none tracking-tight pl-1 ${large ? "text-2xl sm:text-3xl" : "text-xl sm:text-2xl"}`}>
+    <div className={`relative min-w-0 overflow-hidden rounded-xl border border-white/8 bg-white/[0.04] p-4 sm:p-5 transition-colors hover:border-white/15`}>
+      <p className={`mb-2 text-[10px] font-medium uppercase tracking-widest ${a.text}`}>{label}</p>
+      <p className={`whitespace-nowrap font-black leading-none tabular-nums text-white ${large ? "text-base sm:text-3xl" : "text-base sm:text-2xl"}`}>
         {value}
       </p>
-      {sub && <p className="text-[10px] text-white/30 mt-1.5 pl-1">{sub}</p>}
+      {sub && <p className="mt-1.5 text-[10px] text-white/45">{sub}</p>}
     </div>
   );
 }
@@ -81,10 +80,10 @@ function HighlightCard({ label, value, sub, accent }: {
 }) {
   const a = ACCENTS[accent];
   return (
-    <div className={`relative rounded-2xl p-5 sm:p-6 border ${a.border} ${a.bg} backdrop-blur-sm overflow-hidden`}>
+    <div className={`relative min-w-0 overflow-hidden rounded-xl border p-4 sm:p-6 ${a.border} ${a.bg}`}>
       <div className={`absolute top-0 left-0 right-0 h-[2px] ${a.bar} opacity-70`} />
       <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/50 mb-2">{label}</p>
-      <p className={`text-2xl sm:text-3xl font-black ${a.text} leading-none tracking-tight`}>{value}</p>
+      <p className={`whitespace-nowrap text-base font-black leading-none tabular-nums ${a.text} sm:text-3xl`}>{value}</p>
       {sub && <p className="text-xs text-white/40 mt-1.5">{sub}</p>}
     </div>
   );
@@ -96,7 +95,7 @@ function SectionHeader({ icon: Icon, title, accent }: {
 }) {
   const a = ACCENTS[accent];
   return (
-    <div className={`flex items-center gap-3 mb-4 sm:mb-5 px-4 py-3 rounded-2xl bg-gradient-to-r ${a.sectionBg} border ${a.sectionBorder}`}>
+    <div className={`mb-4 flex items-center gap-3 rounded-xl border px-4 py-3 sm:mb-5 ${a.sectionBg} ${a.sectionBorder}`}>
       <div className={`w-8 h-8 rounded-xl ${a.iconBg} flex items-center justify-center shrink-0`}>
         <Icon className={`${a.text}`} style={{ width: 16, height: 16 }} />
       </div>
@@ -207,15 +206,7 @@ export default function PublicReport() {
   const roas            = totalSpent > 0 && purchaseValue > 0 ? (purchaseValue / totalSpent).toFixed(2) : null;
 
   return (
-    <div className="print-report min-h-screen relative" style={{ background: "linear-gradient(135deg, #030509 0%, #0B0F19 50%, #030509 100%)" }}>
-
-      {/* Glows de fundo */}
-      <div className="no-print fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] left-[10%] w-[500px] h-[500px] rounded-full opacity-[0.04]"
-          style={{ background: "radial-gradient(circle, #FFB81A, transparent)" }} />
-        <div className="absolute bottom-[10%] right-[5%] w-[400px] h-[400px] rounded-full opacity-[0.04]"
-          style={{ background: "radial-gradient(circle, #C9A24D, transparent)" }} />
-      </div>
+    <div className="print-report relative min-h-screen bg-background">
 
       {/* ── Header sticky ── */}
       <header className="no-print sticky top-0 z-50 border-b border-white/6 bg-black/50 backdrop-blur-xl">
@@ -460,18 +451,22 @@ export default function PublicReport() {
                     <div className="w-[110px] text-right">Valor</div>
                   </div>
                   {(data as any).trackedList.map((s: any, i: number) => (
-                    <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 px-4 py-3 border-b border-white/6 last:border-0">
-                      <div className="w-[90px] text-xs text-white/50 tabular-nums">
+                    <div key={i} className="flex flex-col gap-2 border-b border-white/6 px-4 py-3 last:border-0 sm:flex-row sm:items-center sm:gap-2">
+                      <div className="text-xs text-white/60 tabular-nums sm:w-[90px]">
+                        <span className="mr-2 text-[10px] text-white/40 sm:hidden">Data</span>
                         {s.saleDate ? new Date(s.saleDate).toLocaleDateString("pt-BR") : "—"}
                       </div>
                       <div className="flex-1 min-w-0">
+                        <span className="mr-2 text-[10px] text-white/40 sm:hidden">Cliente</span>
                         <p className="text-sm text-white/90 truncate">{s.customerName || "Cliente"}</p>
                         {s.customerPhone && <p className="text-[11px] text-white/35">{s.customerPhone}</p>}
                       </div>
-                      <div className="w-[150px] min-w-0 text-[11px] text-cyan-300/80 truncate">
+                      <div className="min-w-0 text-[11px] text-cyan-300/80 truncate sm:w-[150px]">
+                        <span className="mr-2 text-[10px] text-white/40 sm:hidden">Campanha</span>
                         {s.utmCampaign || "—"}
                       </div>
-                      <div className="w-[110px] text-right text-sm font-bold text-emerald-400 tabular-nums">
+                      <div className="flex items-baseline justify-between text-sm font-bold text-emerald-400 tabular-nums sm:w-[110px] sm:justify-end">
+                        <span className="text-[10px] font-normal text-white/40 sm:hidden">Valor</span>
                         {formatCurrency(Number(s.orderValue) || 0)}
                       </div>
                     </div>

@@ -567,7 +567,7 @@ export default function Integracoes() {
                       {ready && <Button
                         size="sm"
                         variant="outline"
-                        className="rounded-lg text-xs h-7 gap-1 text-primary border-primary/30 hover:border-primary/50"
+                        className="h-11 gap-1 rounded-lg text-xs text-primary border-primary/30 hover:border-primary/50 sm:h-7"
                         onClick={() => handleTestWebhook(webhook)}
                         disabled={testingPlatform === webhook.platform}
                       >
@@ -576,7 +576,7 @@ export default function Integracoes() {
                       {(ready || webhook.status === "active") && <Button
                         size="sm"
                         variant={webhook.status === "active" ? "outline" : "default"}
-                        className="rounded-lg text-xs h-7 gap-1"
+                        className="h-11 gap-1 rounded-lg text-xs sm:h-7"
                         onClick={() => handleToggleWebhook(webhook)}
                         disabled={updateStatusMut.isPending}
                       >
@@ -585,7 +585,7 @@ export default function Integracoes() {
                       {ready && <Button
                         size="sm"
                         variant="outline"
-                        className="rounded-lg text-xs h-7 gap-1"
+                        className="h-11 gap-1 rounded-lg text-xs sm:h-7"
                         onClick={() => copyToClipboard(webhook.webhookUrl)}
                       >
                         <Copy className="h-3 w-3" /> {webhook.platform === "facilzap" ? "Copiar URL segura" : "Copiar URL"}
@@ -593,7 +593,7 @@ export default function Integracoes() {
                       {ready && webhook.platform !== "facilzap" && <Button
                         size="sm"
                         variant="outline"
-                        className="rounded-lg text-xs h-7 gap-1"
+                        className="h-11 gap-1 rounded-lg text-xs sm:h-7"
                         onClick={() => getWebhookSecretMut.mutate({ webhookId: webhook.id })}
                         disabled={getWebhookSecretMut.isPending}
                       >
@@ -602,8 +602,12 @@ export default function Integracoes() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="rounded-lg text-xs h-7 gap-1 text-red-400 border-red-400/30 hover:border-red-400/50"
-                        onClick={() => deleteWebhookMut.mutate({ webhookId: webhook.id })}
+                        className="h-11 gap-1 rounded-lg text-xs text-red-400 border-red-400/30 hover:border-red-400/50 sm:h-7"
+                        onClick={() => {
+                          if (window.confirm("Excluir este webhook? Eventos futuros não serão recebidos por ele.")) {
+                            deleteWebhookMut.mutate({ webhookId: webhook.id });
+                          }
+                        }}
                         disabled={deleteWebhookMut.isPending}
                       >
                         <Trash2 className="h-3 w-3" /> Deletar
@@ -776,7 +780,7 @@ export default function Integracoes() {
                       <Button
                         size="sm"
                         variant={credential.status === "active" ? "outline" : "default"}
-                        className="rounded-lg text-xs h-7 gap-1"
+                        className="h-11 gap-1 rounded-lg text-xs sm:h-7"
                         onClick={() => handleToggleCredentialStatus(credential)}
                         disabled={updateCredentialStatusMut.isPending}
                       >
@@ -785,8 +789,12 @@ export default function Integracoes() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="rounded-lg text-xs h-7 gap-1 text-red-400 border-red-400/30 hover:border-red-400/50"
-                        onClick={() => deleteCredentialMut.mutate({ credentialId: credential.id })}
+                        className="h-11 gap-1 rounded-lg text-xs text-red-400 border-red-400/30 hover:border-red-400/50 sm:h-7"
+                        onClick={() => {
+                          if (window.confirm(`Excluir a credencial ${credential.name}? Integrações que usam esse token podem parar.`)) {
+                            deleteCredentialMut.mutate({ credentialId: credential.id });
+                          }
+                        }}
                         disabled={deleteCredentialMut.isPending}
                       >
                         <Trash2 className="h-3 w-3" /> Deletar

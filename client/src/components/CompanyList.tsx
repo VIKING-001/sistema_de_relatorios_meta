@@ -138,10 +138,11 @@ export default function CompanyList({ company, onUpdate, autoOpenMeta = false, i
                 {isConnected ? "Meta ✓" : isExpired ? "Expirado" : "Meta"}
               </button>
 
-              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
                 <button
                   onClick={() => setIsEditingCompany(true)}
-                  className="p-2 rounded-lg hover:bg-blue-500/10 text-blue-400/70 hover:text-blue-400 transition-all"
+                  aria-label="Editar empresa"
+                  className="flex h-11 w-11 items-center justify-center rounded-lg text-blue-400/70 transition-all hover:bg-blue-500/10 hover:text-blue-400"
                   title="Editar empresa"
                 >
                   <Edit2 className="h-4 w-4" />
@@ -149,7 +150,8 @@ export default function CompanyList({ company, onUpdate, autoOpenMeta = false, i
                 <button
                   onClick={handleDelete}
                   disabled={deleteMutation.isPending}
-                  className="p-2 rounded-lg hover:bg-red-500/10 text-red-400/70 hover:text-red-400 transition-all"
+                  aria-label="Excluir empresa"
+                  className="flex h-11 w-11 items-center justify-center rounded-lg text-red-400/70 transition-all hover:bg-red-500/10 hover:text-red-400"
                   title="Excluir empresa"
                 >
                   <Trash2 className="h-4 w-4" />

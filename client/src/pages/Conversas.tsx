@@ -200,13 +200,13 @@ export default function Conversas() {
           {showConfig && <WhatsappConfig companyId={companyId} />}
 
           {/* Resumo */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {[
               { label: "Conversas", value: String(summary.total), icon: Users, color: "text-white" },
               { label: "Via anúncio", value: String(summary.attributed), icon: Megaphone, color: "text-cyan-400" },
               { label: "Viraram venda", value: String(summary.converted), icon: CheckCircle2, color: "text-emerald-400" },
-            ].map((c) => (
-              <div key={c.label} className="glass-card rounded-xl p-4 border border-white/10">
+            ].map((c, index) => (
+              <div key={c.label} className={`glass-card rounded-xl p-4 border border-white/10 ${index === 2 ? "col-span-2 sm:col-span-1" : ""}`}>
                 <div className="flex items-center gap-2 mb-2">
                   <c.icon className={`h-3.5 w-3.5 ${c.color}`} />
                   <p className="text-[10px] text-white/30 uppercase tracking-wider font-medium">{c.label}</p>
@@ -241,29 +241,45 @@ export default function Conversas() {
               <button
                 key={c.id}
                 onClick={() => setSelectedConv(c)}
-                className="w-full text-left flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 px-4 py-3 border-b border-white/8 last:border-0 hover:bg-white/[0.06] active:bg-white/10 transition-colors"
+                className="flex w-full flex-col gap-3 border-b border-white/8 px-4 py-4 text-left transition-colors last:border-0 hover:bg-white/[0.06] active:bg-white/10 sm:flex-row sm:items-center sm:gap-2 sm:py-3"
               >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white/90 truncate flex items-center gap-1.5">
-                    <Phone className="h-3 w-3 text-white/30 shrink-0" />
-                    {c.customerName || c.waId}
-                  </p>
-                  {c.customerName && <p className="text-[11px] text-white/35 truncate pl-[18px]">{c.waId}</p>}
-                  {c.lastMessageText && (
-                    <p className="text-[11px] text-white/30 truncate pl-[18px] mt-0.5 italic">{c.lastMessageText}</p>
-                  )}
+                <div className="flex min-w-0 items-start justify-between gap-3 sm:flex-1">
+                  <div className="min-w-0">
+                    <p className="flex items-center gap-1.5 truncate text-sm font-medium text-white/90">
+                      <Phone className="h-3 w-3 shrink-0 text-white/30" />
+                      {c.customerName || c.waId}
+                    </p>
+                    {c.customerName && <p className="truncate pl-[18px] text-[11px] text-white/35">{c.waId}</p>}
+                    {c.lastMessageText && (
+                      <p className="mt-0.5 truncate pl-[18px] text-[11px] italic text-white/45">{c.lastMessageText}</p>
+                    )}
+                  </div>
+                  <span className="shrink-0 sm:hidden">
+                    {c.status === "converted"
+                      ? <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2 py-1 text-[10px] font-semibold text-emerald-300"><CheckCircle2 className="h-2.5 w-2.5" /> Vendeu</span>
+                      : <span className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[10px] font-semibold text-white/50">Aberta</span>}
+                  </span>
                 </div>
-                <div className="w-full sm:w-[180px] min-w-0">
+                <div className="grid w-full grid-cols-2 gap-x-4 gap-y-2 sm:contents">
+                <div className="col-span-2 min-w-0 sm:col-span-1 sm:w-[180px]">
+                  <span className="mb-1 block text-[10px] text-white/40 sm:hidden">Origem</span>
                   {c.campaignName
-                    ? <span className="inline-flex items-center gap-1 text-[11px] text-cyan-300/90 truncate"><Megaphone className="h-3 w-3 shrink-0" />{c.campaignName}</span>
+                    ? <span className="inline-flex max-w-full min-w-0 items-center gap-1 truncate text-[11px] text-cyan-300/90"><Megaphone className="h-3 w-3 shrink-0" />{c.campaignName}</span>
                     : <span className="inline-flex items-center gap-1 text-[11px] text-white/25"><Tag className="h-3 w-3 shrink-0" />orgânica</span>}
                 </div>
-                <div className="w-[90px] text-center text-[11px] text-white/40 tabular-nums">{c.messageCount}</div>
-                <div className="w-[130px] text-right text-[11px] text-white/45 tabular-nums">{fmtDate(c.lastMessageAt)}</div>
-                <div className="w-[100px] flex sm:justify-center">
+                <div className="text-left text-[11px] text-white/50 tabular-nums sm:w-[90px] sm:text-center">
+                  <span className="mb-1 block text-[10px] text-white/40 sm:hidden">Mensagens</span>
+                  {c.messageCount}
+                </div>
+                <div className="text-left text-[11px] text-white/50 tabular-nums sm:w-[130px] sm:text-right">
+                  <span className="mb-1 block text-[10px] text-white/40 sm:hidden">Última mensagem</span>
+                  {fmtDate(c.lastMessageAt)}
+                </div>
+                <div className="hidden sm:flex sm:w-[100px] sm:justify-center">
                   {c.status === "converted"
                     ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border text-emerald-300 bg-emerald-400/10 border-emerald-400/25"><CheckCircle2 className="h-2.5 w-2.5" /> Vendeu</span>
                     : <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border text-white/50 bg-white/5 border-white/15">Aberta</span>}
+                </div>
                 </div>
               </button>
             ))}

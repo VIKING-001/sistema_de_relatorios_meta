@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,6 +52,22 @@ function fmtBRLcents(cents: number) {
 }
 function fmtPct(v: number) {
   return `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`;
+}
+
+function useCompactCampaignLayout() {
+  const [isCompact, setIsCompact] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 1279px)").matches
+  );
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 1279px)");
+    const update = () => setIsCompact(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  return isCompact;
 }
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
@@ -109,7 +125,7 @@ function MobileMetricsGrid({ spend, revenue, roi, cpa, tracked }: { spend: numbe
     <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-white/8 pt-3">
       {items.map(item => (
         <div key={item.label} className="min-w-0">
-          <p className="text-[10px] text-white/45">{item.label}</p>
+          <p className="text-[10px] text-white/60">{item.label}</p>
           <p className={`mt-0.5 whitespace-nowrap text-sm font-semibold tabular-nums ${item.color}`}>{item.value}</p>
         </div>
       ))}
@@ -118,33 +134,36 @@ function MobileMetricsGrid({ spend, revenue, roi, cpa, tracked }: { spend: numbe
 }
 
 // ─── Ad Row ───────────────────────────────────────────────────────────────────
-function AdRow({ ad }: { ad: any }) {
+function AdRow({ ad, isCompact }: { ad: any; isCompact: boolean }) {
+  if (isCompact) {
+    return (
+      <div className="space-y-3 border-b border-white/8 bg-black/20 px-4 py-3">
+        <div className="flex items-start justify-between gap-3">
+          <p className="min-w-0 break-words text-sm leading-5 text-white/80">{ad.name || "Anúncio sem nome"}</p>
+          <StatusBadge status={ad.status || ""} />
+        </div>
+        <MobileMetricsGrid spend={ad.spend ?? 0} revenue={ad.revenue ?? 0} roi={ad.roi ?? 0} cpa={ad.cpa ?? 0} />
+      </div>
+    );
+  }
+
   return (
-    <>
-    <div className="hidden lg:flex items-center gap-2 px-4 py-2 border-b border-white/5 bg-black/20 last:border-0">
+    <div className="flex items-center gap-2 border-b border-white/5 bg-black/20 px-4 py-2 last:border-0">
       <div className="w-5 shrink-0" /><div className="w-5 shrink-0" />
-      <div className="w-1.5 h-1.5 rounded-full bg-white/20 shrink-0 ml-2" />
-      <div className="flex-1 min-w-0 ml-2">
-        <p className="text-xs text-white/70 truncate">{ad.name || "Anúncio sem nome"}</p>
+      <div className="ml-2 h-1.5 w-1.5 shrink-0 rounded-full bg-white/20" />
+      <div className="ml-2 min-w-0 flex-1">
+        <p className="truncate text-xs text-white/70">{ad.name || "Anúncio sem nome"}</p>
       </div>
       <StatusBadge status={ad.status || ""} />
       <MetricsGroup spend={ad.spend ?? 0} revenue={ad.revenue ?? 0} roi={ad.roi ?? 0} cpa={ad.cpa ?? 0} />
     </div>
-    <div className="lg:hidden space-y-3 border-b border-white/8 bg-black/20 px-4 py-3">
-      <div className="flex items-start justify-between gap-3">
-        <p className="min-w-0 break-words text-sm leading-5 text-white/80">{ad.name || "Anúncio sem nome"}</p>
-        <StatusBadge status={ad.status || ""} />
-      </div>
-      <MobileMetricsGrid spend={ad.spend ?? 0} revenue={ad.revenue ?? 0} roi={ad.roi ?? 0} cpa={ad.cpa ?? 0} />
-    </div>
-    </>
   );
 }
 
 // ─── Adset Row ────────────────────────────────────────────────────────────────
 function AdsetRow({
-  adset, companyId, startDate, endDate,
-}: { adset: any; companyId: number; startDate: string; endDate: string }) {
+  adset, companyId, startDate, endDate, isCompact,
+}: { adset: any; companyId: number; startDate: string; endDate: string; isCompact: boolean }) {
   const [expanded, setExpanded] = useState(false);
 
   const { data: adsData, isLoading } = trpc.meta.adInsights.useQuery(
@@ -156,45 +175,50 @@ function AdsetRow({
 
   return (
     <>
-      <div
-        className="hidden lg:flex items-center gap-2 px-4 py-2.5 border-b border-white/5 bg-white/[0.02] hover:bg-white/[0.04] cursor-pointer transition-colors"
-        onClick={() => setExpanded(v => !v)}
-      >
-        <div className="w-5 shrink-0" />
-        <div className="w-5 h-5 flex items-center justify-center shrink-0">
-          {expanded
-            ? <ChevronDown className="h-3 w-3 text-primary/70" />
-            : <ChevronRight className="h-3 w-3 text-white/30" />}
+      {isCompact ? (
+        <div className="space-y-3 border-b border-white/8 bg-white/[0.02] px-4 py-3">
+          <button
+            type="button"
+            className="flex min-h-11 w-full items-start gap-3 text-left"
+            aria-expanded={expanded}
+            onClick={() => setExpanded(v => !v)}
+          >
+            <Layers className="mt-0.5 h-4 w-4 shrink-0 text-primary/60" />
+            <span className="min-w-0 flex-1">
+              <span className="block break-words text-sm font-medium leading-5 text-white/85">{adset.name || "Conjunto sem nome"}</span>
+              <span className="mt-1 block text-xs text-white/45">
+                {isLoading ? "Carregando anúncios…" : `${ads.length} anúncio${ads.length !== 1 ? "s" : ""}`}
+              </span>
+            </span>
+            <span className="flex shrink-0 items-center gap-2">
+              <StatusBadge status={adset.status || ""} />
+              {expanded ? <ChevronDown className="h-4 w-4 text-primary" /> : <ChevronRight className="h-4 w-4 text-white/40" />}
+            </span>
+          </button>
+          <MobileMetricsGrid spend={adset.spend ?? 0} revenue={adset.revenue ?? 0} roi={adset.roi ?? 0} cpa={adset.cpa ?? 0} />
         </div>
-        <Layers className="h-3 w-3 text-primary/50 shrink-0" />
-        <div className="flex-1 min-w-0 ml-1.5">
-          <p className="text-xs font-medium text-white/80 truncate">{adset.name || "Conjunto sem nome"}</p>
-          {!isLoading && <p className="text-[10px] text-white/30">{ads.length || "?"} anúncio{(ads.length || 0) !== 1 ? "s" : ""}</p>}
-        </div>
-        <StatusBadge status={adset.status || ""} />
-        <MetricsGroup spend={adset.spend ?? 0} revenue={adset.revenue ?? 0} roi={adset.roi ?? 0} cpa={adset.cpa ?? 0} />
-      </div>
-      <div className="lg:hidden border-b border-white/8 bg-white/[0.02] px-4 py-3 space-y-3">
+      ) : (
         <button
           type="button"
-          className="flex min-h-11 w-full items-start gap-3 text-left"
+          className="flex w-full items-center gap-2 border-b border-white/5 bg-white/[0.02] px-4 py-2.5 text-left transition-colors hover:bg-white/[0.04]"
           aria-expanded={expanded}
           onClick={() => setExpanded(v => !v)}
         >
-          <Layers className="mt-0.5 h-4 w-4 shrink-0 text-primary/60" />
-          <span className="min-w-0 flex-1">
-            <span className="block break-words text-sm font-medium leading-5 text-white/85">{adset.name || "Conjunto sem nome"}</span>
-            <span className="mt-1 block text-xs text-white/45">
-              {isLoading ? "Carregando anúncios…" : `${ads.length} anúncio${ads.length !== 1 ? "s" : ""}`}
-            </span>
-          </span>
-          <span className="flex shrink-0 items-center gap-2">
-            <StatusBadge status={adset.status || ""} />
-            {expanded ? <ChevronDown className="h-4 w-4 text-primary" /> : <ChevronRight className="h-4 w-4 text-white/40" />}
-          </span>
+          <div className="w-5 shrink-0" />
+          <div className="flex h-5 w-5 shrink-0 items-center justify-center">
+            {expanded
+              ? <ChevronDown className="h-3 w-3 text-primary/70" />
+              : <ChevronRight className="h-3 w-3 text-white/30" />}
+          </div>
+          <Layers className="h-3 w-3 shrink-0 text-primary/50" />
+          <div className="ml-1.5 min-w-0 flex-1">
+            <p className="truncate text-xs font-medium text-white/80">{adset.name || "Conjunto sem nome"}</p>
+            {!isLoading && <p className="text-[10px] text-white/30">{ads.length || "?"} anúncio{(ads.length || 0) !== 1 ? "s" : ""}</p>}
+          </div>
+          <StatusBadge status={adset.status || ""} />
+          <MetricsGroup spend={adset.spend ?? 0} revenue={adset.revenue ?? 0} roi={adset.roi ?? 0} cpa={adset.cpa ?? 0} />
         </button>
-        <MobileMetricsGrid spend={adset.spend ?? 0} revenue={adset.revenue ?? 0} roi={adset.roi ?? 0} cpa={adset.cpa ?? 0} />
-      </div>
+      )}
       {expanded && (
         <>
           {isLoading && (
@@ -207,7 +231,7 @@ function AdsetRow({
               Sem anúncios com dados no período.
             </div>
           )}
-          {ads.map((ad: any) => <AdRow key={ad.id} ad={ad} />)}
+          {ads.map((ad: any) => <AdRow key={ad.id} ad={ad} isCompact={isCompact} />)}
         </>
       )}
     </>
@@ -216,10 +240,11 @@ function AdsetRow({
 
 // ─── Campaign Row ─────────────────────────────────────────────────────────────
 function CampaignRow({
-  campaign, metrics, tracked, companyId, metaAccountId, startDate, endDate, openUtm, setOpenUtm,
+  campaign, metrics, tracked, companyId, metaAccountId, startDate, endDate, openUtm, setOpenUtm, isCompact,
 }: {
   campaign: any; metrics: any; tracked: any; companyId: number; metaAccountId: string;
   startDate: string; endDate: string; openUtm: string | null; setOpenUtm: (id: string | null) => void;
+  isCompact: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -241,28 +266,86 @@ function CampaignRow({
 
   return (
     <>
-      <div
-        className="hidden lg:flex items-center gap-2 px-4 py-3 border-b border-white/8 bg-white/[0.03] hover:bg-white/[0.06] cursor-pointer transition-all duration-200"
-        onClick={() => setExpanded(v => !v)}
-      >
-        <div className="w-5 h-5 flex items-center justify-center shrink-0">
-          {expanded
-            ? <ChevronDown className="h-3.5 w-3.5 text-primary" />
-            : <ChevronRight className="h-3.5 w-3.5 text-white/30" />}
-        </div>
-        <Megaphone className="h-3.5 w-3.5 text-primary/60 shrink-0" />
-        <div className="flex-1 min-w-0 ml-1.5">
-          <p className="text-sm font-semibold text-white truncate">{campaign.name}</p>
-          <div className="flex items-center gap-2 mt-0.5">
-            {campaign.objective && (
-              <span className="text-[10px] text-white/30">{campaign.objective.replace(/_/g, " ")}</span>
+      {isCompact ? (
+        <div className="space-y-3 border-b border-white/10 bg-white/[0.03] px-4 py-4">
+          <button
+            type="button"
+            className="flex min-h-11 w-full items-start gap-3 text-left"
+            aria-expanded={expanded}
+            onClick={() => setExpanded(v => !v)}
+          >
+            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+              <Megaphone className="h-4 w-4 text-primary" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block break-words text-[15px] font-semibold leading-5 text-white">{campaign.name || "Campanha sem nome"}</span>
+              <span className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs text-white/60">
+                {campaign.objective && <span>{campaign.objective.replace(/_/g, " ")}</span>}
+                {campaign.daily_budget && <span>{fmtBRLcents(parseInt(campaign.daily_budget))}/dia</span>}
+              </span>
+            </span>
+            {expanded ? <ChevronDown className="mt-1 h-4 w-4 shrink-0 text-primary" /> : <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-white/40" />}
+          </button>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge status={campaign.effective_status || campaign.status || ""} />
+            {hasTracking && (
+              <span
+                className="inline-flex min-h-7 items-center gap-1 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-2 text-[10px] font-semibold text-cyan-300"
+                title={`${tracked.linkCount ?? 0} link(s) · ${tracked.clicks ?? 0} clique(s) · ${tracked.salesCount ?? 0} venda(s) rastreada(s)`}
+              >
+                <Link2 className="h-3 w-3" /> Rastreada
+              </span>
             )}
-            {campaign.daily_budget && (
-              <span className="text-[10px] text-white/20">{fmtBRLcents(parseInt(campaign.daily_budget))}/dia</span>
-            )}
+            <span className="flex-1" />
+            <button
+              type="button"
+              aria-label={`${openUtm === campaign.id ? "Fechar" : "Criar"} UTM para ${campaign.name}`}
+              aria-pressed={openUtm === campaign.id}
+              className={`inline-flex min-h-11 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors ${
+                openUtm === campaign.id
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-white/15 bg-white/5 text-white/75 active:bg-white/10"
+              }`}
+              onClick={() => setOpenUtm(openUtm === campaign.id ? null : campaign.id)}
+            >
+              <Link2 className="h-4 w-4" /> UTM
+            </button>
+            <a
+              href={`https://business.facebook.com/adsmanager/manage/campaigns?act=${metaAccountId?.replace("act_", "")}&selected_campaign_ids=${campaign.id}`}
+              target="_blank" rel="noopener noreferrer"
+              aria-label={`Abrir ${campaign.name} no Gerenciador de Anúncios`}
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-white/75 active:bg-white/10"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </a>
           </div>
+
+          <MobileMetricsGrid spend={spend} revenue={rowRevenue} roi={rowRoi} cpa={rowCpa} tracked={useTracked} />
         </div>
-        <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
+      ) : (
+        <div className="flex items-center gap-2 border-b border-white/8 bg-white/[0.03] px-4 py-3 transition-colors hover:bg-white/[0.06]">
+          <button
+            type="button"
+            className="flex min-w-0 flex-1 items-center gap-2 text-left"
+            aria-expanded={expanded}
+            onClick={() => setExpanded(v => !v)}
+          >
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+              {expanded
+                ? <ChevronDown className="h-3.5 w-3.5 text-primary" />
+                : <ChevronRight className="h-3.5 w-3.5 text-white/30" />}
+            </span>
+            <Megaphone className="h-3.5 w-3.5 shrink-0 text-primary/60" />
+            <span className="ml-1.5 min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold text-white">{campaign.name}</span>
+              <span className="mt-0.5 flex items-center gap-2">
+                {campaign.objective && <span className="text-[10px] text-white/30">{campaign.objective.replace(/_/g, " ")}</span>}
+                {campaign.daily_budget && <span className="text-[10px] text-white/20">{fmtBRLcents(parseInt(campaign.daily_budget))}/dia</span>}
+              </span>
+            </span>
+          </button>
+          <div className="flex shrink-0 items-center gap-1.5">
           {hasTracking && (
             <span
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold text-cyan-300 bg-cyan-400/10 border border-cyan-400/25 shrink-0"
@@ -290,72 +373,10 @@ function CampaignRow({
           >
             <ExternalLink className="h-3 w-3" />
           </a>
+          </div>
+          <MetricsGroup spend={spend} revenue={rowRevenue} roi={rowRoi} cpa={rowCpa} tracked={useTracked} />
         </div>
-        <MetricsGroup
-          spend={spend}
-          revenue={rowRevenue}
-          roi={rowRoi}
-          cpa={rowCpa}
-          tracked={useTracked}
-        />
-      </div>
-
-      <div className="lg:hidden space-y-3 border-b border-white/10 bg-white/[0.03] px-4 py-4">
-        <button
-          type="button"
-          className="flex min-h-11 w-full items-start gap-3 text-left"
-          aria-expanded={expanded}
-          onClick={() => setExpanded(v => !v)}
-        >
-          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-            <Megaphone className="h-4 w-4 text-primary" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block break-words text-[15px] font-semibold leading-5 text-white">{campaign.name || "Campanha sem nome"}</span>
-            <span className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs text-white/45">
-              {campaign.objective && <span>{campaign.objective.replace(/_/g, " ")}</span>}
-              {campaign.daily_budget && <span>{fmtBRLcents(parseInt(campaign.daily_budget))}/dia</span>}
-            </span>
-          </span>
-          {expanded ? <ChevronDown className="mt-1 h-4 w-4 shrink-0 text-primary" /> : <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-white/40" />}
-        </button>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <StatusBadge status={campaign.effective_status || campaign.status || ""} />
-          {hasTracking && (
-            <span
-              className="inline-flex min-h-7 items-center gap-1 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-2 text-[10px] font-semibold text-cyan-300"
-              title={`${tracked.linkCount ?? 0} link(s) · ${tracked.clicks ?? 0} clique(s) · ${tracked.salesCount ?? 0} venda(s) rastreada(s)`}
-            >
-              <Link2 className="h-3 w-3" /> Rastreada
-            </span>
-          )}
-          <span className="flex-1" />
-          <button
-            type="button"
-            aria-label={`${openUtm === campaign.id ? "Fechar" : "Criar"} UTM para ${campaign.name}`}
-            aria-pressed={openUtm === campaign.id}
-            className={`inline-flex min-h-11 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors ${
-              openUtm === campaign.id
-                ? "border-primary/40 bg-primary/10 text-primary"
-                : "border-white/15 bg-white/5 text-white/75 active:bg-white/10"
-            }`}
-            onClick={() => setOpenUtm(openUtm === campaign.id ? null : campaign.id)}
-          >
-            <Link2 className="h-4 w-4" /> UTM
-          </button>
-          <a
-            href={`https://business.facebook.com/adsmanager/manage/campaigns?act=${metaAccountId?.replace("act_", "")}&selected_campaign_ids=${campaign.id}`}
-            target="_blank" rel="noopener noreferrer"
-            aria-label={`Abrir ${campaign.name} no Gerenciador de Anúncios`}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-white/75 active:bg-white/10"
-          >
-            <ExternalLink className="h-4 w-4" />
-          </a>
-        </div>
-
-        <MobileMetricsGrid spend={spend} revenue={rowRevenue} roi={rowRoi} cpa={rowCpa} tracked={useTracked} />
-      </div>
+      )}
 
       {expanded && (
         <>
@@ -370,7 +391,7 @@ function CampaignRow({
             </div>
           )}
           {adsets.map((adset: any) => (
-            <AdsetRow key={adset.id} adset={adset} companyId={companyId} startDate={startDate} endDate={endDate} />
+            <AdsetRow key={adset.id} adset={adset} companyId={companyId} startDate={startDate} endDate={endDate} isCompact={isCompact} />
           ))}
         </>
       )}
@@ -561,6 +582,7 @@ const STATUS_FILTERS = [
 
 // ─── Company Detail View ──────────────────────────────────────────────────────
 function CompanyDetailView({ company, onBack }: { company: any; onBack: () => void }) {
+  const isCompact = useCompactCampaignLayout();
   const [search, setSearch]           = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [datePreset, setDatePreset]   = useState(DATE_PRESETS[4]); // 30 dias
@@ -661,7 +683,7 @@ function CompanyDetailView({ company, onBack }: { company: any; onBack: () => vo
           <Filter className="h-3.5 w-3.5 text-white/30 shrink-0" />
           {STATUS_FILTERS.map(f => (
             <button key={f.id} onClick={() => setStatusFilter(f.id)}
-              className={`text-xs px-3 py-1 rounded-lg border font-medium transition-all ${
+              className={`min-h-11 px-3 py-2 text-xs font-medium transition-all sm:min-h-8 sm:py-1 rounded-lg border ${
                 statusFilter === f.id
                   ? "border-primary/50 bg-primary/10 text-primary"
                   : "border-white/10 bg-white/5 text-white/40 hover:bg-white/10 hover:text-white"
@@ -673,7 +695,7 @@ function CompanyDetailView({ company, onBack }: { company: any; onBack: () => vo
           <CalendarDays className="h-3.5 w-3.5 text-white/30 shrink-0" />
           {DATE_PRESETS.map(p => (
             <button key={p.label} onClick={() => setDatePreset(p)}
-              className={`text-xs px-3 py-1 rounded-lg border font-medium transition-all ${
+              className={`min-h-11 px-3 py-2 text-xs font-medium transition-all sm:min-h-8 sm:py-1 rounded-lg border ${
                 datePreset.label === p.label
                   ? "border-primary/50 bg-primary/10 text-primary"
                   : "border-white/10 bg-white/5 text-white/40 hover:bg-white/10 hover:text-white"
@@ -694,8 +716,8 @@ function CompanyDetailView({ company, onBack }: { company: any; onBack: () => vo
 
       {/* Table */}
       <div className="glass-card rounded-xl border border-white/10 overflow-hidden">
-        {campaigns.length > 0 && (
-        <div className="hidden lg:flex items-center gap-2 px-4 py-2.5 bg-black/30 border-b border-white/8 text-[10px] text-white/45 uppercase tracking-widest font-bold">
+        {campaigns.length > 0 && !isCompact && (
+        <div className="flex items-center gap-2 px-4 py-2.5 bg-black/30 border-b border-white/8 text-[10px] text-white/45 uppercase tracking-widest font-bold">
             <div className="w-5 shrink-0" />
             <div className="flex-1">Campanha / Conjunto / Anúncio</div>
             <div className="flex items-center gap-3 shrink-0 ml-3">
@@ -736,6 +758,7 @@ function CompanyDetailView({ company, onBack }: { company: any; onBack: () => vo
             endDate={dateRange.until}
             openUtm={openUtm}
             setOpenUtm={setOpenUtm}
+            isCompact={isCompact}
           />
         ))}
       </div>

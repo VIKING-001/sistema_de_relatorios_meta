@@ -441,7 +441,7 @@ function CompanyDetailView({
                     <p className="text-xs text-white/40">{company.name}</p>
                   </div>
                 </div>
-                <button onClick={() => setShowReportDialog(false)}
+                <button onClick={() => setShowReportDialog(false)} aria-label="Fechar novo relatório"
                   className="p-2 rounded-xl hover:bg-white/10 text-white/40 hover:text-white transition-all">
                   <X className="h-5 w-5" />
                 </button>

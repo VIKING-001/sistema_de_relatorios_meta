@@ -102,13 +102,13 @@ export default function Vendas() {
             <option key={c.id} value={c.id} className="bg-zinc-900">{c.name}</option>
           ))}
         </select>
-        <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
           <CalendarDays className="h-3.5 w-3.5 text-white/30 shrink-0" />
           {DATE_PRESETS.map((p) => (
             <button
               key={p.label}
               onClick={() => setPreset(p)}
-              className={`text-xs px-3 py-1 rounded-lg border font-medium transition-all ${
+              className={`min-h-11 px-3 py-2 text-xs font-medium transition-all sm:min-h-8 sm:py-1 rounded-lg border ${
                 preset.label === p.label
                   ? "border-primary/50 bg-primary/10 text-primary"
                   : "border-white/10 bg-white/5 text-white/40 hover:bg-white/10 hover:text-white"
@@ -151,7 +151,7 @@ export default function Vendas() {
 
           {/* Lista de vendas */}
           <div className="glass-card rounded-xl border border-white/10 overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-2.5 bg-black/30 border-b border-white/8 text-[10px] text-white/25 uppercase tracking-widest font-bold">
+            <div className="hidden items-center gap-2 border-b border-white/8 bg-black/30 px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest text-white/25 sm:flex">
               <div className="flex-1">Pedido / Cliente</div>
               <div className="w-[140px]">Campanha</div>
               <div className="w-[110px]">Origem</div>
@@ -171,8 +171,8 @@ export default function Vendas() {
               </div>
             )}
             {sales.map((s: any) => (
-              <div key={s.id} className="flex items-center gap-2 px-4 py-3 border-b border-white/8 last:border-0 hover:bg-white/[0.03] transition-colors">
-                <div className="flex-1 min-w-0">
+              <div key={s.id} className="grid grid-cols-2 gap-x-4 gap-y-3 border-b border-white/8 px-4 py-4 transition-colors last:border-0 hover:bg-white/[0.03] sm:flex sm:items-center sm:gap-2 sm:py-3">
+                <div className="col-span-2 min-w-0 sm:col-span-1 sm:flex-1">
                   <p className="text-sm font-medium text-white/90 truncate">
                     {s.customerName || s.orderId}
                   </p>
@@ -180,16 +180,22 @@ export default function Vendas() {
                     {[s.customerName ? s.orderId : null, s.customerPhone].filter(Boolean).join(" · ") || "—"}
                   </p>
                 </div>
-                <div className="w-[140px] min-w-0">
+                <div className="min-w-0 sm:w-[140px]">
+                  <span className="mb-1 block text-[10px] text-white/40 sm:hidden">Campanha</span>
                   {s.utmCampaign
-                    ? <span className="inline-flex items-center gap-1 text-[11px] text-cyan-300/90 truncate"><MousePointerClick className="h-3 w-3 shrink-0" />{s.utmCampaign}</span>
+                    ? <span className="inline-flex max-w-full items-center gap-1 truncate text-[11px] text-cyan-300/90"><MousePointerClick className="h-3 w-3 shrink-0" />{s.utmCampaign}</span>
                     : <span className="text-[11px] text-white/20">sem campanha</span>}
                 </div>
-                <div className="w-[110px]">{sourceBadge(s.source)}</div>
-                <div className="w-[120px] text-right text-[11px] text-white/50 tabular-nums">
+                <div className="min-w-0 sm:w-[110px]">
+                  <span className="mb-1 block text-[10px] text-white/40 sm:hidden">Origem</span>
+                  {sourceBadge(s.source)}
+                </div>
+                <div className="text-left text-[11px] text-white/50 tabular-nums sm:w-[120px] sm:text-right">
+                  <span className="mb-1 block text-[10px] text-white/40 sm:hidden">Data</span>
                   {s.saleDate ? new Date(s.saleDate).toLocaleDateString("pt-BR") : "—"}
                 </div>
-                <div className="w-[110px] text-right text-sm font-bold text-emerald-400 tabular-nums">
+                <div className="text-right text-sm font-bold text-emerald-400 tabular-nums sm:w-[110px]">
+                  <span className="mb-1 block text-left text-[10px] font-normal text-white/40 sm:hidden">Valor</span>
                   {fmtBRL(parseFloat(s.orderValue))}
                 </div>
               </div>
@@ -255,10 +261,10 @@ function ManualSaleForm({ companyId, onClose, onSaved }: { companyId: number; on
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="glass-card border border-white/15 rounded-2xl w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <div className="glass-card max-h-[calc(100dvh-2rem)] w-full max-w-md space-y-4 overflow-y-auto overscroll-contain rounded-2xl border border-white/15 p-6" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold flex items-center gap-2"><Plus className="h-5 w-5 text-primary" /> Registrar venda</h2>
-          <button onClick={onClose} className="text-white/40 hover:text-white"><X className="h-5 w-5" /></button>
+          <button type="button" onClick={onClose} aria-label="Fechar cadastro de venda" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white/60 hover:bg-white/5 hover:text-white"><X className="h-5 w-5" /></button>
         </div>
         <p className="text-xs text-muted-foreground">
           Use para vendas fechadas no WhatsApp/Direct. Escolha a campanha para a venda somar no ROAS real daquela campanha e no relatório.
