@@ -24,6 +24,7 @@ import {
   formatNumber,
   formatPercentage,
 } from "@shared/metrics";
+import { buildComparisonFeedback } from "@shared/comparisonFeedback";
 import { displayDate } from "@shared/dateParser";
 import ConsultiveReport from "@/components/ConsultiveReport";
 import FunnelChart from "@/components/FunnelChart";
@@ -812,16 +813,117 @@ function CompareSummary({
           Compare os resultados dos dois períodos, incluindo valores e variação
           dos indicadores.
         </p>
+        <div className="mt-4 grid gap-3 border-t border-white/8 pt-3 text-xs sm:grid-cols-2">
+          <p className="min-w-0 leading-5 text-[#c4cbd2]">
+            <span className="block font-medium text-[#a4afbb]">
+              Período anterior
+            </span>
+            <span className="break-words">{reportLabel(previous)}</span>
+          </p>
+          <p className="min-w-0 leading-5 text-[#c4cbd2]">
+            <span className="block font-medium text-[#a4afbb]">
+              Período atual
+            </span>
+            <span className="break-words">{reportLabel(current)}</span>
+          </p>
+        </div>
         <div className="mt-4 hidden grid-cols-[minmax(0,1fr)_minmax(110px,auto)_minmax(110px,auto)_minmax(130px,auto)] gap-3 text-[11px] font-medium uppercase tracking-wide text-[#a4afbb] sm:grid">
           <span>Indicador</span>
-          <span className="text-right">{previous.title}</span>
-          <span className="text-right">{current.title}</span>
+          <span className="text-right">Período anterior</span>
+          <span className="text-right">Período atual</span>
           <span className="text-right">Variação</span>
         </div>
       </div>
       <div className="divide-y divide-white/8">
         {renderRows(comparisonRows)}
       </div>
+    </section>
+  );
+}
+
+function ComparativeFeedback({
+  previous,
+  current,
+}: {
+  previous: PortalReport;
+  current: PortalReport;
+}) {
+  if (!previous.metrics || !current.metrics) {
+    const missing = !previous.metrics ? previous : current;
+    return (
+      <section
+        className="rounded-xl border border-amber-300/20 bg-amber-300/5 p-4 sm:p-5"
+        aria-labelledby="comparison-feedback-title"
+        role="status"
+      >
+        <h2 id="comparison-feedback-title" className="font-semibold text-white">
+          Feedback comparativo indisponível
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-[#c4cbd2]">
+          O relatório {reportLabel(missing)} não tem métricas registradas. Peça
+          ao responsável para revisar esse período antes de comparar os
+          resultados.
+        </p>
+      </section>
+    );
+  }
+
+  const before = metricsFor(previous);
+  const after = metricsFor(current);
+  const feedback = buildComparisonFeedback(before, after);
+  let recommendation: string | null = null;
+
+  if (current.aiAnalysis) {
+    try {
+      const analysis = JSON.parse(current.aiAnalysis);
+      recommendation =
+        typeof analysis?.recomendacaoPrincipal === "string"
+          ? analysis.recomendacaoPrincipal.trim() || null
+          : null;
+    } catch {
+      recommendation = null;
+    }
+  }
+
+  return (
+    <section
+      className="rounded-xl border border-[#ffb81a]/20 bg-[#111820] p-4 sm:p-5"
+      aria-labelledby="comparison-feedback-title"
+    >
+      <h2
+        id="comparison-feedback-title"
+        className="text-base font-semibold text-white sm:text-lg"
+      >
+        O que mudou entre os períodos
+      </h2>
+      <div className="mt-3 grid gap-2 border-b border-white/10 pb-4 text-sm sm:grid-cols-2 sm:gap-4">
+        <p className="min-w-0 leading-5 text-[#c4cbd2]">
+          <span className="block text-xs font-medium text-[#a4afbb]">
+            Anterior
+          </span>
+          <span className="break-words">{reportLabel(previous)}</span>
+        </p>
+        <p className="min-w-0 leading-5 text-[#c4cbd2]">
+          <span className="block text-xs font-medium text-[#a4afbb]">
+            Atual
+          </span>
+          <span className="break-words">{reportLabel(current)}</span>
+        </p>
+      </div>
+      <p className="mt-4 text-sm leading-6 text-[#e0e5ea]">
+        {feedback.results}.
+      </p>
+      <p className="mt-2 text-sm leading-6 text-[#c4cbd2]">
+        {feedback.interpretation}
+      </p>
+      {recommendation && (
+        <p className="mt-4 border-t border-white/10 pt-4 text-sm leading-6 text-[#c4cbd2]">
+          <span className="font-semibold text-[#ffcf62]">
+            Recomendação registrada em {reportLabel(current)}:
+          </span>{" "}
+          {recommendation}
+        </p>
+      )}
     </section>
   );
 }
@@ -1005,8 +1107,8 @@ export default function ClientPortal() {
                         Compare os períodos
                       </h2>
                       <p className="mt-1 text-sm leading-6 text-[#a4afbb]">
-                        Veja o que mudou entre os períodos, os funis e a análise
-                        de desempenho de cada um.
+                        Compare os funis e receba uma única leitura do que mudou
+                        entre os períodos.
                       </p>
                     </div>
                   </div>
@@ -1079,16 +1181,10 @@ export default function ClientPortal() {
                         ))}
                       </div>
                     </section>
-                    <section aria-label="Análises dos períodos comparados">
-                      <h2 className="mb-5 text-lg font-semibold text-white">
-                        Análise de performance de cada período
-                      </h2>
-                      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-2">
-                        {[previous, current].map(report => (
-                          <PeriodAnalysis key={report.id} report={report} />
-                        ))}
-                      </div>
-                    </section>
+                    <ComparativeFeedback
+                      previous={previous}
+                      current={current}
+                    />
                   </>
                 ) : (
                   <section
@@ -1097,7 +1193,7 @@ export default function ClientPortal() {
                   >
                     {previous && current
                       ? "Escolha dois períodos diferentes para comparar os resultados."
-                      : "Selecione os dois períodos para ver os funis e análises lado a lado."}
+                      : "Selecione os dois períodos para ver os funis e o feedback comparativo."}
                   </section>
                 )}
               </div>
